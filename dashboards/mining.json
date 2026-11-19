@@ -1,0 +1,85 @@
+{
+  "id": "mining",
+  "title": "Mining",
+  "pages": [
+    {
+      "id": "mining",
+      "label": "Mining",
+      "groups": [
+        {
+          "title": "Prospector-Beispiel",
+          "buttons": [
+            {
+              "id": "mining-mode",
+              "label": "Mining-Modus",
+              "hint": "M",
+              "keys": [
+                "m"
+              ],
+              "mode": "toggle",
+              "color": "amber",
+              "wide": true
+            },
+            {
+              "id": "mining-laser",
+              "label": "Laser",
+              "hint": "Linksklick halten",
+              "keys": [
+                "mouse1"
+              ],
+              "mode": "hold",
+              "color": "red",
+              "danger": true,
+              "wide": true
+            },
+            {
+              "id": "mine-1",
+              "label": "Modul 1",
+              "hint": "L-Alt + 1",
+              "keys": [
+                "lalt",
+                "1"
+              ],
+              "mode": "tap",
+              "color": "cyan"
+            },
+            {
+              "id": "mine-2",
+              "label": "Modul 2",
+              "hint": "L-Alt + 2",
+              "keys": [
+                "lalt",
+                "2"
+              ],
+              "mode": "tap",
+              "color": "cyan"
+            },
+            {
+              "id": "mine-3",
+              "label": "Modul 3",
+              "hint": "L-Alt + 3",
+              "keys": [
+                "lalt",
+                "3"
+              ],
+              "mode": "tap",
+              "color": "cyan"
+            },
+            {
+              "id": "jettison",
+              "label": "Abwerfen",
+              "hint": "L-Alt + J",
+              "keys": [
+                "lalt",
+                "j"
+              ],
+              "mode": "tap",
+              "color": "red",
+              "danger": true
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

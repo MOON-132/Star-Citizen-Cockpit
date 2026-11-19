@@ -1,6 +1,9 @@
 # Persönliche Dateien, nicht committen
+dashboards/local/*
+!dashboards/local/.gitkeep
 layout.local.json
 config.local.json
+state.json
 
 __pycache__/
 *.py[cod]

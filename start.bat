@@ -5,6 +5,8 @@ title SC Cockpit
 echo.
 echo  SC Cockpit
 echo  ----------
+echo  Portabler Start aus diesem Ordner.
+echo  Zum Installieren install.bat doppelklicken.
 echo  Fenster offen lassen, waehrend du spielst.
 echo  Beenden mit Strg+C.
 echo.

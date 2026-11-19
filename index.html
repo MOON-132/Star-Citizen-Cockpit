@@ -35,6 +35,7 @@
     user-select: none;
     -webkit-user-select: none;
   }
+  input, select { user-select: text; -webkit-user-select: text; }
   body {
     min-height: 100%;
     display: flex;
@@ -48,27 +49,26 @@
       radial-gradient(1200px 400px at 10% -10%, rgba(226, 162, 58, 0.08), transparent 50%),
       var(--bg);
   }
-  header {
+  header, .sub {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    padding-bottom: 10px;
   }
+  header { padding-bottom: 8px; }
+  .sub { padding-bottom: 10px; }
   .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
   .mark {
-    width: 14px;
-    height: 28px;
-    border-radius: 2px;
+    width: 14px; height: 28px; border-radius: 2px;
     background: linear-gradient(var(--amber), #8a5a12);
     box-shadow: 0 0 16px rgba(226, 162, 58, 0.45);
   }
   header strong { display: block; font-size: 18px; letter-spacing: 0.04em; }
-  #status { color: var(--muted); font-size: 13px; }
+  #status, #board-meta { color: var(--muted); font-size: 13px; }
   #status.on { color: var(--green); }
   #status.off { color: var(--danger); }
-  .tools { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
-  .tools button, .tab {
+  .tools, .editor-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+  button, .tab, select {
     border: 1px solid var(--line);
     background: var(--bg-2);
     color: var(--text);
@@ -78,21 +78,15 @@
     font: inherit;
     font-size: 14px;
   }
-  #arm[aria-pressed="true"] {
+  #board { min-width: 160px; max-width: 46vw; }
+  #arm[aria-pressed="true"], #edit[aria-pressed="true"] {
     background: #3a1612;
     border-color: var(--danger);
     color: #ffd0c8;
   }
-  nav {
-    display: flex;
-    gap: 8px;
-    overflow-x: auto;
-    padding-bottom: 10px;
-  }
-  .tab[aria-selected="true"] {
-    border-color: var(--amber);
-    color: var(--amber);
-  }
+  #edit[aria-pressed="true"] { background: #2a2416; border-color: var(--amber); color: var(--amber); }
+  nav { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; }
+  .tab[aria-selected="true"] { border-color: var(--amber); color: var(--amber); }
   main { flex: 1; overflow: auto; }
   .page { display: none; }
   .page.active { display: block; }
@@ -112,21 +106,17 @@
   }
   .key {
     appearance: none;
-    border: 1px solid var(--line);
     background: #161d27;
-    color: var(--text);
-    border-radius: 16px;
-    min-height: 84px;
-    padding: 12px 14px;
     text-align: left;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     gap: 6px;
-    font: inherit;
-    position: relative;
+    min-height: 84px;
+    border-radius: 16px;
+    padding: 12px 14px;
   }
-  .key b { font-size: 18px; font-weight: 680; letter-spacing: 0.01em; }
+  .key b { font-size: 18px; font-weight: 680; }
   .key small { color: var(--muted); font-size: 12px; }
   .key.wide { grid-column: span 2; }
   .key.amber { box-shadow: inset 3px 0 0 var(--amber); }
@@ -135,43 +125,36 @@
   .key.blue { box-shadow: inset 3px 0 0 var(--blue); }
   .key.green { box-shadow: inset 3px 0 0 var(--green); }
   .key.slate { box-shadow: inset 3px 0 0 var(--slate); }
-  .key.on, .key.holding {
-    background: #1c2836;
-    border-color: #3d5270;
-  }
+  .key.on, .key.holding { background: #1c2836; border-color: #3d5270; }
   .key.on b { color: var(--cyan); }
   .key.holding { border-color: var(--amber); }
   .key:active { transform: scale(0.985); }
   .key.locked { opacity: 0.38; }
-  .banner {
+  body.editing .key.selected { outline: 2px solid var(--amber); }
+  .banner, #editor {
     margin-bottom: 10px;
-    padding: 8px 12px;
+    padding: 10px 12px;
     border: 1px solid #6a5420;
-    border-radius: 10px;
-    color: #f0d7a2;
+    border-radius: 12px;
     background: #241c10;
+    color: #f0d7a2;
     font-size: 13px;
   }
-  footer {
-    color: var(--muted);
-    font-size: 12px;
-    padding-top: 6px;
-  }
+  #editor { display: grid; gap: 8px; }
+  #editor[hidden] { display: none; }
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
+  #editor label { display: grid; gap: 4px; color: var(--muted); font-size: 12px; }
+  #editor input, #editor select { width: 100%; background: #10161e; }
+  .check { display: flex; align-items: center; gap: 8px; min-height: 44px; }
+  footer { color: var(--muted); font-size: 12px; padding-top: 6px; }
   #toast {
-    position: fixed;
-    left: 50%;
-    bottom: 24px;
-    transform: translateX(-50%);
-    background: #3a1612;
-    color: #ffd7d1;
-    border: 1px solid var(--danger);
-    border-radius: 12px;
-    padding: 10px 14px;
-    max-width: min(520px, calc(100% - 24px));
+    position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
+    background: #3a1612; color: #ffd7d1; border: 1px solid var(--danger);
+    border-radius: 12px; padding: 10px 14px; max-width: min(520px, calc(100% - 24px));
   }
   @media (max-width: 720px) {
-    .key.wide { grid-column: span 2; }
     .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .key.wide { grid-column: span 2; }
   }
 </style>
 </head>
@@ -180,17 +163,62 @@
   <div class="brand">
     <span class="mark"></span>
     <div>
-      <strong id="title">SC Cockpit</strong>
+      <strong>SC Cockpit</strong>
       <small id="status">verbinde…</small>
     </div>
   </div>
   <div class="tools">
+    <button id="edit" type="button" aria-pressed="false">Anpassen</button>
     <button id="arm" type="button" aria-pressed="false">Gefahr AUS</button>
     <button id="release" type="button">Loslassen</button>
     <button id="full" type="button">Vollbild</button>
   </div>
 </header>
+<div class="sub">
+  <select id="board" aria-label="Dashboard"></select>
+  <span id="board-meta"></span>
+</div>
 <nav id="tabs"></nav>
+<section id="editor" hidden>
+  <div class="editor-actions">
+    <button id="save" type="button">Speichern</button>
+    <button id="copy" type="button">Kopie</button>
+    <button id="fresh" type="button">Neu</button>
+    <button id="remove-board" type="button">Dashboard löschen</button>
+    <button id="done" type="button">Fertig</button>
+  </div>
+  <p id="edit-hint">Button antippen, dann die Felder ändern. Speichern legt eine eigene Kopie an, die mitgelieferte Datei bleibt erhalten.</p>
+  <div class="form-grid">
+    <label>Text<input id="f-label" maxlength="40"></label>
+    <label>Hinweis<input id="f-hint" maxlength="60" placeholder="z. B. R-Alt + R"></label>
+    <label>Tasten<input id="f-keys" placeholder="n oder ralt+r"></label>
+    <label>Art
+      <select id="f-mode">
+        <option value="tap">Tippen</option>
+        <option value="toggle">Umschalten</option>
+        <option value="hold">Halten</option>
+      </select>
+    </label>
+    <label>Farbe
+      <select id="f-color">
+        <option value="amber">Amber</option>
+        <option value="cyan">Cyan</option>
+        <option value="red">Rot</option>
+        <option value="blue">Blau</option>
+        <option value="green">Grün</option>
+        <option value="slate">Grau</option>
+      </select>
+    </label>
+    <label class="check"><input id="f-wide" type="checkbox"> Breit</label>
+    <label class="check"><input id="f-danger" type="checkbox"> Gefahr</label>
+  </div>
+  <div class="editor-actions">
+    <button id="apply" type="button">Button übernehmen</button>
+    <button id="remove-btn" type="button">Button löschen</button>
+    <button id="add-btn" type="button">Button hinzufügen</button>
+    <button id="add-page" type="button">Seite hinzufügen</button>
+  </div>
+</section>
 <main id="pages"></main>
 <footer id="foot"></footer>
 <div id="toast" hidden></div>
@@ -200,12 +228,17 @@ const tabsEl = document.getElementById("tabs");
 const pagesEl = document.getElementById("pages");
 const toastEl = document.getElementById("toast");
 const armEl = document.getElementById("arm");
+const editEl = document.getElementById("edit");
+const boardEl = document.getElementById("board");
+const editorEl = document.getElementById("editor");
 const held = new Set();
 const toggled = new Set();
 let token = localStorage.getItem("sc-token") || "";
 let armed = false;
+let editing = false;
 let toastTimer = 0;
-let layout = null;
+let current = null;
+let selected = null;
 
 function toast(text) {
   toastEl.hidden = false;
@@ -213,13 +246,11 @@ function toast(text) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => { toastEl.hidden = true; }, 3200);
 }
-
 function headers() {
   const h = { "Content-Type": "application/json" };
   if (token) h["X-Token"] = token;
   return h;
 }
-
 async function api(path, options) {
   const res = await fetch(path, options);
   if (res.status === 401) {
@@ -231,8 +262,16 @@ async function api(path, options) {
   if (!res.ok) throw new Error(data.error || ("HTTP " + res.status));
   return data;
 }
-
+function slug(text) {
+  return (text || "").toLowerCase()
+    .replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss")
+    .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "dashboard";
+}
+function parseKeys(text) {
+  return text.split(/[+,]/).map((part) => part.trim().toLowerCase()).filter(Boolean);
+}
 async function send(button, mode) {
+  if (editing) return;
   if (button.danger && !armed && mode !== "up") {
     toast("Zuerst Gefahr AN schalten");
     return;
@@ -242,12 +281,7 @@ async function send(button, mode) {
       method: "POST",
       headers: headers(),
       keepalive: true,
-      body: JSON.stringify({
-        id: button.id,
-        keys: button.keys,
-        mode: mode,
-        hold_ms: button.hold_ms || (button.mode === "hold" ? 400 : 45)
-      })
+      body: JSON.stringify({ id: button.id, keys: button.keys, mode })
     });
   } catch (err) {
     statusEl.className = "off";
@@ -255,74 +289,88 @@ async function send(button, mode) {
     if (mode !== "down") toast(err.message);
   }
 }
-
+function buttonAt(ref) {
+  return current?.pages?.[ref.pi]?.groups?.[ref.gi]?.buttons?.[ref.bi] || null;
+}
+function fillForm(button) {
+  document.getElementById("f-label").value = button?.label || "";
+  document.getElementById("f-hint").value = button?.hint || "";
+  document.getElementById("f-keys").value = (button?.keys || []).join("+");
+  document.getElementById("f-mode").value = button?.mode || "tap";
+  document.getElementById("f-color").value = button?.color || "slate";
+  document.getElementById("f-wide").checked = !!button?.wide;
+  document.getElementById("f-danger").checked = !!button?.danger;
+}
+function selectButton(ref) {
+  selected = ref;
+  document.querySelectorAll(".key").forEach((el) => {
+    el.classList.toggle("selected", el.dataset.pi === String(ref.pi) && el.dataset.gi === String(ref.gi) && el.dataset.bi === String(ref.bi));
+  });
+  fillForm(buttonAt(ref));
+}
 function render(data) {
-  layout = data;
-  document.getElementById("title").textContent = data.title || "SC Cockpit";
+  current = data;
+  document.getElementById("board-meta").textContent = data._source === "local" ? "eigenes Dashboard" : "mitgeliefert";
+  document.getElementById("remove-board").hidden = data._source !== "local";
   tabsEl.innerHTML = "";
   pagesEl.innerHTML = "";
-  (data.pages || []).forEach((page, index) => {
+  (data.pages || []).forEach((page, pi) => {
     const tab = document.createElement("button");
     tab.type = "button";
     tab.className = "tab";
     tab.textContent = page.label || page.id;
-    tab.setAttribute("aria-selected", index === 0 ? "true" : "false");
-    tab.addEventListener("click", () => select(page.id));
+    tab.setAttribute("aria-selected", pi === 0 ? "true" : "false");
+    tab.addEventListener("click", () => activatePage(pi));
     tabsEl.appendChild(tab);
-
     const section = document.createElement("section");
-    section.className = "page" + (index === 0 ? " active" : "");
-    section.dataset.page = page.id;
-    (page.groups || []).forEach((group) => {
+    section.className = "page" + (pi === 0 ? " active" : "");
+    section.dataset.index = String(pi);
+    (page.groups || []).forEach((group, gi) => {
       const wrap = document.createElement("div");
       wrap.className = "group";
       const title = document.createElement("h2");
       title.textContent = group.title || "";
       const grid = document.createElement("div");
       grid.className = "grid";
-      (group.buttons || []).forEach((button) => grid.appendChild(makeButton(button)));
+      (group.buttons || []).forEach((button, bi) => grid.appendChild(makeButton(button, { pi, gi, bi })));
       wrap.append(title, grid);
       section.appendChild(wrap);
     });
     pagesEl.appendChild(section);
   });
-  const source = data._source === "local" ? "layout.local.json" : "layout.json";
-  document.getElementById("foot").textContent =
-    source + " · Seite neu laden nach einer Änderung · Toggle merkt sich nur die Anzeige, nicht das Spiel";
+  const where = data._source === "local" ? "eigene Datei" : "mitgeliefert, Speichern erzeugt eine eigene Kopie";
+  document.getElementById("foot").textContent = (data.title || data.id) + " · " + where + " · diese Adresse auf jedem Gerät im WLAN öffnen";
+  if (selected) selectButton(selected);
 }
-
-function select(id) {
-  document.querySelectorAll(".tab").forEach((tab, i) => {
-    const page = layout.pages[i];
-    tab.setAttribute("aria-selected", page && page.id === id ? "true" : "false");
-  });
-  document.querySelectorAll(".page").forEach((page) => {
-    page.classList.toggle("active", page.dataset.page === id);
-  });
+function activatePage(index) {
+  document.querySelectorAll(".tab").forEach((tab, i) => tab.setAttribute("aria-selected", i === index ? "true" : "false"));
+  document.querySelectorAll(".page").forEach((page) => page.classList.toggle("active", Number(page.dataset.index) === index));
 }
-
-function makeButton(button) {
+function activePageIndex() {
+  const el = document.querySelector(".page.active");
+  return el ? Number(el.dataset.index) : 0;
+}
+function makeButton(button, ref) {
   const el = document.createElement("button");
   el.type = "button";
   el.className = "key " + (button.color || "slate") + (button.wide ? " wide" : "");
   if (button.danger) el.classList.add("locked");
+  el.dataset.pi = String(ref.pi);
+  el.dataset.gi = String(ref.gi);
+  el.dataset.bi = String(ref.bi);
   el.innerHTML = "<b></b><small></small>";
   el.querySelector("b").textContent = button.label || button.id;
-  el.querySelector("small").textContent = button.hint || (button.keys || []).join(" + ");
-  el.dataset.id = button.id;
-
-  const refreshLock = () => {
-    if (!button.danger) return;
-    el.classList.toggle("locked", !armed);
-  };
+  el.querySelector("small").textContent = button.hint || (button.keys || []).join("+");
+  const refreshLock = () => { if (button.danger) el.classList.toggle("locked", !armed); };
   el._refreshLock = refreshLock;
-
+  const pick = (event) => {
+    event.preventDefault();
+    selectButton(ref);
+  };
   if (button.mode === "hold") {
     const down = (event) => {
-      if (button.danger && !armed) {
-        toast("Zuerst Gefahr AN schalten");
-        return;
-      }
+      if (editing) return pick(event);
+      if (button.danger && !armed) { toast("Zuerst Gefahr AN schalten"); return; }
       event.preventDefault();
       el.setPointerCapture?.(event.pointerId);
       held.add(button.id);
@@ -330,7 +378,7 @@ function makeButton(button) {
       send(button, "down");
     };
     const up = () => {
-      if (!held.has(button.id)) return;
+      if (editing || !held.has(button.id)) return;
       held.delete(button.id);
       el.classList.remove("holding");
       send(button, "up");
@@ -338,14 +386,10 @@ function makeButton(button) {
     el.addEventListener("pointerdown", down);
     el.addEventListener("pointerup", up);
     el.addEventListener("pointercancel", up);
-    el.addEventListener("lostpointercapture", up);
   } else {
     el.addEventListener("pointerup", (event) => {
-      if (event.pointerType === "mouse" && event.button !== 0) return;
-      if (button.danger && !armed) {
-        toast("Zuerst Gefahr AN schalten");
-        return;
-      }
+      if (editing) return pick(event);
+      if (button.danger && !armed) { toast("Zuerst Gefahr AN schalten"); return; }
       if (button.mode === "toggle") {
         if (toggled.has(button.id)) toggled.delete(button.id);
         else toggled.add(button.id);
@@ -356,38 +400,204 @@ function makeButton(button) {
   }
   return el;
 }
-
+function applyForm(showToast) {
+  if (!selected) { toast("Zuerst einen Button antippen"); return false; }
+  const button = buttonAt(selected);
+  if (!button) return false;
+  const keys = parseKeys(document.getElementById("f-keys").value);
+  if (!keys.length || keys.length > 4) { toast("1 bis 4 Tasten, z. B. ralt+r"); return false; }
+  button.label = document.getElementById("f-label").value.trim() || button.label;
+  button.hint = document.getElementById("f-hint").value.trim();
+  button.keys = keys;
+  button.mode = document.getElementById("f-mode").value;
+  button.color = document.getElementById("f-color").value;
+  button.wide = document.getElementById("f-wide").checked;
+  button.danger = document.getElementById("f-danger").checked;
+  const keep = selected;
+  render(current);
+  selectButton(keep);
+  if (showToast) toast("Übernommen, noch nicht gespeichert");
+  return true;
+}
+function payload() {
+  return {
+    id: current.id,
+    title: current.title,
+    pages: current.pages,
+    activate: true
+  };
+}
+async function refreshList(selectId) {
+  const list = await api("/api/dashboards");
+  boardEl.innerHTML = "";
+  list.dashboards.forEach((item) => {
+    const option = document.createElement("option");
+    option.value = item.id;
+    option.textContent = item.title + (item.source === "local" ? " · eigen" : "");
+    boardEl.appendChild(option);
+  });
+  const id = selectId || list.active;
+  if ([...boardEl.options].some((option) => option.value === id)) boardEl.value = id;
+  return id;
+}
+async function openBoard(id) {
+  held.clear();
+  selected = null;
+  const data = await api("/api/dashboard/" + encodeURIComponent(id));
+  render(data);
+  api("/api/active", { method: "POST", headers: headers(), body: JSON.stringify({ id }) }).catch(() => {});
+}
+async function saveBoard() {
+  if (selected && !applyForm(false)) return;
+  try {
+    const saved = await api("/api/dashboard/" + encodeURIComponent(current.id), {
+      method: "PUT",
+      headers: headers(),
+      body: JSON.stringify(payload())
+    });
+    await refreshList(saved.id);
+    render(saved);
+    toast("Gespeichert");
+  } catch (err) { toast(err.message); }
+}
+editEl.addEventListener("click", async () => {
+  editing = !editing;
+  editEl.setAttribute("aria-pressed", editing ? "true" : "false");
+  editEl.textContent = editing ? "Anpassen AN" : "Anpassen";
+  editorEl.hidden = !editing;
+  document.body.classList.toggle("editing", editing);
+  if (editing) {
+    held.clear();
+    api("/api/release", { method: "POST", headers: headers(), body: "{}" }).catch(() => {});
+  }
+});
+document.getElementById("done").addEventListener("click", () => editEl.click());
+document.getElementById("apply").addEventListener("click", () => applyForm(true));
+document.getElementById("save").addEventListener("click", saveBoard);
+document.getElementById("fresh").addEventListener("click", async () => {
+  const title = prompt("Name des neuen Dashboards", "Mein Schiff");
+  if (!title) return;
+  const id = slug(title);
+  const body = {
+    title,
+    activate: true,
+    pages: [{
+      id: "seite",
+      label: "Seite 1",
+      groups: [{
+        title: "Steuerung",
+        buttons: [{ id: "neu", label: "Neuer Button", hint: "N", keys: ["n"], mode: "tap", color: "amber" }]
+      }]
+    }]
+  };
+  try {
+    const saved = await api("/api/dashboard/" + encodeURIComponent(id), {
+      method: "PUT", headers: headers(), body: JSON.stringify(body)
+    });
+    await refreshList(saved.id);
+    render(saved);
+    toast("Dashboard angelegt");
+  } catch (err) { toast(err.message); }
+});
+document.getElementById("copy").addEventListener("click", async () => {
+  const title = prompt("Name der Kopie", (current.title || "Dashboard") + " Kopie");
+  if (!title) return;
+  const id = slug(title);
+  try {
+    const saved = await api("/api/dashboard/" + encodeURIComponent(id), {
+      method: "PUT",
+      headers: headers(),
+      body: JSON.stringify({ title, pages: current.pages, activate: true })
+    });
+    await refreshList(saved.id);
+    render(saved);
+    toast("Kopie gespeichert");
+  } catch (err) { toast(err.message); }
+});
+document.getElementById("remove-board").addEventListener("click", async () => {
+  if (current._source !== "local") return;
+  if (!confirm("Eigene Kopie von " + current.title + " löschen?")) return;
+  try {
+    await api("/api/dashboard/" + encodeURIComponent(current.id), { method: "DELETE" });
+    const id = await refreshList("standard");
+    await openBoard(boardEl.value || id);
+    toast("Eigene Kopie gelöscht");
+  } catch (err) { toast(err.message); }
+});
+document.getElementById("remove-btn").addEventListener("click", () => {
+  if (!selected) return;
+  const buttons = current.pages[selected.pi].groups[selected.gi].buttons;
+  if (buttons.length < 2 && current.pages.length < 2) { toast("Der letzte Button bleibt"); return; }
+  buttons.splice(selected.bi, 1);
+  current.pages[selected.pi].groups = current.pages[selected.pi].groups.filter((group) => group.buttons.length);
+  if (!current.pages[selected.pi].groups.length) current.pages.splice(selected.pi, 1);
+  selected = null;
+  fillForm(null);
+  render(current);
+});
+document.getElementById("add-btn").addEventListener("click", () => {
+  const pi = activePageIndex();
+  const page = current.pages[pi];
+  if (!page.groups.length) page.groups.push({ title: "Steuerung", buttons: [] });
+  page.groups[0].buttons.push({
+    id: "neu-" + Date.now(),
+    label: "Neuer Button",
+    hint: "",
+    keys: ["n"],
+    mode: "tap",
+    color: "slate"
+  });
+  const bi = page.groups[0].buttons.length - 1;
+  render(current);
+  activatePage(pi);
+  selectButton({ pi, gi: 0, bi });
+});
+document.getElementById("add-page").addEventListener("click", () => {
+  const label = prompt("Name der Seite", "Seite " + (current.pages.length + 1));
+  if (!label) return;
+  current.pages.push({
+    id: slug(label),
+    label: label.slice(0, 24),
+    groups: [{
+      title: "Steuerung",
+      buttons: [{ id: "neu-" + Date.now(), label: "Neuer Button", hint: "", keys: ["n"], mode: "tap", color: "slate" }]
+    }]
+  });
+  render(current);
+  activatePage(current.pages.length - 1);
+});
+boardEl.addEventListener("change", () => {
+  if (editing && current && boardEl.value !== current.id && !confirm("Ohne Speichern wechseln?")) {
+    boardEl.value = current.id;
+    return;
+  }
+  openBoard(boardEl.value).catch((err) => toast(err.message));
+});
 armEl.addEventListener("click", () => {
   armed = !armed;
   armEl.setAttribute("aria-pressed", armed ? "true" : "false");
   armEl.textContent = armed ? "Gefahr AN" : "Gefahr AUS";
   document.querySelectorAll(".key").forEach((el) => el._refreshLock && el._refreshLock());
 });
-
 document.getElementById("release").addEventListener("click", async () => {
   held.clear();
   document.querySelectorAll(".holding").forEach((el) => el.classList.remove("holding"));
-  try {
-    await api("/api/release", { method: "POST", headers: headers(), body: "{}" });
-  } catch (err) {
-    toast(err.message);
-  }
+  try { await api("/api/release", { method: "POST", headers: headers(), body: "{}" }); }
+  catch (err) { toast(err.message); }
 });
-
 document.getElementById("full").addEventListener("click", () => {
   if (!document.fullscreenElement) document.documentElement.requestFullscreen?.();
   else document.exitFullscreen?.();
 });
-
 setInterval(() => {
+  if (editing) return;
   held.forEach((id) => {
     const button = findButton(id);
     if (button) send(button, "down");
   });
 }, 1000);
-
 function findButton(id) {
-  for (const page of layout?.pages || []) {
+  for (const page of current?.pages || []) {
     for (const group of page.groups || []) {
       for (const button of group.buttons || []) {
         if (button.id === id) return button;
@@ -396,38 +606,23 @@ function findButton(id) {
   }
   return null;
 }
-
 async function health() {
   try {
     const data = await api("/api/health");
     statusEl.className = "on";
     statusEl.textContent = data.dry_run ? "Trockenlauf, keine echten Tasten" : "PC verbunden";
-    let banner = document.getElementById("dry");
-    if (data.dry_run) {
-      if (!banner) {
-        banner = document.createElement("div");
-        banner.id = "dry";
-        banner.className = "banner";
-        banner.textContent = "Trockenlauf: Dieser Rechner ist nicht Windows. Tasten werden nur im Server-Fenster gezeigt.";
-        pagesEl.before(banner);
-      }
-    } else if (banner) {
-      banner.remove();
-    }
   } catch (err) {
     statusEl.className = "off";
     statusEl.textContent = "keine Verbindung";
   }
 }
-
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") {
     held.clear();
     fetch("/api/release", { method: "POST", headers: headers(), body: "{}", keepalive: true }).catch(() => {});
   }
 });
-
-api("/api/layout").then(render).catch((err) => {
+refreshList().then((id) => openBoard(boardEl.value || id)).catch((err) => {
   statusEl.className = "off";
   statusEl.textContent = err.message;
   toast(err.message);

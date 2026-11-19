@@ -2,24 +2,32 @@
 """SC Cockpit — lokaler Tastatur-Bridge für ein Tablet-Dashboard.
 
 Nur die Python-Standardbibliothek. Auf dem Gaming-PC starten, im Browser
-des Tablets die angezeigte Adresse öffnen. Tasten gehen per SendInput
+jedes Endgeräts die angezeigte Adresse öffnen. Tasten gehen per SendInput
 (Scancode) an das fokussierte Fenster, also an Star Citizen.
 
-Keine Pip-Pakete. Kein Account. Kein Internet nötig nach dem Start.
+Dashboards sind JSON-Dateien. Mitgelieferte liegen in dashboards/,
+eigene in dashboards/local/ oder im Benutzerordner des Installers.
+
 """
 
 from __future__ import annotations
 
 import json
+import os
+import re
 import socket
 import sys
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from urllib.parse import unquote
 
-ROOT = Path(__file__).resolve().parent
-VERSION = "0.1.0"
+APP_ROOT = Path(__file__).resolve().parent
+VERSION = "0.2.0"
+ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,40}$")
+RESERVED_IDS = {"local", "state"}
+COLORS = {"amber", "cyan", "red", "blue", "green", "slate"}
 
 # Virtual-Key-Codes. Buchstaben werden auf Windows per MapVirtualKey in den
 # Scancode des aktiven Tastaturlayouts übersetzt (wichtig für DE: Y/Z).
@@ -239,32 +247,52 @@ def load_json(path: Path) -> dict | None:
 
 def load_config() -> dict:
     cfg = {"port": 8765, "token": "", "hold_timeout_s": 4}
-    try:
-        raw = load_json(ROOT / "config.local.json")
-    except json.JSONDecodeError as exc:
-        log(f"config.local.json ist kein gültiges JSON: {exc}")
-        raw = None
-    if isinstance(raw, dict):
-        cfg.update({k: raw[k] for k in cfg if k in raw})
+    candidates = []
+    home = os.environ.get("SC_COCKPIT_HOME", "").strip()
+    if home:
+        candidates.append(Path(home) / "config.local.json")
+    candidates.append(APP_ROOT / "config.local.json")
+    for path in candidates:
+        try:
+            raw = load_json(path)
+        except json.JSONDecodeError as exc:
+            log(f"{path.name} ist kein gültiges JSON: {exc}")
+            continue
+        if isinstance(raw, dict):
+            cfg.update({k: raw[k] for k in cfg if k in raw})
+            break
     cfg["port"] = int(cfg["port"])
     cfg["token"] = str(cfg.get("token") or "")
     cfg["hold_timeout_s"] = float(cfg["hold_timeout_s"])
     return cfg
 
 
-def layout_path() -> tuple[Path, str]:
-    local = ROOT / "layout.local.json"
-    if local.is_file():
-        return local, "local"
-    return ROOT / "layout.json", "default"
+def user_root() -> Path:
+    raw = os.environ.get("SC_COCKPIT_HOME", "").strip()
+    if raw:
+        path = Path(raw)
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+    return APP_ROOT
 
 
-def load_layout() -> tuple[dict, str]:
-    path, source = layout_path()
-    data = load_json(path)
-    if not isinstance(data, dict) or "pages" not in data:
-        raise SystemExit(f"Layout fehlt oder ist ungültig: {path}")
-    return data, source
+def builtin_dir() -> Path:
+    return APP_ROOT / "dashboards"
+
+
+def local_dir() -> Path:
+    if user_root().resolve() == APP_ROOT.resolve():
+        path = APP_ROOT / "dashboards" / "local"
+    else:
+        path = user_root() / "dashboards"
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def state_path() -> Path:
+    if user_root().resolve() == APP_ROOT.resolve():
+        return local_dir() / "state.json"
+    return user_root() / "state.json"
 
 
 def normalize_key(name: str) -> str:
@@ -444,6 +472,189 @@ def validate_layout(layout: dict) -> list[str]:
     return errors
 
 
+def slug(text: str) -> str:
+    out = []
+    for ch in str(text).strip().lower():
+        if ch.isascii() and ch.isalnum():
+            out.append(ch)
+        elif ch in "-_ " and out and out[-1] != "-":
+            out.append("-")
+    return "".join(out).strip("-")[:40]
+
+
+def _read_dashboard(path: Path, source: str, items: list, index: dict) -> None:
+    try:
+        data = load_json(path)
+    except json.JSONDecodeError as exc:
+        log(f"{path.name}: {exc}")
+        return
+    if not isinstance(data, dict) or not isinstance(data.get("pages"), list):
+        return
+    dash_id = str(data.get("id") or path.stem)
+    if dash_id in RESERVED_IDS or not ID_RE.fullmatch(dash_id):
+        log(f"Dashboard-Id ungültig: {dash_id}")
+        return
+    entry = {
+        "id": dash_id,
+        "title": str(data.get("title") or dash_id)[:40],
+        "source": source,
+        "path": path,
+        "data": data,
+    }
+    if dash_id in index:
+        items[index[dash_id]] = entry
+    else:
+        index[dash_id] = len(items)
+        items.append(entry)
+
+
+def catalog() -> list[dict]:
+    items: list[dict] = []
+    index: dict[str, int] = {}
+    folder = builtin_dir()
+    if folder.is_dir():
+        for path in sorted(folder.glob("*.json")):
+            _read_dashboard(path, "builtin", items, index)
+    legacy = APP_ROOT / "layout.json"
+    if legacy.is_file():
+        _read_dashboard(legacy, "builtin", items, index)
+    legacy_local = APP_ROOT / "layout.local.json"
+    if legacy_local.is_file():
+        _read_dashboard(legacy_local, "local", items, index)
+    for path in sorted(local_dir().glob("*.json")):
+        _read_dashboard(path, "local", items, index)
+    return items
+
+
+def active_id(items: list[dict] | None = None) -> str:
+    items = catalog() if items is None else items
+    ids = [item["id"] for item in items]
+    try:
+        raw = load_json(state_path())
+    except (json.JSONDecodeError, OSError):
+        raw = None
+    want = raw.get("active") if isinstance(raw, dict) else None
+    if want in ids:
+        return str(want)
+    if "standard" in ids:
+        return "standard"
+    return ids[0] if ids else ""
+
+
+def set_active(dash_id: str) -> None:
+    path = state_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({"active": dash_id}, indent=2) + "\n", encoding="utf-8")
+
+
+def find_dashboard(dash_id: str) -> dict | None:
+    for item in catalog():
+        if item["id"] == dash_id:
+            return item
+    return None
+
+
+def clean_dashboard(data: dict, dash_id: str) -> dict:
+    if not isinstance(data, dict):
+        raise ValueError("Dashboard muss ein Objekt sein")
+    pages_in = data.get("pages")
+    if not isinstance(pages_in, list) or not pages_in:
+        raise ValueError("mindestens eine Seite")
+    if len(pages_in) > 12:
+        raise ValueError("höchstens 12 Seiten")
+    pages = []
+    seen_pages: set[str] = set()
+    seen_buttons: set[str] = set()
+    for i, page in enumerate(pages_in):
+        if not isinstance(page, dict):
+            raise ValueError("Seite ungültig")
+        pid = slug(page.get("id") or f"seite-{i + 1}") or f"seite-{i + 1}"
+        base = pid
+        n = 2
+        while pid in seen_pages:
+            pid = f"{base}-{n}"[:40]
+            n += 1
+        seen_pages.add(pid)
+        groups = []
+        for group in page.get("groups") or []:
+            if not isinstance(group, dict):
+                continue
+            buttons = []
+            for button in group.get("buttons") or []:
+                if not isinstance(button, dict):
+                    continue
+                keys = button.get("keys")
+                if not isinstance(keys, list) or not 1 <= len(keys) <= 4:
+                    raise ValueError(f"Tasten fehlen bei {button.get('label') or 'Button'}")
+                norm = [normalize_key(str(key)) for key in keys]
+                for key in norm:
+                    if not known_key(key):
+                        raise ValueError(f"unbekannte Taste: {key}")
+                mode = button.get("mode") or "tap"
+                if mode not in {"tap", "toggle", "hold"}:
+                    raise ValueError("mode ungültig")
+                color = button.get("color") or "slate"
+                if color not in COLORS:
+                    color = "slate"
+                bid = slug(str(button.get("id") or button.get("label") or "button")) or "button"
+                base_id = bid
+                n = 2
+                while bid in seen_buttons:
+                    bid = f"{base_id}-{n}"[:40]
+                    n += 1
+                seen_buttons.add(bid)
+                buttons.append({
+                    "id": bid,
+                    "label": str(button.get("label") or bid)[:40],
+                    "hint": str(button.get("hint") or "")[:60],
+                    "keys": norm,
+                    "mode": mode,
+                    "color": color,
+                    "wide": bool(button.get("wide")),
+                    "danger": bool(button.get("danger")),
+                })
+            if buttons:
+                groups.append({
+                    "title": str(group.get("title") or "Steuerung")[:40],
+                    "buttons": buttons,
+                })
+        if not groups:
+            raise ValueError(f"Seite {pid} hat keine Buttons")
+        pages.append({
+            "id": pid,
+            "label": str(page.get("label") or pid)[:24],
+            "groups": groups,
+        })
+    return {"id": dash_id, "title": str(data.get("title") or dash_id)[:40], "pages": pages}
+
+
+def save_dashboard(dash_id: str, data: dict) -> dict:
+    if dash_id in RESERVED_IDS or not ID_RE.fullmatch(dash_id):
+        raise ValueError("Id ungültig. Kleinbuchstaben, Zahlen, Bindestrich.")
+    cleaned = clean_dashboard(data, dash_id)
+    path = local_dir() / f"{dash_id}.json"
+    tmp = path.with_suffix(".tmp")
+    tmp.write_text(json.dumps(cleaned, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    tmp.replace(path)
+    return cleaned
+
+
+def delete_dashboard(dash_id: str) -> bool:
+    path = local_dir() / f"{dash_id}.json"
+    if not path.is_file():
+        return False
+    path.unlink()
+    return True
+
+
+def public_dashboard(item: dict) -> dict:
+    data = dict(item["data"])
+    data["id"] = item["id"]
+    data["_source"] = item["source"]
+    data["_title"] = item["title"]
+    return data
+
+
 def lan_ips() -> list[str]:
     ips: list[str] = []
     try:
@@ -511,9 +722,9 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
-    def _read_json(self) -> dict:
+    def _read_json(self, limit: int = 8192) -> dict:
         length = int(self.headers.get("Content-Length", "0") or 0)
-        if length <= 0 or length > 8192:
+        if length <= 0 or length > limit:
             raise ValueError("ungültiger Body")
         raw = self.rfile.read(length)
         data = json.loads(raw.decode("utf-8"))
@@ -521,10 +732,19 @@ class Handler(BaseHTTPRequestHandler):
             raise ValueError("JSON-Objekt erwartet")
         return data
 
+    def _dash_id(self, path: str) -> str | None:
+        prefix = "/api/dashboard/"
+        if not path.startswith(prefix):
+            return None
+        dash_id = unquote(path[len(prefix):]).strip().strip("/")
+        if not ID_RE.fullmatch(dash_id) or dash_id in RESERVED_IDS:
+            return None
+        return dash_id
+
     def do_GET(self) -> None:  # noqa: N802
         path = self.path.split("?", 1)[0]
         if path in {"/", "/index.html"}:
-            file = ROOT / "index.html"
+            file = APP_ROOT / "index.html"
             if not file.is_file():
                 self._json(500, {"error": "index.html fehlt"})
                 return
@@ -537,31 +757,104 @@ class Handler(BaseHTTPRequestHandler):
             self._json(401, {"error": "token"})
             return
         if path == "/api/health":
-            _layout, source = layout_path()
+            items = catalog()
             self._json(200, {
                 "ok": True,
                 "version": VERSION,
                 "dry_run": DRY_RUN,
-                "layout": source,
+                "active": active_id(items),
+                "dashboards": len(items),
                 "held": sorted(BOARD.down),
             })
             return
+        if path == "/api/dashboards":
+            items = catalog()
+            self._json(200, {
+                "active": active_id(items),
+                "dashboards": [
+                    {"id": item["id"], "title": item["title"], "source": item["source"]}
+                    for item in items
+                ],
+            })
+            return
         if path == "/api/layout":
-            try:
-                layout, source = load_layout()
-            except (json.JSONDecodeError, OSError, SystemExit) as exc:
-                self._json(500, {"error": str(exc)})
+            items = catalog()
+            current = active_id(items)
+            item = find_dashboard(current) if current else None
+            if item is None:
+                self._json(404, {"error": "kein Dashboard"})
                 return
-            layout = dict(layout)
-            layout["_source"] = source
-            self._json(200, layout)
+            self._json(200, public_dashboard(item))
+            return
+        dash_id = self._dash_id(path)
+        if dash_id:
+            item = find_dashboard(dash_id)
+            if item is None:
+                self._json(404, {"error": "Dashboard nicht gefunden"})
+                return
+            self._json(200, public_dashboard(item))
             return
         self._json(404, {"error": "nicht gefunden"})
+
+    def do_PUT(self) -> None:  # noqa: N802
+        self._save_dashboard()
+
+    def do_DELETE(self) -> None:  # noqa: N802
+        path = self.path.split("?", 1)[0]
+        if not self._authorized():
+            self._json(401, {"error": "token"})
+            return
+        dash_id = self._dash_id(path)
+        if not dash_id:
+            self._json(404, {"error": "nicht gefunden"})
+            return
+        if not delete_dashboard(dash_id):
+            self._json(404, {"error": "keine eigene Kopie"})
+            return
+        log(f"dashboard gelöscht  {dash_id}")
+        self._json(200, {"ok": True, "id": dash_id})
+
+    def _save_dashboard(self) -> None:
+        path = self.path.split("?", 1)[0]
+        if not self._authorized():
+            self._json(401, {"error": "token"})
+            return
+        dash_id = self._dash_id(path)
+        if not dash_id:
+            self._json(404, {"error": "nicht gefunden"})
+            return
+        try:
+            data = self._read_json(300000)
+            saved = save_dashboard(dash_id, data)
+            if data.get("activate", True):
+                set_active(dash_id)
+        except (ValueError, TypeError, json.JSONDecodeError, OSError) as exc:
+            self._json(400, {"error": str(exc)})
+            return
+        log(f"dashboard gespeichert  {dash_id}")
+        item = find_dashboard(dash_id)
+        self._json(200, public_dashboard(item) if item else saved)
 
     def do_POST(self) -> None:  # noqa: N802
         path = self.path.split("?", 1)[0]
         if not self._authorized():
             self._json(401, {"error": "token"})
+            return
+        if self._dash_id(path):
+            self._save_dashboard()
+            return
+        if path == "/api/active":
+            try:
+                data = self._read_json()
+                dash_id = str(data.get("id") or "")
+            except (ValueError, TypeError, json.JSONDecodeError) as exc:
+                self._json(400, {"error": str(exc)})
+                return
+            if find_dashboard(dash_id) is None:
+                self._json(404, {"error": "Dashboard nicht gefunden"})
+                return
+            set_active(dash_id)
+            self._json(200, {"ok": True, "id": dash_id})
             return
         if path == "/api/release":
             released = BOARD.release_all()
@@ -609,33 +902,35 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def serve(host: str = "0.0.0.0") -> None:
-    layout, source = load_layout()
-    errors = validate_layout(layout)
-    if errors:
-        for err in errors:
-            log(f"Layout: {err}")
-        raise SystemExit(1)
-    buttons = sum(1 for _ in iter_buttons(layout))
+    items = catalog()
+    if not items:
+        raise SystemExit("Keine Dashboards in dashboards/ gefunden.")
+    for item in items:
+        for err in validate_layout(item["data"]):
+            log(f"{item['id']}: {err}")
     server = ThreadingHTTPServer((host, CONFIG["port"]), Handler)
     ips = lan_ips()
     log("")
     log(f"SC Cockpit {VERSION}")
-    log(f"Layout: {buttons} Buttons ({source})")
+    log("Dashboards: " + ", ".join(item["title"] for item in items))
+    log(f"Aktiv: {active_id(items) or '-'}")
+    log(f"Eigene Dashboards: {local_dir()}")
     if DRY_RUN:
         log("Trockenlauf: kein Windows, Tasten werden nur angezeigt.")
     admin = is_admin()
     if admin is False:
         log("Hinweis: nicht als Administrator. Wenn Star Citizen als Admin läuft,")
-        log("         start.bat per Rechtsklick 'Als Administrator ausführen'.")
+        log("         die Startmenü-Verknüpfung 'SC Cockpit (Administrator)' nutzen.")
     if CONFIG["token"]:
         log("Token ist aktiv.")
     else:
         log("Kein Token. Nur im eigenen WLAN benutzen.")
     log("")
     for ip in ips:
-        log(f"  Tablet:  http://{ip}:{CONFIG['port']}/")
+        log(f"  Gerät:  http://{ip}:{CONFIG['port']}/")
     log("")
-    log("Strg+C beendet den Server. Dieses Fenster offen lassen.")
+    log("Dieses Fenster offen lassen, dann ins Spiel wechseln.")
+    log("Strg+C beendet den Server.")
     log("")
     try:
         server.serve_forever()
@@ -647,14 +942,24 @@ def serve(host: str = "0.0.0.0") -> None:
 
 
 def self_test() -> int:
-    layout, source = load_layout()
-    errors = validate_layout(layout)
-    if errors:
-        for err in errors:
-            log(err)
+    import shutil
+    import tempfile
+    import urllib.error
+    import urllib.request
+
+    tmp = Path(tempfile.mkdtemp(prefix="sc-cockpit-"))
+    os.environ["SC_COCKPIT_HOME"] = str(tmp)
+    items = catalog()
+    if not any(item["id"] == "standard" for item in items):
+        log("standard-Dashboard fehlt")
         return 1
+    for item in items:
+        errors = validate_layout(item["data"])
+        if errors:
+            for err in errors:
+                log(f"{item['id']}: {err}")
+            return 1
     BOARD.tap(["n"], 15)
-    BOARD.finger_down(["lshift"])
     BOARD.finger_down(["lshift"])
     BOARD.finger_up(["lshift"])
     BOARD.release_all()
@@ -662,30 +967,64 @@ def self_test() -> int:
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     port = server.server_address[1]
-    try:
-        import urllib.request
+    base = f"http://127.0.0.1:{port}"
 
-        with urllib.request.urlopen(f"http://127.0.0.1:{port}/api/health") as res:
-            health = json.loads(res.read().decode())
-        if not health.get("ok"):
+    def call(method: str, path: str, payload: dict | None = None) -> dict:
+        data = None if payload is None else json.dumps(payload).encode()
+        req = urllib.request.Request(base + path, data=data, method=method)
+        if payload is not None:
+            req.add_header("Content-Type", "application/json")
+        try:
+            with urllib.request.urlopen(req) as res:
+                raw = res.read().decode()
+                return json.loads(raw) if raw else {}
+        except urllib.error.HTTPError as exc:
+            detail = exc.read().decode()
+            raise SystemExit(f"{method} {path} -> {exc.code} {detail}") from exc
+
+    try:
+        health = call("GET", "/api/health")
+        if not health.get("ok") or health.get("version") != VERSION:
             raise SystemExit("health nicht ok")
-        req = urllib.request.Request(
-            f"http://127.0.0.1:{port}/api/press",
-            data=json.dumps({"keys": ["n"], "mode": "tap", "id": "test"}).encode(),
-            headers={"Content-Type": "application/json"},
-        )
-        with urllib.request.urlopen(req) as res:
-            body = json.loads(res.read().decode())
-        if not body.get("ok"):
-            raise SystemExit("press nicht ok")
-        with urllib.request.urlopen(f"http://127.0.0.1:{port}/") as res:
+        listed = call("GET", "/api/dashboards")
+        ids = {item["id"] for item in listed["dashboards"]}
+        if "standard" not in ids or "mining" not in ids:
+            raise SystemExit(f"Dashboards unvollständig: {ids}")
+        saved = call("PUT", "/api/dashboard/selftest", {
+            "title": "Selftest",
+            "pages": [{
+                "id": "seite",
+                "label": "Test",
+                "groups": [{
+                    "title": "X",
+                    "buttons": [{
+                        "id": "gear",
+                        "label": "Fahrwerk",
+                        "keys": ["n"],
+                        "mode": "toggle",
+                    }],
+                }],
+            }],
+        })
+        if saved.get("_source") != "local" or saved.get("id") != "selftest":
+            raise SystemExit(f"Speichern fehlgeschlagen: {saved}")
+        call("POST", "/api/active", {"id": "mining"})
+        if active_id() != "mining":
+            raise SystemExit("aktives Dashboard nicht gesetzt")
+        call("DELETE", "/api/dashboard/selftest")
+        if find_dashboard("selftest") is not None:
+            raise SystemExit("Dashboard nicht gelöscht")
+        call("POST", "/api/press", {"keys": ["n"], "mode": "tap", "id": "test"})
+        with urllib.request.urlopen(base + "/") as res:
             html = res.read().decode()
-        if "SC Cockpit" not in html:
-            raise SystemExit("index.html unvollständig")
+        if "Anpassen" not in html:
+            raise SystemExit("index.html ohne Editor")
     finally:
         server.shutdown()
         server.server_close()
-    log(f"self-test ok ({source}, dry_run={DRY_RUN})")
+        os.environ.pop("SC_COCKPIT_HOME", None)
+        shutil.rmtree(tmp, ignore_errors=True)
+    log(f"self-test ok ({len(items)} dashboards, dry_run={DRY_RUN})")
     return 0
 
 
