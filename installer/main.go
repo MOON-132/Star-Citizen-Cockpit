@@ -3,13 +3,9 @@ package main
 import (
 	"fmt"
 	"os"
-	"os/exec"
-	"path/filepath"
 	"runtime"
-	"strings"
 	"sync"
 	"syscall"
-	"time"
 	"unsafe"
 )
 
@@ -18,91 +14,87 @@ const (
 	AppName    = "SC Cockpit"
 )
 
-// Star Citizen Cockpit Palette (COLORREF = 0x00BBGGRR)
 func rgb(r, g, b uint8) uint32 {
 	return uint32(r) | (uint32(g) << 8) | (uint32(b) << 16)
 }
 
 var (
-	colBg       = rgb(0x0b, 0x0e, 0x13) // #0b0e13 Deep Void
-	colBg2      = rgb(0x12, 0x18, 0x20) // #121820 Panel Dark
-	colCard     = rgb(0x16, 0x1d, 0x27) // #161d27 Card Fill
-	colCardHov  = rgb(0x1c, 0x26, 0x34) // #1c2634 Hover Fill
-	colLine     = rgb(0x24, 0x30, 0x41) // #243041 Structural Line
-	colLineHi   = rgb(0x36, 0x48, 0x62) // #364862 Highlight Line
-	colText     = rgb(0xe7, 0xed, 0xf5) // #e7edf5 Primary Text
-	colMuted    = rgb(0x8b, 0x9b, 0xb0) // #8b9bb0 Telemetry Muted
-	colDim      = rgb(0x52, 0x61, 0x75) // #526175 Dim Text
-	colAmber    = rgb(0xe2, 0xa2, 0x3a) // #e2a23a SC Amber Gold
-	colAmberDim = rgb(0x7a, 0x56, 0x1c) // #7a561c Dim Amber
-	colAmberBg  = rgb(0x24, 0x1c, 0x10) // #241c10 Amber Banner Bg
-	colCyan     = rgb(0x3e, 0xc8, 0xc4) // #3ec8c4 SC MFD Cyan
-	colCyanDim  = rgb(0x1d, 0x5e, 0x5c) // #1d5e5c Dim Cyan
-	colCyanBg   = rgb(0x0f, 0x22, 0x26) // #0f2226 Cyan Active Bg
+	colBg       = rgb(0x0b, 0x0e, 0x13) // #0b0e13 Deep Space Background
+	colSidebar  = rgb(0x0e, 0x13, 0x1a) // #0e131a RSI Sidebar Dark
+	colPanel    = rgb(0x13, 0x1a, 0x24) // #131a24 Card / Panel Surface
+	colPanelHov = rgb(0x1a, 0x23, 0x30) // #1a2330 Hover Surface
+	colPanelAct = rgb(0x1d, 0x28, 0x38) // #1d2838 Active Surface
+	colLine     = rgb(0x22, 0x2d, 0x3d) // #222d3d Subtle Border
+	colLineHi   = rgb(0x33, 0x45, 0x5c) // #33455c Highlight Border
+	colText     = rgb(0xe9, 0xef, 0xf7) // #e9eff7 Primary Text
+	colMuted    = rgb(0x88, 0x99, 0xae) // #8899ae Secondary Text
+	colDim      = rgb(0x52, 0x62, 0x75) // #526275 Muted Label
+	colAmber    = rgb(0xe2, 0xa2, 0x3a) // #e2a23a Star Citizen Amber
+	colAmberHov = rgb(0xf0, 0xb2, 0x4c) // #f0b24c Amber Hover
+	colAmberBg  = rgb(0x27, 0x1e, 0x11) // #271e11 Amber Card Fill
+	colCyan     = rgb(0x3e, 0xc8, 0xc4) // #3ec8c4 Star Citizen Cyan
+	colCyanBg   = rgb(0x11, 0x25, 0x29) // #112529 Cyan Card Fill
+	colGreen    = rgb(0x4e, 0xc9, 0x78) // #4ec978 Online Green
+	colGreenBg  = rgb(0x11, 0x26, 0x1a) // #11261a Online Fill
 	colRed      = rgb(0xe1, 0x5b, 0x4c) // #e15b4c Danger Red
-	colRedBg    = rgb(0x2c, 0x14, 0x14) // #2c1414 Danger Bg
-	colGreen    = rgb(0x6f, 0xbf, 0x73) // #6fbf73 Online Green
+	colRedBg    = rgb(0x2a, 0x14, 0x14) // #2a1414 Danger Fill
 )
 
 // Win32 Constants
 const (
-	WS_POPUP         = 0x80000000
-	WS_VISIBLE       = 0x10000000
-	WS_SYSMENU       = 0x00080000
-	WS_MINIMIZEBOX   = 0x00020000
-	WS_CLIPCHILDREN  = 0x02000000
-	WS_EX_APPWINDOW  = 0x00040000
-	WS_EX_LAYERED    = 0x00080000
+	WS_POPUP        = 0x80000000
+	WS_VISIBLE      = 0x10000000
+	WS_SYSMENU      = 0x00080000
+	WS_MINIMIZEBOX  = 0x00020000
+	WS_CLIPCHILDREN = 0x02000000
+	WS_EX_APPWINDOW = 0x00040000
 
-	WM_DESTROY       = 0x0002
-	WM_PAINT         = 0x000F
-	WM_CLOSE         = 0x0010
-	WM_ERASEBKGND    = 0x0014
-	WM_SETCURSOR     = 0x0020
-	WM_NCHITTEST     = 0x0084
-	WM_KEYDOWN       = 0x0100
-	WM_TIMER         = 0x0113
-	WM_MOUSEMOVE     = 0x0200
-	WM_LBUTTONDOWN   = 0x0201
-	WM_LBUTTONUP     = 0x0202
-	WM_MOUSELEAVE    = 0x02A3
-	WM_APP_PROGRESS  = 0x8001
-	WM_APP_DONE      = 0x8002
+	WM_DESTROY      = 0x0002
+	WM_PAINT        = 0x000F
+	WM_CLOSE        = 0x0010
+	WM_ERASEBKGND   = 0x0014
+	WM_SETCURSOR    = 0x0020
+	WM_NCHITTEST    = 0x0084
+	WM_KEYDOWN      = 0x0100
+	WM_TIMER        = 0x0113
+	WM_MOUSEMOVE    = 0x0200
+	WM_LBUTTONDOWN  = 0x0201
+	WM_LBUTTONUP    = 0x0202
+	WM_APP_REFRESH  = 0x8001
+	WM_APP_DONE     = 0x8002
 
-	HTCLIENT         = 1
-	HTCAPTION        = 2
+	HTCLIENT  = 1
+	HTCAPTION = 2
 
-	IDC_ARROW        = 32512
-	IDC_HAND         = 32649
+	IDC_ARROW = 32512
+	IDC_HAND  = 32649
 
-	DT_LEFT          = 0x00000000
-	DT_CENTER        = 0x00000001
-	DT_RIGHT         = 0x00000002
-	DT_VCENTER       = 0x00000004
-	DT_WORDBREAK     = 0x00000010
-	DT_SINGLELINE    = 0x00000020
-	DT_NOPREFIX      = 0x00000800
+	DT_LEFT       = 0x00000000
+	DT_CENTER     = 0x00000001
+	DT_RIGHT      = 0x00000002
+	DT_VCENTER    = 0x00000004
+	DT_WORDBREAK  = 0x00000010
+	DT_SINGLELINE = 0x00000020
+	DT_NOPREFIX   = 0x00000800
 
-	TRANSPARENT      = 1
-	PS_SOLID         = 0
-	NULL_BRUSH       = 5
+	TRANSPARENT = 1
+	PS_SOLID    = 0
 
-	SW_HIDE          = 0
-	SW_SHOWNORMAL    = 1
-	SW_MINIMIZE      = 6
+	SW_SHOWNORMAL = 1
+	SW_MINIMIZE   = 6
 
-	CS_HREDRAW       = 0x0002
-	CS_VREDRAW       = 0x0001
-	CS_DROPSHADOW    = 0x00020000
+	CS_HREDRAW    = 0x0002
+	CS_VREDRAW    = 0x0001
+	CS_DROPSHADOW = 0x00020000
 
-	VK_ESCAPE        = 0x1B
-	VK_RETURN        = 0x0D
+	VK_ESCAPE = 0x1B
+	VK_RETURN = 0x0D
 
-	SRCCOPY          = 0x00CC0020
-	 CLEARTYPE_QUALITY = 5
-	FW_NORMAL        = 400
-	FW_SEMIBOLD      = 600
-	FW_BOLD          = 700
+	SRCCOPY           = 0x00CC0020
+	CLEARTYPE_QUALITY = 5
+	FW_NORMAL         = 400
+	FW_SEMIBOLD       = 600
+	FW_BOLD           = 700
 )
 
 type POINT struct {
@@ -152,76 +144,125 @@ var (
 	kernel32 = syscall.NewLazyDLL("kernel32.dll")
 	shell32  = syscall.NewLazyDLL("shell32.dll")
 
-	pSetProcessDPIAware       = user32.NewProc("SetProcessDPIAware")
-	pRegisterClassExW         = user32.NewProc("RegisterClassExW")
-	pCreateWindowExW          = user32.NewProc("CreateWindowExW")
-	pDefWindowProcW           = user32.NewProc("DefWindowProcW")
-	pShowWindow               = user32.NewProc("ShowWindow")
-	pUpdateWindow             = user32.NewProc("UpdateWindow")
-	pGetMessageW              = user32.NewProc("GetMessageW")
-	pTranslateMessage         = user32.NewProc("TranslateMessage")
-	pDispatchMessageW         = user32.NewProc("DispatchMessageW")
-	pPostQuitMessage          = user32.NewProc("PostQuitMessage")
-	pPostMessageW             = user32.NewProc("PostMessageW")
-	pBeginPaint               = user32.NewProc("BeginPaint")
-	pEndPaint                 = user32.NewProc("EndPaint")
-	pInvalidateRect           = user32.NewProc("InvalidateRect")
-	pGetClientRect            = user32.NewProc("GetClientRect")
-	pFillRect                 = user32.NewProc("FillRect")
-	pDrawTextW                = user32.NewProc("DrawTextW")
-	pLoadCursorW              = user32.NewProc("LoadCursorW")
-	pLoadIconW                = user32.NewProc("LoadIconW")
-	pSetCursor                = user32.NewProc("SetCursor")
-	pGetSystemMetrics         = user32.NewProc("GetSystemMetrics")
-	pSetCapture               = user32.NewProc("SetCapture")
-	pReleaseCapture           = user32.NewProc("ReleaseCapture")
-	pScreenToClient           = user32.NewProc("ScreenToClient")
-	pSetTimer                 = user32.NewProc("SetTimer")
-	pKillTimer                = user32.NewProc("KillTimer")
+	pSetProcessDPIAware = user32.NewProc("SetProcessDPIAware")
+	pRegisterClassExW   = user32.NewProc("RegisterClassExW")
+	pCreateWindowExW    = user32.NewProc("CreateWindowExW")
+	pDefWindowProcW     = user32.NewProc("DefWindowProcW")
+	pShowWindow         = user32.NewProc("ShowWindow")
+	pUpdateWindow       = user32.NewProc("UpdateWindow")
+	pGetMessageW        = user32.NewProc("GetMessageW")
+	pTranslateMessage   = user32.NewProc("TranslateMessage")
+	pDispatchMessageW   = user32.NewProc("DispatchMessageW")
+	pPostQuitMessage    = user32.NewProc("PostQuitMessage")
+	pPostMessageW       = user32.NewProc("PostMessageW")
+	pBeginPaint         = user32.NewProc("BeginPaint")
+	pEndPaint           = user32.NewProc("EndPaint")
+	pInvalidateRect     = user32.NewProc("InvalidateRect")
+	pGetClientRect      = user32.NewProc("GetClientRect")
+	pFillRect           = user32.NewProc("FillRect")
+	pDrawTextW          = user32.NewProc("DrawTextW")
+	pLoadCursorW        = user32.NewProc("LoadCursorW")
+	pLoadIconW          = user32.NewProc("LoadIconW")
+	pSetCursor          = user32.NewProc("SetCursor")
+	pGetSystemMetrics   = user32.NewProc("GetSystemMetrics")
+	pSetCapture         = user32.NewProc("SetCapture")
+	pReleaseCapture     = user32.NewProc("ReleaseCapture")
+	pScreenToClient     = user32.NewProc("ScreenToClient")
+	pSetTimer           = user32.NewProc("SetTimer")
+	pKillTimer          = user32.NewProc("KillTimer")
+	pOpenClipboard      = user32.NewProc("OpenClipboard")
+	pEmptyClipboard     = user32.NewProc("EmptyClipboard")
+	pSetClipboardData   = user32.NewProc("SetClipboardData")
+	pCloseClipboard     = user32.NewProc("CloseClipboard")
 
-	pCreateCompatibleDC       = gdi32.NewProc("CreateCompatibleDC")
-	pCreateCompatibleBitmap   = gdi32.NewProc("CreateCompatibleBitmap")
-	pSelectObject             = gdi32.NewProc("SelectObject")
-	pDeleteObject             = gdi32.NewProc("DeleteObject")
-	pDeleteDC                 = gdi32.NewProc("DeleteDC")
-	pBitBlt                   = gdi32.NewProc("BitBlt")
-	pCreateSolidBrush         = gdi32.NewProc("CreateSolidBrush")
-	pCreatePen                = gdi32.NewProc("CreatePen")
-	pCreateFontW              = gdi32.NewProc("CreateFontW")
-	pSetTextColor             = gdi32.NewProc("SetTextColor")
-	pSetBkMode                = gdi32.NewProc("SetBkMode")
-	pMoveToEx                 = gdi32.NewProc("MoveToEx")
-	pLineTo                   = gdi32.NewProc("LineTo")
-	pPolygon                  = gdi32.NewProc("Polygon")
-	pGetStockObject           = gdi32.NewProc("GetStockObject")
-	pGetDeviceCaps            = gdi32.NewProc("GetDeviceCaps")
+	pCreateCompatibleDC     = gdi32.NewProc("CreateCompatibleDC")
+	pCreateCompatibleBitmap = gdi32.NewProc("CreateCompatibleBitmap")
+	pSelectObject           = gdi32.NewProc("SelectObject")
+	pDeleteObject           = gdi32.NewProc("DeleteObject")
+	pDeleteDC               = gdi32.NewProc("DeleteDC")
+	pBitBlt                 = gdi32.NewProc("BitBlt")
+	pCreateSolidBrush       = gdi32.NewProc("CreateSolidBrush")
+	pCreatePen              = gdi32.NewProc("CreatePen")
+	pCreateFontW            = gdi32.NewProc("CreateFontW")
+	pSetTextColor           = gdi32.NewProc("SetTextColor")
+	pSetBkMode              = gdi32.NewProc("SetBkMode")
+	pMoveToEx               = gdi32.NewProc("MoveToEx")
+	pLineTo                 = gdi32.NewProc("LineTo")
+	pRoundRect              = gdi32.NewProc("RoundRect")
+	pGetDeviceCaps          = gdi32.NewProc("GetDeviceCaps")
 
-	pGetModuleHandleW         = kernel32.NewProc("GetModuleHandleW")
-	pShellExecuteW            = shell32.NewProc("ShellExecuteW")
+	pGetModuleHandleW = kernel32.NewProc("GetModuleHandleW")
+	pGlobalAlloc      = kernel32.NewProc("GlobalAlloc")
+	pGlobalLock       = kernel32.NewProc("GlobalLock")
+	pGlobalUnlock     = kernel32.NewProc("GlobalUnlock")
+	pShellExecuteW    = shell32.NewProc("ShellExecuteW")
 )
 
-// Application Pages
+// Modes and Navigation Tabs
 const (
-	PageWelcome = iota
-	PageInstalling
-	PageDone
-	PageUninstallConfirm
+	ModeInstaller = iota
+	ModeLauncher
 )
 
-// Interactive Control IDs
+const (
+	TabServer = iota
+	TabDashboards
+	TabSettings
+)
+
+const (
+	InstPageWelcome = iota
+	InstPageProgress
+	InstPageDone
+	InstPageUninstall
+)
+
+// Control IDs
 const (
 	CtrlNone = iota
-	CtrlClose
-	CtrlMinimize
-	CtrlChkDesktop
-	CtrlChkStartMenu
-	CtrlChkWingetPy
-	CtrlChkLaunchNow
-	CtrlChkOpenDocs
+	CtrlWinClose
+	CtrlWinMin
+
+	// Sidebar Tabs (Launcher Mode)
+	CtrlNavServer
+	CtrlNavDashboards
+	CtrlNavSettings
+
+	// Server Tab Controls
+	CtrlBtnToggleServer
+	CtrlBtnCopyURL
+	CtrlBtnOpenBrowser
+	CtrlBtnOpenEditor
+	CtrlBtnRestartAdmin
+
+	// Dashboards Tab Controls
+	CtrlBtnNewDash
+	CtrlBtnOpenDashFolder
+	CtrlBtnReloadDash
+
+	// Settings Tab Controls
+	CtrlBtnPortMinus
+	CtrlBtnPortPlus
+	CtrlBtnOpenUserFolder
+	CtrlBtnOpenAppFolder
+	CtrlBtnUpdateRepair
+	CtrlBtnShowUninstall
 	CtrlChkPurgeData
-	CtrlBtnPrimary
-	CtrlBtnSecondary
-	CtrlBtnModeSwitch
+	CtrlBtnConfirmUninstall
+	CtrlBtnCancelUninstall
+
+	// Installer Mode Controls
+	CtrlInstChkDesktop
+	CtrlInstChkStartMenu
+	CtrlInstChkWingetPy
+	CtrlInstPrimary
+	CtrlInstSecondary
+	CtrlInstSwitchUninstall
+
+	CtrlDashActivateBase = 1000 // + index
+	CtrlDashEditBase     = 2000 // + index
+	CtrlDashDupBase      = 3000 // + index
+	CtrlDashDelBase      = 4000 // + index
 )
 
 type HotRegion struct {
@@ -229,63 +270,92 @@ type HotRegion struct {
 	Rect RECT
 }
 
+type DashboardInfo struct {
+	ID          string
+	Title       string
+	Source      string // "builtin" or "local"
+	Path        string
+	PageCount   int
+	ButtonCount int
+}
+
 type AppState struct {
-	mu           sync.Mutex
-	Hwnd         uintptr
-	Scale        float64
-	Width        int32
-	Height       int32
-	Page         int
-	IsUninstall  bool
+	mu          sync.Mutex
+	Hwnd        uintptr
+	Scale       float64
+	Width       int32
+	Height      int32
+	Mode        int
+	Tab         int
+	InstPage    int
+	IsUninstall bool
+
+	// Paths & Environment
+	RootDir      string
+	AppDir       string
+	UserDir      string
+	UserDashDir  string
 	ExistingInst bool
 	PythonFound  bool
+	PythonCmd    string
 	PythonVer    string
 	WingetFound  bool
-	InstallDir   string
-	UserDir      string
+	IsAdmin      bool
 
-	// Options
+	// Server Process & Network
+	ServerRunning bool
+	ServerCmd     *os.Process
+	Port          int
+	LanIP         string
+	ServerLogs    []string
+	ToastMsg      string
+
+	// Dashboards Catalog
+	Dashboards []DashboardInfo
+	ActiveDash string
+
+	// Installer Options & Progress
 	OptDesktop   bool
 	OptStartMenu bool
 	OptWingetPy  bool
-	OptLaunchNow bool
-	OptOpenDocs  bool
 	OptPurgeData bool
-
-	// Progress & Telemetry
+	ConfirmUninst bool
 	ProgressPct  int
 	StatusLine   string
-	Logs         []string
 	InstallErr   string
-	InstallOK    bool
-	AnimTick     int
 
-	// Mouse Interaction
-	HoverID      int
-	PressID      int
-	Regions      []HotRegion
+	// Mouse & UI
+	HoverID int
+	PressID int
+	Regions []HotRegion
 
-	// GDI Resources
-	CursorArrow  uintptr
-	CursorHand   uintptr
-	FontHero     uintptr
-	FontTitle    uintptr
-	FontSub      uintptr
-	FontBody     uintptr
-	FontBold     uintptr
-	FontMono     uintptr
-	FontSmall    uintptr
+	// Fonts & Cursors
+	CursorArrow uintptr
+	CursorHand  uintptr
+	FontHero    uintptr
+	FontTitle   uintptr
+	FontSub     uintptr
+	FontBody    uintptr
+	FontBold    uintptr
+	FontMono    uintptr
+	FontSmall   uintptr
 }
 
 var app = &AppState{
 	OptDesktop:   true,
 	OptStartMenu: true,
-	OptLaunchNow: true,
+	Port:         8765,
+	LanIP:        "127.0.0.1",
 }
 
 func u16(s string) *uint16 {
 	p, _ := syscall.UTF16PtrFromString(s)
 	return p
+}
+
+func u16ptr(s string) uintptr {
+	p, _ := syscall.UTF16PtrFromString(s)
+	return uintptr(unsafe.Pointer(p))
 }
 
 func sc(v int32) int32 {
@@ -296,66 +366,50 @@ func ptInRect(x, y int32, r RECT) bool {
 	return x >= r.Left && x < r.Right && y >= r.Top && y < r.Bottom
 }
 
-func (a *AppState) addLog(msg string) {
-	a.mu.Lock()
-	ts := time.Now().Format("15:04:05")
-	a.Logs = append(a.Logs, fmt.Sprintf("[%s]  %s", ts, msg))
-	if len(a.Logs) > 9 {
-		a.Logs = a.Logs[len(a.Logs)-9:]
+func copyToClipboard(text string) {
+	u, err := syscall.UTF16FromString(text)
+	if err != nil {
+		return
 	}
-	a.StatusLine = msg
-	a.mu.Unlock()
-	if a.Hwnd != 0 {
-		pPostMessageW.Call(a.Hwnd, WM_APP_PROGRESS, 0, 0)
+	r, _, _ := pOpenClipboard.Call(app.Hwnd)
+	if r == 0 {
+		return
 	}
+	defer pCloseClipboard.Call()
+	pEmptyClipboard.Call()
+	size := uintptr(len(u) * 2)
+	hMem, _, _ := pGlobalAlloc.Call(0x0002, size) // GMEM_MOVEABLE
+	if hMem == 0 {
+		return
+	}
+	ptr, _, _ := pGlobalLock.Call(hMem)
+	if ptr == 0 {
+		return
+	}
+	dst := unsafe.Slice((*uint16)(unsafe.Pointer(ptr)), len(u))
+	copy(dst, u)
+	pGlobalUnlock.Call(hMem)
+	pSetClipboardData.Call(13, hMem) // CF_UNICODETEXT = 13
 }
 
-func (a *AppState) setProgress(pct int, msg string) {
-	a.mu.Lock()
-	a.ProgressPct = pct
-	if msg != "" {
-		ts := time.Now().Format("15:04:05")
-		a.Logs = append(a.Logs, fmt.Sprintf("[%s]  %s", ts, msg))
-		if len(a.Logs) > 9 {
-			a.Logs = a.Logs[len(a.Logs)-9:]
-		}
-		a.StatusLine = msg
-	}
-	a.mu.Unlock()
-	if a.Hwnd != 0 {
-		pPostMessageW.Call(a.Hwnd, WM_APP_PROGRESS, 0, 0)
-	}
+// Drawing Primitives
+func fillRect(hdc uintptr, r RECT, col uint32) {
+	brush, _, _ := pCreateSolidBrush.Call(uintptr(col))
+	pFillRect.Call(hdc, uintptr(unsafe.Pointer(&r)), brush)
+	pDeleteObject.Call(brush)
 }
 
-// Chamfered polygon helper (draws an octagonal/chamfered sci-fi box)
-func drawChamferBox(hdc uintptr, r RECT, cutTL, cutTR, cutBR, cutBL int32, fillCol, borderCol uint32, borderWidth int32) {
-	pts := []POINT{
-		{r.Left + cutTL, r.Top},
-		{r.Right - cutTR, r.Top},
-		{r.Right, r.Top + cutTR},
-		{r.Right, r.Bottom - cutBR},
-		{r.Right - cutBR, r.Bottom},
-		{r.Left + cutBL, r.Bottom},
-		{r.Left, r.Bottom - cutBL},
-		{r.Left, r.Top + cutTL},
-	}
+func drawCard(hdc uintptr, r RECT, fillCol, borderCol uint32, radius int32) {
 	brush, _, _ := pCreateSolidBrush.Call(uintptr(fillCol))
-	pen, _, _ := pCreatePen.Call(PS_SOLID, uintptr(borderWidth), uintptr(borderCol))
+	pen, _, _ := pCreatePen.Call(PS_SOLID, uintptr(sc(1)), uintptr(borderCol))
 	oldB, _, _ := pSelectObject.Call(hdc, brush)
 	oldP, _, _ := pSelectObject.Call(hdc, pen)
-
-	pPolygon.Call(hdc, uintptr(unsafe.Pointer(&pts[0])), uintptr(len(pts)))
-
+	rad := sc(radius)
+	pRoundRect.Call(hdc, uintptr(r.Left), uintptr(r.Top), uintptr(r.Right), uintptr(r.Bottom), uintptr(rad), uintptr(rad))
 	pSelectObject.Call(hdc, oldB)
 	pSelectObject.Call(hdc, oldP)
 	pDeleteObject.Call(brush)
 	pDeleteObject.Call(pen)
-}
-
-func fillSolidRect(hdc uintptr, r RECT, col uint32) {
-	brush, _, _ := pCreateSolidBrush.Call(uintptr(col))
-	pFillRect.Call(hdc, uintptr(unsafe.Pointer(&r)), brush)
-	pDeleteObject.Call(brush)
 }
 
 func drawLine(hdc uintptr, x1, y1, x2, y2 int32, col uint32, width int32) {
@@ -363,34 +417,6 @@ func drawLine(hdc uintptr, x1, y1, x2, y2 int32, col uint32, width int32) {
 	oldP, _, _ := pSelectObject.Call(hdc, pen)
 	pMoveToEx.Call(hdc, uintptr(x1), uintptr(y1), 0)
 	pLineTo.Call(hdc, uintptr(x2), uintptr(y2))
-	pSelectObject.Call(hdc, oldP)
-	pDeleteObject.Call(pen)
-}
-
-func drawCornerBrackets(hdc uintptr, r RECT, length, thick int32, col uint32) {
-	pen, _, _ := pCreatePen.Call(PS_SOLID, uintptr(thick), uintptr(col))
-	oldP, _, _ := pSelectObject.Call(hdc, pen)
-
-	// Top-Left
-	pMoveToEx.Call(hdc, uintptr(r.Left), uintptr(r.Top+length), 0)
-	pLineTo.Call(hdc, uintptr(r.Left), uintptr(r.Top))
-	pLineTo.Call(hdc, uintptr(r.Left+length), uintptr(r.Top))
-
-	// Top-Right
-	pMoveToEx.Call(hdc, uintptr(r.Right-length), uintptr(r.Top), 0)
-	pLineTo.Call(hdc, uintptr(r.Right), uintptr(r.Top))
-	pLineTo.Call(hdc, uintptr(r.Right), uintptr(r.Top+length))
-
-	// Bottom-Right
-	pMoveToEx.Call(hdc, uintptr(r.Right), uintptr(r.Bottom-length), 0)
-	pLineTo.Call(hdc, uintptr(r.Right), uintptr(r.Bottom))
-	pLineTo.Call(hdc, uintptr(r.Right-length), uintptr(r.Bottom))
-
-	// Bottom-Left
-	pMoveToEx.Call(hdc, uintptr(r.Left+length), uintptr(r.Bottom), 0)
-	pLineTo.Call(hdc, uintptr(r.Left), uintptr(r.Bottom))
-	pLineTo.Call(hdc, uintptr(r.Left), uintptr(r.Bottom-length))
-
 	pSelectObject.Call(hdc, oldP)
 	pDeleteObject.Call(pen)
 }
@@ -407,92 +433,52 @@ func drawText(hdc uintptr, text string, r RECT, font uintptr, col uint32, flags 
 	pDrawTextW.Call(hdc, uintptr(unsafe.Pointer(&u[0])), uintptr(len(u)-1), uintptr(unsafe.Pointer(&rc)), uintptr(flags|DT_NOPREFIX))
 }
 
-func drawCheckboxCard(hdc uintptr, id int, r RECT, title, subtitle string, checked bool, accentCol uint32) {
-	app.Regions = append(app.Regions, HotRegion{ID: id, Rect: r})
-	hov := app.HoverID == id
-	fill := colCard
-	border := colLine
-	if hov {
-		fill = colCardHov
-		border = colLineHi
-	}
-	if checked {
-		border = accentCol
-	}
-
-	cut := sc(8)
-	drawChamferBox(hdc, r, 0, cut, 0, cut, fill, border, sc(1))
-
-	// Left accent bar
-	barCol := colLine
-	if checked {
-		barCol = accentCol
-	}
-	fillSolidRect(hdc, RECT{r.Left, r.Top + sc(4), r.Left + sc(3), r.Bottom - sc(4)}, barCol)
-
-	// Checkbox indicator square
-	boxSize := sc(18)
-	bx := r.Left + sc(16)
-	by := r.Top + (r.Bottom-r.Top-boxSize)/2
-	boxRect := RECT{bx, by, bx + boxSize, by + boxSize}
-	boxFill := colBg
-	boxBorder := colMuted
-	if checked {
-		boxFill = accentCol
-		boxBorder = accentCol
-	} else if hov {
-		boxBorder = colText
-	}
-	drawChamferBox(hdc, boxRect, sc(3), sc(3), sc(3), sc(3), boxFill, boxBorder, sc(1))
-
-	if checked {
-		// Draw crisp checkmark inside box
-		drawLine(hdc, bx+sc(4), by+sc(9), bx+sc(8), by+sc(13), colBg, sc(2))
-		drawLine(hdc, bx+sc(8), by+sc(13), bx+sc(14), by+sc(5), colBg, sc(2))
-	}
-
-	// Title and subtitle
-	tx := bx + boxSize + sc(14)
-	if subtitle != "" {
-		drawText(hdc, title, RECT{tx, r.Top + sc(7), r.Right - sc(12), r.Top + sc(26)}, app.FontBold, colText, DT_LEFT|DT_SINGLELINE|DT_VCENTER)
-		drawText(hdc, subtitle, RECT{tx, r.Top + sc(25), r.Right - sc(12), r.Bottom - sc(5)}, app.FontSmall, colMuted, DT_LEFT|DT_SINGLELINE|DT_VCENTER)
-	} else {
-		drawText(hdc, title, RECT{tx, r.Top, r.Right - sc(12), r.Bottom}, app.FontBold, colText, DT_LEFT|DT_SINGLELINE|DT_VCENTER)
-	}
-}
-
-func drawMFDButton(hdc uintptr, id int, r RECT, label string, primary bool, danger bool) {
+// RSI Launcher Style Button
+func drawButton(hdc uintptr, id int, r RECT, label string, style string) {
 	app.Regions = append(app.Regions, HotRegion{ID: id, Rect: r})
 	hov := app.HoverID == id
 	press := app.PressID == id
 
-	var fill, border, textCol, accent uint32
-	if danger {
+	var fill, border, textCol uint32
+	switch style {
+	case "amber": // Primary RSI Launch Button
+		fill = colAmber
+		border = colAmber
+		textCol = rgb(0x0b, 0x0e, 0x13)
+		if hov {
+			fill = colAmberHov
+			border = colAmberHov
+		}
+	case "cyan":
+		fill = colCyanBg
+		border = colCyan
+		textCol = colCyan
+		if hov {
+			fill = rgb(0x18, 0x35, 0x3b)
+			textCol = colText
+		}
+	case "danger":
 		fill = colRedBg
 		border = colRed
-		textCol = colText
-		accent = colRed
+		textCol = colRed
 		if hov {
-			fill = rgb(0x42, 0x1a, 0x18)
-		}
-	} else if primary {
-		fill = colAmberBg
-		border = colAmber
-		textCol = colAmber
-		accent = colAmber
-		if hov {
-			fill = rgb(0x36, 0x28, 0x14)
-			textCol = rgb(0xff, 0xc8, 0x64)
-		}
-	} else {
-		fill = colCard
-		border = colLine
-		textCol = colMuted
-		accent = colCyan
-		if hov {
-			fill = colCardHov
-			border = colCyan
+			fill = colRed
 			textCol = colText
+		}
+	case "green":
+		fill = colGreenBg
+		border = colGreen
+		textCol = colGreen
+		if hov {
+			fill = rgb(0x19, 0x38, 0x26)
+		}
+	default: // "secondary"
+		fill = colPanel
+		border = colLineHi
+		textCol = colText
+		if hov {
+			fill = colPanelHov
+			border = colMuted
 		}
 	}
 
@@ -501,398 +487,723 @@ func drawMFDButton(hdc uintptr, id int, r RECT, label string, primary bool, dang
 		r.Bottom += sc(1)
 	}
 
-	cut := sc(10)
-	drawChamferBox(hdc, r, cut, 0, cut, 0, fill, border, sc(1))
-
-	// Side glow bar
-	fillSolidRect(hdc, RECT{r.Left, r.Top + cut, r.Left + sc(3), r.Bottom - sc(2)}, accent)
-	// Top right corner tick
-	drawLine(hdc, r.Right-sc(12), r.Top+sc(3), r.Right-sc(3), r.Top+sc(3), accent, sc(2))
-	drawLine(hdc, r.Right-sc(3), r.Top+sc(3), r.Right-sc(3), r.Top+sc(12), accent, sc(2))
-
+	drawCard(hdc, r, fill, border, 8)
 	drawText(hdc, label, r, app.FontBold, textCol, DT_CENTER|DT_VCENTER|DT_SINGLELINE)
 }
 
-func paintHUD(hdc uintptr, w, h int32) {
+func drawCheckboxRow(hdc uintptr, id int, r RECT, title, subtitle string, checked bool) {
+	app.Regions = append(app.Regions, HotRegion{ID: id, Rect: r})
+	hov := app.HoverID == id
+
+	fill := colPanel
+	border := colLine
+	if hov {
+		fill = colPanelHov
+		border = colLineHi
+	}
+	if checked {
+		border = colAmber
+	}
+	drawCard(hdc, r, fill, border, 10)
+
+	boxSize := sc(20)
+	bx := r.Left + sc(18)
+	by := r.Top + (r.Bottom-r.Top-boxSize)/2
+	boxRect := RECT{bx, by, bx + boxSize, by + boxSize}
+
+	if checked {
+		drawCard(hdc, boxRect, colAmber, colAmber, 5)
+		drawLine(hdc, bx+sc(5), by+sc(10), bx+sc(9), by+sc(14), colBg, sc(2))
+		drawLine(hdc, bx+sc(9), by+sc(14), bx+sc(15), by+sc(6), colBg, sc(2))
+	} else {
+		drawCard(hdc, boxRect, colBg, colMuted, 5)
+	}
+
+	tx := bx + boxSize + sc(16)
+	drawText(hdc, title, RECT{tx, r.Top + sc(10), r.Right - sc(16), r.Top + sc(30)}, app.FontBold, colText, DT_LEFT|DT_SINGLELINE)
+	drawText(hdc, subtitle, RECT{tx, r.Top + sc(30), r.Right - sc(16), r.Bottom - sc(8)}, app.FontSmall, colMuted, DT_LEFT|DT_SINGLELINE)
+}
+
+func paintWindow(hdc uintptr, w, h int32) {
 	app.Regions = app.Regions[:0]
+	fillRect(hdc, RECT{0, 0, w, h}, colBg)
 
-	// 1. Deep Space Background
-	fillSolidRect(hdc, RECT{0, 0, w, h}, colBg)
-
-	// Subtle tactical background grid lines
-	gridStep := sc(36)
-	gridCol := rgb(0x0f, 0x14, 0x1c)
-	for x := gridStep; x < w; x += gridStep {
-		drawLine(hdc, x, 0, x, h, gridCol, 1)
-	}
-	for y := gridStep; y < h; y += gridStep {
-		drawLine(hdc, 0, y, w, y, gridCol, 1)
+	if app.Mode == ModeInstaller {
+		paintInstallerMode(hdc, w, h)
+	} else {
+		paintLauncherMode(hdc, w, h)
 	}
 
-	// Top header panel background
-	headerH := sc(72)
-	fillSolidRect(hdc, RECT{0, 0, w, headerH}, colBg2)
-	drawLine(hdc, 0, headerH, w, headerH, colLine, sc(1))
-	// Glowing amber segment on header line
-	drawLine(hdc, sc(24), headerH, sc(220), headerH, colAmber, sc(2))
-	drawLine(hdc, sc(224), headerH, sc(260), headerH, colCyan, sc(2))
-
-	// Amber Brand Mark (matches index.html .mark)
-	markRect := RECT{sc(24), sc(18), sc(36), sc(54)}
-	fillSolidRect(hdc, markRect, colAmber)
-	fillSolidRect(hdc, RECT{sc(24), sc(38), sc(36), sc(54)}, colAmberDim)
-
-	// Header Titles
-	drawText(hdc, "SC COCKPIT // DEPLOYMENT SYSTEM", RECT{sc(48), sc(15), w - sc(120), sc(38)}, app.FontTitle, colText, DT_LEFT|DT_SINGLELINE|DT_VCENTER)
-	subHeader := fmt.Sprintf("AEGIS-MFD TERMINAL  |  BUILD %s  |  UEE STANDARD TOUCH INTERFACE", AppVersion)
-	drawText(hdc, subHeader, RECT{sc(48), sc(38), w - sc(120), sc(56)}, app.FontMono, colCyan, DT_LEFT|DT_SINGLELINE|DT_VCENTER)
-
-	// Window Control Buttons (Minimize & Close)
-	btnW := sc(38)
+	// Window Top-Right Controls (Minimize & Close)
+	btnW := sc(36)
 	btnH := sc(28)
-	closeRect := RECT{w - sc(16) - btnW, sc(14), w - sc(16), sc(14) + btnH}
-	minRect := RECT{closeRect.Left - sc(6) - btnW, sc(14), closeRect.Left - sc(6), sc(14) + btnH}
+	closeRect := RECT{w - sc(14) - btnW, sc(12), w - sc(14), sc(12) + btnH}
+	minRect := RECT{closeRect.Left - sc(6) - btnW, sc(12), closeRect.Left - sc(6), sc(12) + btnH}
 
-	app.Regions = append(app.Regions, HotRegion{ID: CtrlMinimize, Rect: minRect})
-	app.Regions = append(app.Regions, HotRegion{ID: CtrlClose, Rect: closeRect})
+	app.Regions = append(app.Regions, HotRegion{ID: CtrlWinMin, Rect: minRect})
+	app.Regions = append(app.Regions, HotRegion{ID: CtrlWinClose, Rect: closeRect})
 
-	if app.HoverID == CtrlMinimize {
-		fillSolidRect(hdc, minRect, colCardHov)
+	if app.HoverID == CtrlWinMin {
+		drawCard(hdc, minRect, colPanelHov, colLine, 6)
 	}
 	drawText(hdc, "—", minRect, app.FontBold, colMuted, DT_CENTER|DT_VCENTER|DT_SINGLELINE)
 
 	closeCol := colMuted
-	if app.HoverID == CtrlClose {
-		fillSolidRect(hdc, closeRect, colRed)
+	if app.HoverID == CtrlWinClose {
+		drawCard(hdc, closeRect, colRed, colRed, 6)
 		closeCol = colText
 	}
 	drawText(hdc, "✕", closeRect, app.FontBold, closeCol, DT_CENTER|DT_VCENTER|DT_SINGLELINE)
 
-	// Telemetry Status Bar below header
-	teleY := headerH + sc(12)
-	teleH := sc(62)
-	teleRect := RECT{sc(24), teleY, w - sc(24), teleY + teleH}
-	drawChamferBox(hdc, teleRect, sc(8), sc(8), sc(8), sc(8), colBg2, colLine, sc(1))
-	drawCornerBrackets(hdc, teleRect, sc(10), sc(2), colAmber)
+	// Subtle outer window border
+	drawLine(hdc, 0, 0, w, 0, colLine, 1)
+	drawLine(hdc, 0, h-1, w, h-1, colLine, 1)
+	drawLine(hdc, 0, 0, 0, h, colLine, 1)
+	drawLine(hdc, w-1, 0, w-1, h, colLine, 1)
+}
 
-	// Telemetry 3 Columns: Target Path, Python Runtime, System Mode
-	col1W := (teleRect.Right - teleRect.Left) / 2
-	col2X := teleRect.Left + col1W + sc(10)
-	drawLine(hdc, teleRect.Left+col1W, teleRect.Top+sc(10), teleRect.Left+col1W, teleRect.Bottom-sc(10), colLine, 1)
+// ============================================================================
+// 1. RSI-STYLE CLEAN INSTALLER UI
+// ============================================================================
+func paintInstallerMode(hdc uintptr, w, h int32) {
+	// Left RSI Brand Sidebar
+	sideW := sc(240)
+	fillRect(hdc, RECT{0, 0, sideW, h}, colSidebar)
+	drawLine(hdc, sideW, 0, sideW, h, colLine, 1)
 
-	drawText(hdc, "ZIELVERZEICHNIS // TARGET PATH", RECT{teleRect.Left + sc(16), teleRect.Top + sc(8), teleRect.Left + col1W - sc(10), teleRect.Top + sc(24)}, app.FontSmall, colMuted, DT_LEFT|DT_SINGLELINE)
-	drawText(hdc, app.InstallDir, RECT{teleRect.Left + sc(16), teleRect.Top + sc(26), teleRect.Left + col1W - sc(10), teleRect.Bottom - sc(8)}, app.FontMono, colText, DT_LEFT|DT_SINGLELINE|DT_VCENTER)
+	// Amber Brand Pill + Title
+	fillRect(hdc, RECT{sc(28), sc(28), sc(36), sc(58)}, colAmber)
+	drawText(hdc, "SC COCKPIT", RECT{sc(48), sc(25), sideW - sc(16), sc(46)}, app.FontTitle, colText, DT_LEFT|DT_SINGLELINE)
+	drawText(hdc, "SETUP & DEPLOYMENT", RECT{sc(48), sc(45), sideW - sc(16), sc(62)}, app.FontSmall, colAmber, DT_LEFT|DT_SINGLELINE)
 
-	drawText(hdc, "SYSTEM-TELEMETRIE // RUNTIME CHECK", RECT{col2X, teleRect.Top + sc(8), teleRect.Right - sc(16), teleRect.Top + sc(24)}, app.FontSmall, colMuted, DT_LEFT|DT_SINGLELINE)
-
-	pyStatus := "PYTHON 3: NICHT GEFUNDEN (WINGET VERFÜGBAR)"
-	pyCol := colAmber
-	if app.PythonFound {
-		pyStatus = fmt.Sprintf("PYTHON RUNTIME: %s [ONLINE]", app.PythonVer)
-		pyCol = colGreen
-	} else if !app.WingetFound {
-		pyStatus = "PYTHON 3: FEHLT (BITTE VON PYTHON.ORG INSTALLIEREN)"
-		pyCol = colRed
+	// Step Indicator in Sidebar
+	steps := []string{"1.  Konfiguration", "2.  Installation", "3.  Bereit zum Start"}
+	sy := sc(110)
+	for i, st := range steps {
+		active := (app.InstPage == InstPageWelcome && i == 0) ||
+			(app.InstPage == InstPageProgress && i == 1) ||
+			(app.InstPage == InstPageDone && i == 2)
+		col := colMuted
+		if active {
+			col = colText
+			fillRect(hdc, RECT{0, sy, sc(4), sy + sc(32)}, colAmber)
+			fillRect(hdc, RECT{sc(4), sy, sideW, sy + sc(32)}, colPanel)
+		}
+		drawText(hdc, st, RECT{sc(28), sy, sideW - sc(16), sy + sc(32)}, app.FontBold, col, DT_LEFT|DT_VCENTER|DT_SINGLELINE)
+		sy += sc(40)
 	}
-	// Status dot
-	dotY := teleRect.Top + sc(34)
-	fillSolidRect(hdc, RECT{col2X, dotY, col2X + sc(8), dotY + sc(8)}, pyCol)
-	drawText(hdc, pyStatus, RECT{col2X + sc(14), teleRect.Top + sc(26), teleRect.Right - sc(16), teleRect.Bottom - sc(8)}, app.FontMono, pyCol, DT_LEFT|DT_SINGLELINE|DT_VCENTER)
+
+	// Sidebar Footer Info
+	drawText(hdc, fmt.Sprintf("Version %s\nKein Admin erforderlich\nLokales WLAN-Dashboard", AppVersion),
+		RECT{sc(28), h - sc(82), sideW - sc(16), h - sc(20)}, app.FontSmall, colDim, DT_LEFT|DT_WORDBREAK)
+
+	// Right Content Area
+	cx := sideW + sc(36)
+	cw := w - cx - sc(36)
+
+	switch app.InstPage {
+	case InstPageWelcome:
+		title := "SC Cockpit installieren"
+		sub := "Richtet das Star Citizen Touch-Dashboard und das Control Center auf deinem PC ein."
+		if app.ExistingInst {
+			title = "SC Cockpit aktualisieren oder verwalten"
+			sub = "Eine bestehende Installation wurde gefunden. Deine eigenen Dashboards bleiben beim Update erhalten."
+		}
+		drawText(hdc, title, RECT{cx, sc(32), cx + cw - sc(80), sc(62)}, app.FontHero, colText, DT_LEFT|DT_SINGLELINE)
+		drawText(hdc, sub, RECT{cx, sc(64), cx + cw, sc(90)}, app.FontBody, colMuted, DT_LEFT|DT_SINGLELINE)
+
+		// System Check Card
+		sysCard := RECT{cx, sc(102), cx + cw, sc(174)}
+		drawCard(hdc, sysCard, colPanel, colLine, 10)
+		drawText(hdc, "ZIELORDNER", RECT{sysCard.Left + sc(18), sysCard.Top + sc(12), sysCard.Left + sc(310), sysCard.Top + sc(28)}, app.FontSmall, colDim, DT_LEFT|DT_SINGLELINE)
+		drawText(hdc, app.AppDir, RECT{sysCard.Left + sc(18), sysCard.Top + sc(30), sysCard.Left + sc(330), sysCard.Bottom - sc(12)}, app.FontMono, colText, DT_LEFT|DT_SINGLELINE)
+
+		drawLine(hdc, sysCard.Left+sc(345), sysCard.Top+sc(12), sysCard.Left+sc(345), sysCard.Bottom-sc(12), colLine, 1)
+		drawText(hdc, "PYTHON 3 RUNTIME", RECT{sysCard.Left + sc(365), sysCard.Top + sc(12), sysCard.Right - sc(16), sysCard.Top + sc(28)}, app.FontSmall, colDim, DT_LEFT|DT_SINGLELINE)
+		if app.PythonFound {
+			drawText(hdc, "●  "+app.PythonVer+" bereit", RECT{sysCard.Left + sc(365), sysCard.Top + sc(30), sysCard.Right - sc(16), sysCard.Bottom - sc(12)}, app.FontBold, colGreen, DT_LEFT|DT_SINGLELINE)
+		} else {
+			drawText(hdc, "●  Wird automatisch eingerichtet", RECT{sysCard.Left + sc(365), sysCard.Top + sc(30), sysCard.Right - sc(16), sysCard.Bottom - sc(12)}, app.FontBold, colAmber, DT_LEFT|DT_SINGLELINE)
+		}
+
+		// Clean Option Checkboxes
+		oy := sc(192)
+		oh := sc(58)
+		drawCheckboxRow(hdc, CtrlInstChkDesktop, RECT{cx, oy, cx + cw, oy + oh},
+			"Desktop-Verknüpfung erstellen",
+			"Legt 'SC Cockpit' mit Star-Citizen-Icon auf deinem Desktop an",
+			app.OptDesktop)
+
+		oy += oh + sc(12)
+		drawCheckboxRow(hdc, CtrlInstChkStartMenu, RECT{cx, oy, cx + cw, oy + oh},
+			"Startmenü-Einträge erstellen",
+			"Erstellt SC Cockpit & SC Cockpit (Administrator) im Windows-Startmenü",
+			app.OptStartMenu)
+
+		if !app.PythonFound && app.WingetFound {
+			oy += oh + sc(12)
+			drawCheckboxRow(hdc, CtrlInstChkWingetPy, RECT{cx, oy, cx + cw, oy + oh},
+				"Python 3.12 automatisch installieren (empfohlen)",
+				"Installiert Python 3 für den lokalen Tastatur-Server über Windows winget",
+				app.OptWingetPy)
+		}
+
+		// Bottom Action Bar
+		btnPrimary := RECT{w - sc(36) - sc(210), h - sc(68), w - sc(36), h - sc(22)}
+		btnLabel := "JETZT INSTALLIEREN"
+		if app.ExistingInst {
+			btnLabel = "AKTUALISIEREN"
+			btnUninst := RECT{cx, h - sc(68), cx + sc(160), h - sc(22)}
+			drawButton(hdc, CtrlInstSwitchUninstall, btnUninst, "Deinstallieren...", "danger")
+		}
+		drawButton(hdc, CtrlInstPrimary, btnPrimary, btnLabel, "amber")
+
+	case InstPageUninstall:
+		drawText(hdc, "SC Cockpit deinstallieren", RECT{cx, sc(32), cx + cw - sc(80), sc(62)}, app.FontHero, colText, DT_LEFT|DT_SINGLELINE)
+		drawText(hdc, "Möchtest du SC Cockpit von deinem Computer entfernen?", RECT{cx, sc(64), cx + cw, sc(90)}, app.FontBody, colMuted, DT_LEFT|DT_SINGLELINE)
+
+		warnCard := RECT{cx, sc(110), cx + cw, sc(185)}
+		drawCard(hdc, warnCard, colRedBg, colRed, 10)
+		drawText(hdc, "Das Programm sowie alle Desktop- und Startmenü-Verknüpfungen werden entfernt.\nDeine eigenen Dashboards bleiben standardmäßig im Benutzerordner gespeichert.",
+			RECT{warnCard.Left + sc(18), warnCard.Top + sc(16), warnCard.Right - sc(18), warnCard.Bottom - sc(14)}, app.FontBody, colText, DT_LEFT|DT_WORDBREAK)
+
+		drawCheckboxRow(hdc, CtrlChkPurgeData, RECT{cx, sc(205), cx + cw, sc(265)},
+			"Auch alle eigenen Dashboards und Einstellungen unwiderruflich löschen",
+			fmt.Sprintf("Löscht zusätzlich den Ordner %s", app.UserDir),
+			app.OptPurgeData)
+
+		btnBack := RECT{cx, h - sc(68), cx + sc(140), h - sc(22)}
+		btnRemove := RECT{w - sc(36) - sc(210), h - sc(68), w - sc(36), h - sc(22)}
+		drawButton(hdc, CtrlInstSwitchUninstall, btnBack, "Zurück", "secondary")
+		drawButton(hdc, CtrlInstPrimary, btnRemove, "JETZT DEINSTALLIEREN", "danger")
+
+	case InstPageProgress:
+		app.mu.Lock()
+		pct := app.ProgressPct
+		status := app.StatusLine
+		app.mu.Unlock()
+
+		title := "Installation läuft..."
+		if app.IsUninstall {
+			title = "Deinstallation läuft..."
+		}
+		drawText(hdc, title, RECT{cx, sc(32), cx + cw, sc(62)}, app.FontHero, colText, DT_LEFT|DT_SINGLELINE)
+		drawText(hdc, status, RECT{cx, sc(68), cx + cw, sc(94)}, app.FontBody, colMuted, DT_LEFT|DT_SINGLELINE)
+
+		// Clean Smooth Progress Bar
+		barBg := RECT{cx, sc(130), cx + cw, sc(152)}
+		drawCard(hdc, barBg, colPanel, colLine, 10)
+		fillW := ( (barBg.Right - barBg.Left) * int32(pct) ) / 100
+		if fillW > sc(8) {
+			drawCard(hdc, RECT{barBg.Left, barBg.Top, barBg.Left + fillW, barBg.Bottom}, colAmber, colAmber, 10)
+		}
+		drawText(hdc, fmt.Sprintf("%d %%", pct), RECT{cx, sc(162), cx + cw, sc(188)}, app.FontBold, colAmber, DT_RIGHT|DT_SINGLELINE)
+
+	case InstPageDone:
+		if app.InstallErr != "" {
+			drawText(hdc, "Fehler bei der Ausführung", RECT{cx, sc(32), cx + cw, sc(62)}, app.FontHero, colRed, DT_LEFT|DT_SINGLELINE)
+			errCard := RECT{cx, sc(80), cx + cw, sc(180)}
+			drawCard(hdc, errCard, colRedBg, colRed, 10)
+			drawText(hdc, app.InstallErr, RECT{errCard.Left + sc(18), errCard.Top + sc(16), errCard.Right - sc(18), errCard.Bottom - sc(16)}, app.FontBody, colText, DT_LEFT|DT_WORDBREAK)
+		} else if app.IsUninstall {
+			drawText(hdc, "Deinstallation abgeschlossen", RECT{cx, sc(32), cx + cw, sc(62)}, app.FontHero, colText, DT_LEFT|DT_SINGLELINE)
+			doneCard := RECT{cx, sc(80), cx + cw, sc(165)}
+			drawCard(hdc, doneCard, colPanel, colLine, 10)
+			msg := "SC Cockpit wurde erfolgreich von deinem PC entfernt."
+			if !app.OptPurgeData {
+				msg += "\nDeine eigenen Dashboards im Ordner 'user' wurden behalten."
+			}
+			drawText(hdc, msg, RECT{doneCard.Left + sc(18), doneCard.Top + sc(18), doneCard.Right - sc(18), doneCard.Bottom - sc(18)}, app.FontBody, colMuted, DT_LEFT|DT_WORDBREAK)
+		}
+		btnClose := RECT{w - sc(36) - sc(180), h - sc(68), w - sc(36), h - sc(22)}
+		drawButton(hdc, CtrlInstPrimary, btnClose, "SCHLIESSEN", "amber")
+	}
+}
+
+// ============================================================================
+// 2. RSI-STYLE GRAPHICAL CONTROL CENTER & LAUNCHER (POST-INSTALL)
+// ============================================================================
+func paintLauncherMode(hdc uintptr, w, h int32) {
+	// Left RSI Navigation Sidebar
+	sideW := sc(230)
+	fillRect(hdc, RECT{0, 0, sideW, h}, colSidebar)
+	drawLine(hdc, sideW, 0, sideW, h, colLine, 1)
+
+	// Brand Header
+	fillRect(hdc, RECT{sc(24), sc(24), sc(32), sc(54)}, colAmber)
+	drawText(hdc, "SC COCKPIT", RECT{sc(44), sc(21), sideW - sc(12), sc(42)}, app.FontTitle, colText, DT_LEFT|DT_SINGLELINE)
+	drawText(hdc, "CONTROL CENTER", RECT{sc(44), sc(41), sideW - sc(12), sc(58)}, app.FontSmall, colCyan, DT_LEFT|DT_SINGLELINE)
+
+	// Navigation Items
+	navItems := []struct {
+		id    int
+		tab   int
+		label string
+	}{
+		{CtrlNavServer, TabServer, "Cockpit & Server"},
+		{CtrlNavDashboards, TabDashboards, fmt.Sprintf("Dashboards (%d)", len(app.Dashboards))},
+		{CtrlNavSettings, TabSettings, "Einstellungen"},
+	}
+
+	ny := sc(92)
+	for _, item := range navItems {
+		r := RECT{sc(12), ny, sideW - sc(12), ny + sc(44)}
+		app.Regions = append(app.Regions, HotRegion{ID: item.id, Rect: r})
+		active := app.Tab == item.tab
+		hov := app.HoverID == item.id
+
+		if active {
+			drawCard(hdc, r, colPanelAct, colLineHi, 8)
+			fillRect(hdc, RECT{r.Left, r.Top + sc(10), r.Left + sc(4), r.Bottom - sc(10)}, colAmber)
+		} else if hov {
+			drawCard(hdc, r, colPanel, colLine, 8)
+		}
+
+		col := colMuted
+		if active || hov {
+			col = colText
+		}
+		drawText(hdc, item.label, RECT{r.Left + sc(18), r.Top, r.Right - sc(10), r.Bottom}, app.FontBold, col, DT_LEFT|DT_VCENTER|DT_SINGLELINE)
+		ny += sc(52)
+	}
+
+	// Live Server Status Pill in Bottom-Left Sidebar
+	statusCard := RECT{sc(16), h - sc(78), sideW - sc(16), h - sc(18)}
+	if app.ServerRunning {
+		drawCard(hdc, statusCard, colGreenBg, colGreen, 8)
+		drawText(hdc, "●  SERVER ONLINE", RECT{statusCard.Left + sc(14), statusCard.Top + sc(10), statusCard.Right - sc(10), statusCard.Top + sc(28)}, app.FontBold, colGreen, DT_LEFT|DT_SINGLELINE)
+		drawText(hdc, fmt.Sprintf("Port %d aktiv", app.Port), RECT{statusCard.Left + sc(14), statusCard.Top + sc(30), statusCard.Right - sc(10), statusCard.Bottom - sc(8)}, app.FontSmall, colText, DT_LEFT|DT_SINGLELINE)
+	} else {
+		drawCard(hdc, statusCard, colPanel, colLine, 8)
+		drawText(hdc, "○  SERVER GESTOPPT", RECT{statusCard.Left + sc(14), statusCard.Top + sc(10), statusCard.Right - sc(10), statusCard.Top + sc(28)}, app.FontBold, colMuted, DT_LEFT|DT_SINGLELINE)
+		drawText(hdc, "Klicke auf Starten", RECT{statusCard.Left + sc(14), statusCard.Top + sc(30), statusCard.Right - sc(10), statusCard.Bottom - sc(8)}, app.FontSmall, colDim, DT_LEFT|DT_SINGLELINE)
+	}
 
 	// Main Content Area
-	contentTop := teleRect.Bottom + sc(14)
-	footerTop := h - sc(74)
+	cx := sideW + sc(32)
+	cw := w - cx - sc(32)
 
-	switch app.Page {
-	case PageWelcome:
-		paintPageWelcome(hdc, w, contentTop, footerTop)
-	case PageUninstallConfirm:
-		paintPageUninstall(hdc, w, contentTop, footerTop)
-	case PageInstalling:
-		paintPageInstalling(hdc, w, contentTop, footerTop)
-	case PageDone:
-		paintPageDone(hdc, w, contentTop, footerTop)
+	if app.ToastMsg != "" {
+		toastRect := RECT{cx, h - sc(46), cx + cw, h - sc(14)}
+		drawCard(hdc, toastRect, colAmberBg, colAmber, 6)
+		drawText(hdc, app.ToastMsg, toastRect, app.FontBold, colAmber, DT_CENTER|DT_VCENTER|DT_SINGLELINE)
 	}
 
-	// Footer Bar
-	fillSolidRect(hdc, RECT{0, footerTop, w, h}, colBg2)
-	drawLine(hdc, 0, footerTop, w, footerTop, colLine, 1)
-
-	// Footer left metadata
-	modeTag := "MODUS: INSTALLATION"
-	if app.ExistingInst && app.Page == PageWelcome {
-		modeTag = "MODUS: UPDATE / REPARATUR"
-	} else if app.Page == PageUninstallConfirm || app.IsUninstall {
-		modeTag = "MODUS: DEINSTALLATION"
+	switch app.Tab {
+	case TabServer:
+		paintTabServer(hdc, cx, cw, h)
+	case TabDashboards:
+		paintTabDashboards(hdc, cx, cw, h)
+	case TabSettings:
+		paintTabSettings(hdc, cx, cw, h)
 	}
-	drawText(hdc, modeTag, RECT{sc(24), footerTop + sc(14), sc(300), footerTop + sc(32)}, app.FontMono, colAmber, DT_LEFT|DT_SINGLELINE)
-	drawText(hdc, "KEIN ADMIN NÖTIG  •  LOKALES WLAN-PANEL  •  ZERO CLOUD", RECT{sc(24), footerTop + sc(34), sc(420), footerTop + sc(54)}, app.FontSmall, colMuted, DT_LEFT|DT_SINGLELINE)
-
-	// Footer Buttons
-	btnPrimaryRect := RECT{w - sc(24) - sc(215), footerTop + sc(15), w - sc(24), footerTop + sc(59)}
-	btnSecondaryRect := RECT{btnPrimaryRect.Left - sc(12) - sc(145), footerTop + sc(15), btnPrimaryRect.Left - sc(12), footerTop + sc(59)}
-
-	switch app.Page {
-	case PageWelcome:
-		if app.ExistingInst {
-			drawMFDButton(hdc, CtrlBtnModeSwitch, btnSecondaryRect, "DEINSTALLIEREN", false, true)
-			drawMFDButton(hdc, CtrlBtnPrimary, btnPrimaryRect, "AKTUALISIEREN  ►", true, false)
-		} else {
-			drawMFDButton(hdc, CtrlBtnSecondary, btnSecondaryRect, "ABBRECHEN", false, false)
-			drawMFDButton(hdc, CtrlBtnPrimary, btnPrimaryRect, "INSTALLIEREN  ►", true, false)
-		}
-	case PageUninstallConfirm:
-		drawMFDButton(hdc, CtrlBtnModeSwitch, btnSecondaryRect, "◄  ZURÜCK", false, false)
-		drawMFDButton(hdc, CtrlBtnPrimary, btnPrimaryRect, "ENTFERNEN  ✕", false, true)
-	case PageInstalling:
-		drawText(hdc, "BITTE WARTEN — SYSTEMOPERATION LÄUFT...", RECT{w - sc(380), footerTop, w - sc(24), h}, app.FontMono, colCyan, DT_RIGHT|DT_VCENTER|DT_SINGLELINE)
-	case PageDone:
-		drawMFDButton(hdc, CtrlBtnPrimary, btnPrimaryRect, "FERTIGSTELLEN  ►", true, false)
-	}
-
-	// Outer Window tactical border
-	drawCornerBrackets(hdc, RECT{1, 1, w - 2, h - 2}, sc(18), sc(2), colAmber)
-	drawLine(hdc, sc(20), 0, w-sc(20), 0, colLine, 1)
-	drawLine(hdc, sc(20), h-1, w-sc(20), h-1, colLine, 1)
-	drawLine(hdc, 0, sc(20), 0, h-sc(20), colLine, 1)
-	drawLine(hdc, w-1, sc(20), w-1, h-sc(20), colLine, 1)
 }
 
-func paintPageWelcome(hdc uintptr, w, top, bottom int32) {
-	padX := sc(24)
+func paintTabServer(hdc uintptr, cx, cw, h int32) {
+	drawText(hdc, "Cockpit Serversteuerung", RECT{cx, sc(26), cx + cw - sc(90), sc(56)}, app.FontHero, colText, DT_LEFT|DT_SINGLELINE)
+	drawText(hdc, "Starte den Server auf deinem PC und öffne die WLAN-Adresse auf deinem Tablet oder Smartphone.",
+		RECT{cx, sc(56), cx + cw, sc(80)}, app.FontBody, colMuted, DT_LEFT|DT_SINGLELINE)
 
-	// Section Header
-	secTitle := "KONFIGURATION & BEREITSTELLUNG // DEPLOYMENT OPTIONS"
-	if app.ExistingInst {
-		secTitle = "BESTEHENDE INSTALLATION ERKANNT // UPDATE ODER REPARATUR"
-	}
-	drawText(hdc, secTitle, RECT{padX, top, w - padX, top + sc(20)}, app.FontMono, colAmber, DT_LEFT|DT_SINGLELINE)
+	// Hero Server Control Card (RSI Launcher Style)
+	heroCard := RECT{cx, sc(92), cx + cw, sc(230)}
+	drawCard(hdc, heroCard, colPanel, colLineHi, 12)
 
-	desc := "Installiert den SC Cockpit Server, das Touch-Interface sowie die Standard- und Mining-Dashboards in dein Benutzerprofil. Eigene Dashboards im Ordner 'user' bleiben bei Updates unangetastet."
-	drawText(hdc, desc, RECT{padX, top + sc(22), w - padX, top + sc(58)}, app.FontBody, colMuted, DT_LEFT|DT_WORDBREAK)
+	url := fmt.Sprintf("http://%s:%d/", app.LanIP, app.Port)
 
-	cardY := top + sc(64)
-	cardH := sc(52)
-	gap := sc(10)
-
-	drawCheckboxCard(hdc, CtrlChkDesktop,
-		RECT{padX, cardY, w - padX, cardY + cardH},
-		"Desktop-Verknüpfung anlegen",
-		"Erstellt 'SC Cockpit' direkt auf dem Desktop für schnellen Spielstart",
-		app.OptDesktop, colAmber)
-
-	cardY += cardH + gap
-	drawCheckboxCard(hdc, CtrlChkStartMenu,
-		RECT{padX, cardY, w - padX, cardY + cardH},
-		"Startmenü-Ordner & Administrator-Starter erstellen",
-		"Inklusive 'SC Cockpit (Administrator)' falls Star Citizen mit Admin-Rechten läuft",
-		app.OptStartMenu, colAmber)
-
-	cardY += cardH + gap
-	if !app.PythonFound && app.WingetFound {
-		drawCheckboxCard(hdc, CtrlChkWingetPy,
-			RECT{padX, cardY, w - padX, cardY + cardH},
-			"Python 3.12 automatisch via Windows Package Manager (winget) installieren",
-			"Erhältlich ohne Admin-Rechte (User-Scope) — wird für den lokalen Cockpit-Server benötigt",
-			app.OptWingetPy, colCyan)
+	if app.ServerRunning {
+		drawText(hdc, "STATUS: SERVER LÄUFT & EMPFÄNGT TASTEN", RECT{heroCard.Left + sc(24), heroCard.Top + sc(18), heroCard.Right - sc(220), heroCard.Top + sc(38)}, app.FontBold, colGreen, DT_LEFT|DT_SINGLELINE)
 	} else {
-		// Info panel about included modules
-		infoRect := RECT{padX, cardY, w - padX, cardY + cardH}
-		drawChamferBox(hdc, infoRect, 0, sc(8), 0, sc(8), colBg2, colLine, 1)
-		fillSolidRect(hdc, RECT{infoRect.Left, infoRect.Top + sc(4), infoRect.Left + sc(3), infoRect.Bottom - sc(4)}, colCyan)
-		drawText(hdc, "INKLUSIVE MODULE:  STANDARD (FLUG / ENERGIE / QUANTUM / KAMPF)  •  MINING  •  LIVE-EDITOR",
-			RECT{infoRect.Left + sc(16), infoRect.Top + sc(8), infoRect.Right - sc(16), infoRect.Top + sc(26)}, app.FontMono, colCyan, DT_LEFT|DT_SINGLELINE)
-		drawText(hdc, fmt.Sprintf("Eigene Dashboards & Konfiguration:  %s", app.UserDir),
-			RECT{infoRect.Left + sc(16), infoRect.Top + sc(26), infoRect.Right - sc(16), infoRect.Bottom - sc(6)}, app.FontSmall, colMuted, DT_LEFT|DT_SINGLELINE)
+		drawText(hdc, "STATUS: SERVER IST AUSGESCHALTET", RECT{heroCard.Left + sc(24), heroCard.Top + sc(18), heroCard.Right - sc(220), heroCard.Top + sc(38)}, app.FontBold, colAmber, DT_LEFT|DT_SINGLELINE)
 	}
-}
 
-func paintPageUninstall(hdc uintptr, w, top, bottom int32) {
-	padX := sc(24)
+	drawText(hdc, "ADRESSE FÜR TABLET / HANDY IM WLAN:", RECT{heroCard.Left + sc(24), heroCard.Top + sc(46), heroCard.Right - sc(220), heroCard.Top + sc(64)}, app.FontSmall, colMuted, DT_LEFT|DT_SINGLELINE)
+	drawText(hdc, url, RECT{heroCard.Left + sc(24), heroCard.Top + sc(64), heroCard.Right - sc(220), heroCard.Top + sc(96)}, app.FontHero, colCyan, DT_LEFT|DT_SINGLELINE)
 
-	// Warning Banner
-	warnRect := RECT{padX, top + sc(4), w - padX, top + sc(82)}
-	drawChamferBox(hdc, warnRect, sc(10), sc(10), sc(10), sc(10), colRedBg, colRed, sc(1))
-	fillSolidRect(hdc, RECT{warnRect.Left, warnRect.Top + sc(10), warnRect.Left + sc(4), warnRect.Bottom - sc(10)}, colRed)
+	// Quick Action Buttons inside Hero Card
+	btnCopy := RECT{heroCard.Left + sc(24), heroCard.Bottom - sc(46), heroCard.Left + sc(174), heroCard.Bottom - sc(14)}
+	btnOpen := RECT{btnCopy.Right + sc(10), heroCard.Bottom - sc(46), btnCopy.Right + sc(195), heroCard.Bottom - sc(14)}
+	btnEdit := RECT{btnOpen.Right + sc(10), heroCard.Bottom - sc(46), btnOpen.Right + sc(195), heroCard.Bottom - sc(14)}
 
-	drawText(hdc, "WARNUNG // SYSTEM-DEINSTALLATION", RECT{warnRect.Left + sc(18), warnRect.Top + sc(12), warnRect.Right - sc(16), warnRect.Top + sc(32)}, app.FontBold, colRed, DT_LEFT|DT_SINGLELINE)
-	drawText(hdc, "Der Programmordner (%LOCALAPPDATA%\\SC Cockpit\\app) sowie alle Desktop- und Startmenü-Verknüpfungen werden von diesem System entfernt.",
-		RECT{warnRect.Left + sc(18), warnRect.Top + sc(34), warnRect.Right - sc(16), warnRect.Bottom - sc(10)}, app.FontBody, colText, DT_LEFT|DT_WORDBREAK)
+	drawButton(hdc, CtrlBtnCopyURL, btnCopy, "Adresse kopieren", "secondary")
+	drawButton(hdc, CtrlBtnOpenBrowser, btnOpen, "Dashboard öffnen", "cyan")
+	drawButton(hdc, CtrlBtnOpenEditor, btnEdit, "Im Browser anpassen", "secondary")
 
-	cardY := warnRect.Bottom + sc(18)
-	cardH := sc(58)
-	drawCheckboxCard(hdc, CtrlChkPurgeData,
-		RECT{padX, cardY, w - padX, cardY + cardH},
-		"Eigene Dashboards und Einstellungen ebenfalls unwiderruflich löschen (-Purge)",
-		fmt.Sprintf("Löscht auch %s (standardmäßig bleiben deine eigenen Dashboards erhalten)", app.UserDir),
-		app.OptPurgeData, colRed)
-}
+	// Big Power Toggle Button on Right Side of Hero Card
+	powerBtn := RECT{heroCard.Right - sc(200), heroCard.Top + sc(22), heroCard.Right - sc(24), heroCard.Bottom - sc(58)}
+	if app.ServerRunning {
+		drawButton(hdc, CtrlBtnToggleServer, powerBtn, "SERVER STOPPEN", "danger")
+	} else {
+		drawButton(hdc, CtrlBtnToggleServer, powerBtn, "SERVER STARTEN", "amber")
+	}
 
-func paintPageInstalling(hdc uintptr, w, top, bottom int32) {
-	padX := sc(24)
+	// Active Dashboard & Admin Status Row
+	midY := sc(246)
+	cardW := (cw - sc(16)) / 2
+	leftCard := RECT{cx, midY, cx + cardW, midY + sc(84)}
+	rightCard := RECT{cx + cardW + sc(16), midY, cx + cw, midY + sc(84)}
+
+	drawCard(hdc, leftCard, colPanel, colLine, 10)
+	drawText(hdc, "AKTIVES DASHBOARD", RECT{leftCard.Left + sc(18), leftCard.Top + sc(12), leftCard.Right - sc(16), leftCard.Top + sc(28)}, app.FontSmall, colDim, DT_LEFT|DT_SINGLELINE)
+	activeTitle := app.ActiveDash
+	for _, d := range app.Dashboards {
+		if d.ID == app.ActiveDash {
+			activeTitle = fmt.Sprintf("%s  (%d Seiten, %d Tasten)", d.Title, d.PageCount, d.ButtonCount)
+			break
+		}
+	}
+	drawText(hdc, activeTitle, RECT{leftCard.Left + sc(18), leftCard.Top + sc(32), leftCard.Right - sc(16), leftCard.Bottom - sc(12)}, app.FontBold, colText, DT_LEFT|DT_SINGLELINE)
+
+	drawCard(hdc, rightCard, colPanel, colLine, 10)
+	drawText(hdc, "BERECHTIGUNGS-MODUS", RECT{rightCard.Left + sc(18), rightCard.Top + sc(12), rightCard.Right - sc(16), rightCard.Top + sc(28)}, app.FontSmall, colDim, DT_LEFT|DT_SINGLELINE)
+	if app.IsAdmin {
+		drawText(hdc, "●  Administrator-Modus aktiv", RECT{rightCard.Left + sc(18), rightCard.Top + sc(32), rightCard.Right - sc(16), rightCard.Bottom - sc(12)}, app.FontBold, colGreen, DT_LEFT|DT_SINGLELINE)
+	} else {
+		drawText(hdc, "Standard-Benutzer", RECT{rightCard.Left + sc(18), rightCard.Top + sc(32), rightCard.Right - sc(165), rightCard.Bottom - sc(12)}, app.FontBold, colText, DT_LEFT|DT_SINGLELINE)
+		adminBtn := RECT{rightCard.Right - sc(155), rightCard.Top + sc(24), rightCard.Right - sc(14), rightCard.Bottom - sc(16)}
+		drawButton(hdc, CtrlBtnRestartAdmin, adminBtn, "Als Admin starten", "secondary")
+	}
+
+	// Clean Live Activity Log
+	logCard := RECT{cx, sc(346), cx + cw, h - sc(54)}
+	drawCard(hdc, logCard, rgb(0x09, 0x0c, 0x10), colLine, 10)
+	drawText(hdc, "LIVE TASTEN- & SERVER-PROTOKOLL", RECT{logCard.Left + sc(18), logCard.Top + sc(10), logCard.Right - sc(18), logCard.Top + sc(28)}, app.FontSmall, colDim, DT_LEFT|DT_SINGLELINE)
+
 	app.mu.Lock()
-	pct := app.ProgressPct
-	status := app.StatusLine
-	logs := append([]string(nil), app.Logs...)
-	tick := app.AnimTick
+	logs := append([]string(nil), app.ServerLogs...)
 	app.mu.Unlock()
 
-	drawText(hdc, "QUANTUM DEPLOYMENT SEQUENCE // DATEIÜBERTRAGUNG", RECT{padX, top, w - padX, top + sc(20)}, app.FontMono, colCyan, DT_LEFT|DT_SINGLELINE)
-	drawText(hdc, fmt.Sprintf("%d %%", pct), RECT{padX, top - sc(2), w - padX, top + sc(22)}, app.FontTitle, colAmber, DT_RIGHT|DT_SINGLELINE)
-
-	// Segmented Sci-Fi Progress Bar
-	barRect := RECT{padX, top + sc(26), w - padX, top + sc(52)}
-	drawChamferBox(hdc, barRect, sc(6), sc(6), sc(6), sc(6), colBg2, colLineHi, 1)
-
-	totalSegs := 32
-	innerW := barRect.Right - barRect.Left - sc(12)
-	segGap := sc(3)
-	segW := (innerW - int32(totalSegs-1)*segGap) / int32(totalSegs)
-	activeSegs := (pct * totalSegs) / 100
-
-	for i := 0; i < totalSegs; i++ {
-		sx := barRect.Left + sc(6) + int32(i)*(segW+segGap)
-		sRect := RECT{sx, barRect.Top + sc(5), sx + segW, barRect.Bottom - sc(5)}
-		if i < activeSegs {
-			col := colAmber
-			if i == activeSegs-1 && (tick%2 == 0) {
-				col = colCyan
+	ly := logCard.Top + sc(32)
+	if len(logs) == 0 {
+		drawText(hdc, "Noch keine Ereignisse. Sobald du auf dem Tablet eine Taste drückst, erscheint sie hier.",
+			RECT{logCard.Left + sc(18), ly, logCard.Right - sc(18), ly + sc(24)}, app.FontMono, colDim, DT_LEFT|DT_SINGLELINE)
+	} else {
+		maxLines := int((logCard.Bottom - ly - sc(8)) / sc(19))
+		if len(logs) > maxLines && maxLines > 0 {
+			logs = logs[len(logs)-maxLines:]
+		}
+		for i, line := range logs {
+			c := colMuted
+			if i == len(logs)-1 {
+				c = colCyan
 			}
-			fillSolidRect(hdc, sRect, col)
-		} else {
-			fillSolidRect(hdc, sRect, rgb(0x18, 0x20, 0x2b))
+			drawText(hdc, line, RECT{logCard.Left + sc(18), ly, logCard.Right - sc(18), ly + sc(18)}, app.FontMono, c, DT_LEFT|DT_SINGLELINE)
+			ly += sc(19)
 		}
-	}
-
-	drawText(hdc, status, RECT{padX, barRect.Bottom + sc(8), w - padX, barRect.Bottom + sc(26)}, app.FontBody, colText, DT_LEFT|DT_SINGLELINE)
-
-	// Telemetry Console Log Window
-	logRect := RECT{padX, barRect.Bottom + sc(32), w - padX, bottom - sc(14)}
-	drawChamferBox(hdc, logRect, sc(8), sc(8), sc(8), sc(8), rgb(0x08, 0x0b, 0x0f), colLine, 1)
-	drawCornerBrackets(hdc, logRect, sc(8), sc(1), colCyan)
-
-	ly := logRect.Top + sc(10)
-	lineH := sc(18)
-	for i, line := range logs {
-		c := colMuted
-		if i == len(logs)-1 {
-			c = colCyan
-		}
-		drawText(hdc, line, RECT{logRect.Left + sc(14), ly, logRect.Right - sc(14), ly + lineH}, app.FontMono, c, DT_LEFT|DT_SINGLELINE)
-		ly += lineH
 	}
 }
 
-func paintPageDone(hdc uintptr, w, top, bottom int32) {
-	padX := sc(24)
+func paintTabDashboards(hdc uintptr, cx, cw, h int32) {
+	drawText(hdc, "Dashboards verwalten", RECT{cx, sc(26), cx + cw - sc(260), sc(56)}, app.FontHero, colText, DT_LEFT|DT_SINGLELINE)
+	drawText(hdc, "Wähle dein aktives Dashboard, erstelle Kopien für eigene Schiffe oder bearbeite Tasten direkt im Browser.",
+		RECT{cx, sc(56), cx + cw, sc(80)}, app.FontBody, colMuted, DT_LEFT|DT_SINGLELINE)
 
-	bannerRect := RECT{padX, top + sc(4), w - padX, top + sc(86)}
-	if app.InstallErr != "" {
-		drawChamferBox(hdc, bannerRect, sc(10), sc(10), sc(10), sc(10), colRedBg, colRed, 1)
-		fillSolidRect(hdc, RECT{bannerRect.Left, bannerRect.Top + sc(8), bannerRect.Left + sc(4), bannerRect.Bottom - sc(8)}, colRed)
-		drawText(hdc, "FEHLER BEI DER AUSFÜHRUNG // OPERATION ABORTED", RECT{bannerRect.Left + sc(18), bannerRect.Top + sc(12), bannerRect.Right - sc(16), bannerRect.Top + sc(32)}, app.FontBold, colRed, DT_LEFT|DT_SINGLELINE)
-		drawText(hdc, app.InstallErr, RECT{bannerRect.Left + sc(18), bannerRect.Top + sc(36), bannerRect.Right - sc(16), bannerRect.Bottom - sc(10)}, app.FontBody, colText, DT_LEFT|DT_WORDBREAK)
-		return
-	}
+	// Top Action Buttons
+	btnNew := RECT{cx, sc(92), cx + sc(185), sc(128)}
+	btnFolder := RECT{btnNew.Right + sc(12), sc(92), btnNew.Right + sc(235), sc(128)}
+	btnReload := RECT{btnFolder.Right + sc(12), sc(92), btnFolder.Right + sc(150), sc(128)}
 
-	if app.IsUninstall {
-		drawChamferBox(hdc, bannerRect, sc(10), sc(10), sc(10), sc(10), colCyanBg, colCyan, 1)
-		fillSolidRect(hdc, RECT{bannerRect.Left, bannerRect.Top + sc(8), bannerRect.Left + sc(4), bannerRect.Bottom - sc(8)}, colCyan)
-		drawText(hdc, "DEINSTALLATION ABGESCHLOSSEN // SYSTEM CLEAN", RECT{bannerRect.Left + sc(18), bannerRect.Top + sc(14), bannerRect.Right - sc(16), bannerRect.Top + sc(36)}, app.FontBold, colCyan, DT_LEFT|DT_SINGLELINE)
-		msg := "SC Cockpit wurde erfolgreich entfernt. Deine eigenen Dashboards unter %LOCALAPPDATA%\\SC Cockpit\\user wurden behalten."
-		if app.OptPurgeData {
-			msg = "SC Cockpit sowie alle eigenen Dashboards und Benutzerdaten wurden vollständig entfernt."
+	drawButton(hdc, CtrlBtnNewDash, btnNew, "+ Neues Dashboard", "amber")
+	drawButton(hdc, CtrlBtnOpenDashFolder, btnFolder, "Dashboard-Ordner öffnen", "secondary")
+	drawButton(hdc, CtrlBtnReloadDash, btnReload, "Aktualisieren", "secondary")
+
+	// Dashboard List Cards
+	y := sc(144)
+	rowH := sc(68)
+	for i, d := range app.Dashboards {
+		if y+rowH > h-sc(50) {
+			break
 		}
-		drawText(hdc, msg, RECT{bannerRect.Left + sc(18), bannerRect.Top + sc(38), bannerRect.Right - sc(16), bannerRect.Bottom - sc(10)}, app.FontBody, colText, DT_LEFT|DT_WORDBREAK)
-		return
+		card := RECT{cx, y, cx + cw, y + rowH}
+		isActive := d.ID == app.ActiveDash
+		border := colLine
+		fill := colPanel
+		if isActive {
+			border = colAmber
+			fill = colPanelAct
+		}
+		drawCard(hdc, card, fill, border, 10)
+
+		if isActive {
+			fillRect(hdc, RECT{card.Left, card.Top + sc(12), card.Left + sc(4), card.Bottom - sc(12)}, colAmber)
+		}
+
+		// Title & Source Badge
+		badge := "MITGELIEFERT"
+		badgeCol := colCyan
+		if d.Source == "local" {
+			badge = "EIGENES DASHBOARD"
+			badgeCol = colAmber
+		}
+		drawText(hdc, d.Title, RECT{card.Left + sc(20), card.Top + sc(12), card.Left + sc(260), card.Top + sc(36)}, app.FontTitle, colText, DT_LEFT|DT_SINGLELINE)
+		meta := fmt.Sprintf("%s   •   ID: %s.json   •   %d Seiten   •   %d Buttons", badge, d.ID, d.PageCount, d.ButtonCount)
+		drawText(hdc, meta, RECT{card.Left + sc(20), card.Top + sc(38), card.Right - sc(310), card.Bottom - sc(10)}, app.FontSmall, badgeCol, DT_LEFT|DT_SINGLELINE)
+
+		// Action Buttons on the right of each dashboard card
+		bx := card.Right - sc(16)
+
+		if d.Source == "local" {
+			btnDel := RECT{bx - sc(90), card.Top + sc(16), bx, card.Bottom - sc(16)}
+			drawButton(hdc, CtrlDashDelBase+i, btnDel, "Löschen", "danger")
+			bx = btnDel.Left - sc(8)
+		}
+
+		btnDup := RECT{bx - sc(100), card.Top + sc(16), bx, card.Bottom - sc(16)}
+		drawButton(hdc, CtrlDashDupBase+i, btnDup, "Duplizieren", "secondary")
+		bx = btnDup.Left - sc(8)
+
+		btnEdit := RECT{bx - sc(100), card.Top + sc(16), bx, card.Bottom - sc(16)}
+		drawButton(hdc, CtrlDashEditBase+i, btnEdit, "Bearbeiten", "cyan")
+		bx = btnEdit.Left - sc(8)
+
+		btnAct := RECT{bx - sc(105), card.Top + sc(16), bx, card.Bottom - sc(16)}
+		if isActive {
+			drawButton(hdc, CtrlDashActivateBase+i, btnAct, "● AKTIV", "green")
+		} else {
+			drawButton(hdc, CtrlDashActivateBase+i, btnAct, "Aktivieren", "secondary")
+		}
+
+		y += rowH + sc(10)
 	}
+}
 
-	// Successful Installation Banner
-	drawChamferBox(hdc, bannerRect, sc(10), sc(10), sc(10), sc(10), colCyanBg, colCyan, 1)
-	fillSolidRect(hdc, RECT{bannerRect.Left, bannerRect.Top + sc(8), bannerRect.Left + sc(4), bannerRect.Bottom - sc(8)}, colGreen)
-	drawText(hdc, "SYSTEM BEREIT // SC COCKPIT ERFOLGREICH INSTALLIERT", RECT{bannerRect.Left + sc(18), bannerRect.Top + sc(12), bannerRect.Right - sc(16), bannerRect.Top + sc(34)}, app.FontBold, colGreen, DT_LEFT|DT_SINGLELINE)
-	drawText(hdc, "Starte SC Cockpit auf dem Gaming-PC und öffne die angezeigte http://192.168.x.x:8765 Adresse im Browser deines Tablets oder Smartphones im selben WLAN.",
-		RECT{bannerRect.Left + sc(18), bannerRect.Top + sc(36), bannerRect.Right - sc(16), bannerRect.Bottom - sc(10)}, app.FontBody, colText, DT_LEFT|DT_WORDBREAK)
+func paintTabSettings(hdc uintptr, cx, cw, h int32) {
+	drawText(hdc, "Einstellungen & Systemverwaltung", RECT{cx, sc(26), cx + cw - sc(90), sc(56)}, app.FontHero, colText, DT_LEFT|DT_SINGLELINE)
+	drawText(hdc, "Konfiguriere den Netzwerk-Port, öffne Systemordner oder deinstalliere SC Cockpit.",
+		RECT{cx, sc(56), cx + cw, sc(80)}, app.FontBody, colMuted, DT_LEFT|DT_SINGLELINE)
 
-	cardY := bannerRect.Bottom + sc(16)
-	cardH := sc(52)
-	gap := sc(10)
+	// 1. Port & Network Card
+	portCard := RECT{cx, sc(94), cx + cw, sc(168)}
+	drawCard(hdc, portCard, colPanel, colLine, 10)
+	drawText(hdc, "Server-Port (Standard: 8765)", RECT{portCard.Left + sc(20), portCard.Top + sc(14), portCard.Left + sc(350), portCard.Top + sc(36)}, app.FontBold, colText, DT_LEFT|DT_SINGLELINE)
+	drawText(hdc, "Port für die Verbindung zwischen PC und Tablet/Handy im lokalen WLAN", RECT{portCard.Left + sc(20), portCard.Top + sc(38), portCard.Left + sc(450), portCard.Bottom - sc(12)}, app.FontSmall, colMuted, DT_LEFT|DT_SINGLELINE)
 
-	drawCheckboxCard(hdc, CtrlChkLaunchNow,
-		RECT{padX, cardY, w - padX, cardY + cardH},
-		"SC Cockpit Server jetzt sofort starten",
-		"Öffnet das Server-Fenster mit deiner WLAN-Adresse für Tablet & Smartphone",
-		app.OptLaunchNow, colAmber)
+	btnMinus := RECT{portCard.Right - sc(180), portCard.Top + sc(18), portCard.Right - sc(140), portCard.Bottom - sc(18)}
+	portBox := RECT{btnMinus.Right + sc(6), portCard.Top + sc(18), btnMinus.Right + sc(82), portCard.Bottom - sc(18)}
+	btnPlus := RECT{portBox.Right + sc(6), portCard.Top + sc(18), portBox.Right + sc(46), portCard.Bottom - sc(18)}
 
-	cardY += cardH + gap
-	drawCheckboxCard(hdc, CtrlChkOpenDocs,
-		RECT{padX, cardY, w - padX, cardY + cardH},
-		"Installationsordner & Dashboard-Dokumentation im Explorer anzeigen",
-		fmt.Sprintf("Öffnet %s", app.InstallDir),
-		app.OptOpenDocs, colCyan)
+	drawButton(hdc, CtrlBtnPortMinus, btnMinus, "—", "secondary")
+	drawCard(hdc, portBox, colBg, colLineHi, 6)
+	drawText(hdc, fmt.Sprintf("%d", app.Port), portBox, app.FontBold, colCyan, DT_CENTER|DT_VCENTER|DT_SINGLELINE)
+	drawButton(hdc, CtrlBtnPortPlus, btnPlus, "+", "secondary")
+
+	// 2. Directories & Updates Card
+	dirCard := RECT{cx, sc(182), cx + cw, sc(272)}
+	drawCard(hdc, dirCard, colPanel, colLine, 10)
+	drawText(hdc, "Speicherorte & Programmdateien", RECT{dirCard.Left + sc(20), dirCard.Top + sc(14), dirCard.Right - sc(20), dirCard.Top + sc(34)}, app.FontBold, colText, DT_LEFT|DT_SINGLELINE)
+	drawText(hdc, fmt.Sprintf("Programm: %s   |   Eigene Dashboards: %s", app.AppDir, app.UserDashDir),
+		RECT{dirCard.Left + sc(20), dirCard.Top + sc(34), dirCard.Right - sc(20), dirCard.Top + sc(52)}, app.FontSmall, colMuted, DT_LEFT|DT_SINGLELINE)
+
+	btnUserDir := RECT{dirCard.Left + sc(20), dirCard.Bottom - sc(36), dirCard.Left + sc(220), dirCard.Bottom - sc(8)}
+	btnAppDir := RECT{btnUserDir.Right + sc(10), dirCard.Bottom - sc(36), btnUserDir.Right + sc(210), dirCard.Bottom - sc(8)}
+	btnRepair := RECT{btnAppDir.Right + sc(10), dirCard.Bottom - sc(36), btnAppDir.Right + sc(210), dirCard.Bottom - sc(8)}
+
+	drawButton(hdc, CtrlBtnOpenUserFolder, btnUserDir, "Benutzerordner öffnen", "secondary")
+	drawButton(hdc, CtrlBtnOpenAppFolder, btnAppDir, "Programmordner öffnen", "secondary")
+	drawButton(hdc, CtrlBtnUpdateRepair, btnRepair, "Verknüpfungen reparieren", "secondary")
+
+	// 3. Uninstall Section inside Settings
+	uninstCard := RECT{cx, sc(286), cx + cw, sc(435)}
+	drawCard(hdc, uninstCard, colRedBg, colRed, 10)
+	drawText(hdc, "SC Cockpit deinstallieren", RECT{uninstCard.Left + sc(20), uninstCard.Top + sc(14), uninstCard.Right - sc(20), uninstCard.Top + sc(36)}, app.FontBold, colRed, DT_LEFT|DT_SINGLELINE)
+	drawText(hdc, "Entfernt den SC Cockpit Server, das Control Center sowie alle Desktop- und Startmenü-Verknüpfungen von deinem PC.",
+		RECT{uninstCard.Left + sc(20), uninstCard.Top + sc(36), uninstCard.Right - sc(20), uninstCard.Top + sc(56)}, app.FontSmall, colText, DT_LEFT|DT_SINGLELINE)
+
+	drawCheckboxRow(hdc, CtrlChkPurgeData,
+		RECT{uninstCard.Left + sc(20), uninstCard.Top + sc(60), uninstCard.Right - sc(230), uninstCard.Bottom - sc(14)},
+		"Eigene Dashboards ebenfalls löschen",
+		"Wenn deaktiviert, bleiben deine eigenen Dashboards im Ordner 'user' erhalten",
+		app.OptPurgeData)
+
+	if !app.ConfirmUninst {
+		btnUninst := RECT{uninstCard.Right - sc(210), uninstCard.Top + sc(72), uninstCard.Right - sc(20), uninstCard.Bottom - sc(22)}
+		drawButton(hdc, CtrlBtnShowUninstall, btnUninst, "Deinstallieren...", "danger")
+	} else {
+		btnConfirm := RECT{uninstCard.Right - sc(210), uninstCard.Top + sc(60), uninstCard.Right - sc(20), uninstCard.Top + sc(96)}
+		btnCancel := RECT{uninstCard.Right - sc(210), uninstCard.Top + sc(102), uninstCard.Right - sc(20), uninstCard.Bottom - sc(12)}
+		drawButton(hdc, CtrlBtnConfirmUninstall, btnConfirm, "Wirklich entfernen!", "danger")
+		drawButton(hdc, CtrlBtnCancelUninstall, btnCancel, "Abbrechen", "secondary")
+	}
 }
 
 func handleControlClick(id int) {
-	switch id {
-	case CtrlClose, CtrlBtnSecondary:
-		if app.Page != PageInstalling {
-			pPostQuitMessage.Call(0)
+	app.ToastMsg = ""
+
+	// Dashboard Row Actions
+	if id >= CtrlDashActivateBase && id < CtrlDashActivateBase+100 {
+		idx := id - CtrlDashActivateBase
+		if idx < len(app.Dashboards) {
+			setActiveDashboard(app.Dashboards[idx].ID)
+			app.ToastMsg = fmt.Sprintf("Dashboard '%s' als aktiv gesetzt.", app.Dashboards[idx].Title)
 		}
-	case CtrlMinimize:
+		pInvalidateRect.Call(app.Hwnd, 0, 0)
+		return
+	}
+	if id >= CtrlDashEditBase && id < CtrlDashEditBase+100 {
+		idx := id - CtrlDashEditBase
+		if idx < len(app.Dashboards) {
+			setActiveDashboard(app.Dashboards[idx].ID)
+			if !app.ServerRunning {
+				startServer()
+			}
+			url := fmt.Sprintf("http://127.0.0.1:%d/", app.Port)
+			pShellExecuteW.Call(0, u16ptr("open"), u16ptr(url), 0, 0, SW_SHOWNORMAL)
+		}
+		pInvalidateRect.Call(app.Hwnd, 0, 0)
+		return
+	}
+	if id >= CtrlDashDupBase && id < CtrlDashDupBase+100 {
+		idx := id - CtrlDashDupBase
+		if idx < len(app.Dashboards) {
+			newID, err := duplicateDashboard(app.Dashboards[idx])
+			if err != nil {
+				app.ToastMsg = "Fehler: " + err.Error()
+			} else {
+				app.ToastMsg = fmt.Sprintf("Kopie '%s.json' unter eigene Dashboards angelegt.", newID)
+			}
+		}
+		pInvalidateRect.Call(app.Hwnd, 0, 0)
+		return
+	}
+	if id >= CtrlDashDelBase && id < CtrlDashDelBase+100 {
+		idx := id - CtrlDashDelBase
+		if idx < len(app.Dashboards) {
+			d := app.Dashboards[idx]
+			if d.Source == "local" {
+				_ = os.Remove(d.Path)
+				reloadDashboards()
+				app.ToastMsg = fmt.Sprintf("Eigenes Dashboard '%s' gelöscht.", d.Title)
+			}
+		}
+		pInvalidateRect.Call(app.Hwnd, 0, 0)
+		return
+	}
+
+	switch id {
+	case CtrlWinClose, CtrlInstSecondary:
+		stopServer()
+		pPostQuitMessage.Call(0)
+	case CtrlWinMin:
 		pShowWindow.Call(app.Hwnd, SW_MINIMIZE)
-	case CtrlChkDesktop:
-		app.OptDesktop = !app.OptDesktop
-	case CtrlChkStartMenu:
-		app.OptStartMenu = !app.OptStartMenu
-	case CtrlChkWingetPy:
-		app.OptWingetPy = !app.OptWingetPy
-	case CtrlChkLaunchNow:
-		app.OptLaunchNow = !app.OptLaunchNow
-	case CtrlChkOpenDocs:
-		app.OptOpenDocs = !app.OptOpenDocs
+
+	// Navigation Tabs
+	case CtrlNavServer:
+		app.Tab = TabServer
+		app.ConfirmUninst = false
+	case CtrlNavDashboards:
+		reloadDashboards()
+		app.Tab = TabDashboards
+		app.ConfirmUninst = false
+	case CtrlNavSettings:
+		app.Tab = TabSettings
+		app.ConfirmUninst = false
+
+	// Server Controls
+	case CtrlBtnToggleServer:
+		if app.ServerRunning {
+			stopServer()
+		} else {
+			startServer()
+		}
+	case CtrlBtnCopyURL:
+		url := fmt.Sprintf("http://%s:%d/", app.LanIP, app.Port)
+		copyToClipboard(url)
+		app.ToastMsg = "WLAN-Adresse in die Zwischenablage kopiert: " + url
+	case CtrlBtnOpenBrowser, CtrlBtnOpenEditor:
+		if !app.ServerRunning {
+			startServer()
+		}
+		url := fmt.Sprintf("http://127.0.0.1:%d/", app.Port)
+		pShellExecuteW.Call(0, u16ptr("open"), u16ptr(url), 0, 0, SW_SHOWNORMAL)
+	case CtrlBtnRestartAdmin:
+		stopServer()
+		selfExe, _ := os.Executable()
+		pShellExecuteW.Call(0, u16ptr("runas"), u16ptr(selfExe), u16ptr("--launcher"), u16ptr(app.AppDir), SW_SHOWNORMAL)
+		pPostQuitMessage.Call(0)
+
+	// Dashboards Tab Controls
+	case CtrlBtnNewDash:
+		newID, err := createNewDashboard()
+		if err != nil {
+			app.ToastMsg = "Fehler: " + err.Error()
+		} else {
+			app.ToastMsg = fmt.Sprintf("Neues Dashboard '%s.json' angelegt.", newID)
+		}
+	case CtrlBtnOpenDashFolder:
+		_ = os.MkdirAll(app.UserDashDir, 0755)
+		pShellExecuteW.Call(0, u16ptr("open"), u16ptr(app.UserDashDir), 0, 0, SW_SHOWNORMAL)
+	case CtrlBtnReloadDash:
+		reloadDashboards()
+		app.ToastMsg = "Dashboard-Liste aktualisiert."
+
+	// Settings Tab Controls
+	case CtrlBtnPortMinus:
+		if app.Port > 1024 {
+			app.Port--
+			saveConfigPort(app.Port)
+			if app.ServerRunning {
+				stopServer()
+				startServer()
+			}
+		}
+	case CtrlBtnPortPlus:
+		if app.Port < 65530 {
+			app.Port++
+			saveConfigPort(app.Port)
+			if app.ServerRunning {
+				stopServer()
+				startServer()
+			}
+		}
+	case CtrlBtnOpenUserFolder:
+		_ = os.MkdirAll(app.UserDir, 0755)
+		pShellExecuteW.Call(0, u16ptr("open"), u16ptr(app.UserDir), 0, 0, SW_SHOWNORMAL)
+	case CtrlBtnOpenAppFolder:
+		pShellExecuteW.Call(0, u16ptr("open"), u16ptr(app.AppDir), 0, 0, SW_SHOWNORMAL)
+	case CtrlBtnUpdateRepair:
+		createShortcutsAndRegistry()
+		app.ToastMsg = "Desktop- & Startmenü-Verknüpfungen wurden aktualisiert."
 	case CtrlChkPurgeData:
 		app.OptPurgeData = !app.OptPurgeData
-	case CtrlBtnModeSwitch:
-		if app.Page == PageWelcome {
-			app.Page = PageUninstallConfirm
-		} else if app.Page == PageUninstallConfirm {
-			app.Page = PageWelcome
+	case CtrlBtnShowUninstall:
+		app.ConfirmUninst = true
+	case CtrlBtnCancelUninstall:
+		app.ConfirmUninst = false
+	case CtrlBtnConfirmUninstall:
+		stopServer()
+		app.Mode = ModeInstaller
+		app.IsUninstall = true
+		app.InstPage = InstPageProgress
+		go runUninstallWorker()
+
+	// Installer Controls
+	case CtrlInstChkDesktop:
+		app.OptDesktop = !app.OptDesktop
+	case CtrlInstChkStartMenu:
+		app.OptStartMenu = !app.OptStartMenu
+	case CtrlInstChkWingetPy:
+		app.OptWingetPy = !app.OptWingetPy
+	case CtrlInstSwitchUninstall:
+		if app.InstPage == InstPageWelcome {
+			app.InstPage = InstPageUninstall
+		} else {
+			app.InstPage = InstPageWelcome
 		}
-	case CtrlBtnPrimary:
-		switch app.Page {
-		case PageWelcome:
+	case CtrlInstPrimary:
+		if app.InstPage == InstPageWelcome {
 			app.IsUninstall = false
-			app.Page = PageInstalling
-			pSetTimer.Call(app.Hwnd, 1, 120, 0)
+			app.InstPage = InstPageProgress
 			go runInstallWorker()
-		case PageUninstallConfirm:
+		} else if app.InstPage == InstPageUninstall {
+			stopServer()
 			app.IsUninstall = true
-			app.Page = PageInstalling
-			pSetTimer.Call(app.Hwnd, 1, 120, 0)
+			app.InstPage = InstPageProgress
 			go runUninstallWorker()
-		case PageDone:
-			finishAndExit()
+		} else if app.InstPage == InstPageDone {
+			pPostQuitMessage.Call(0)
 		}
 	}
+
 	pInvalidateRect.Call(app.Hwnd, 0, 0)
-}
-
-func u16ptr(s string) uintptr {
-	p, _ := syscall.UTF16PtrFromString(s)
-	return uintptr(unsafe.Pointer(p))
-}
-
-func finishAndExit() {
-	if !app.IsUninstall && app.InstallErr == "" {
-		if app.OptLaunchNow {
-			bat := filepath.Join(app.InstallDir, "Starten.bat")
-			pShellExecuteW.Call(0, u16ptr("open"), u16ptr(bat), 0, u16ptr(app.InstallDir), SW_SHOWNORMAL)
-		}
-		if app.OptOpenDocs {
-			pShellExecuteW.Call(0, u16ptr("open"), u16ptr(app.InstallDir), 0, 0, SW_SHOWNORMAL)
-		}
-	}
-	pPostQuitMessage.Call(0)
 }
 
 func wndProc(hwnd uintptr, msg uint32, wParam, lParam uintptr) uintptr {
@@ -912,7 +1223,7 @@ func wndProc(hwnd uintptr, msg uint32, wParam, lParam uintptr) uintptr {
 		memBmp, _, _ := pCreateCompatibleBitmap.Call(hdc, uintptr(w), uintptr(h))
 		oldBmp, _, _ := pSelectObject.Call(memDC, memBmp)
 
-		paintHUD(memDC, w, h)
+		paintWindow(memDC, w, h)
 
 		pBitBlt.Call(hdc, 0, 0, uintptr(w), uintptr(h), memDC, 0, 0, SRCCOPY)
 		pSelectObject.Call(memDC, oldBmp)
@@ -929,7 +1240,7 @@ func wndProc(hwnd uintptr, msg uint32, wParam, lParam uintptr) uintptr {
 				return HTCLIENT
 			}
 		}
-		if pt.Y < sc(72) {
+		if pt.Y < sc(64) {
 			return HTCAPTION
 		}
 		return HTCLIENT
@@ -991,37 +1302,31 @@ func wndProc(hwnd uintptr, msg uint32, wParam, lParam uintptr) uintptr {
 		return 0
 
 	case WM_KEYDOWN:
-		if wParam == VK_ESCAPE && app.Page != PageInstalling {
+		if wParam == VK_ESCAPE {
+			stopServer()
 			pPostQuitMessage.Call(0)
-		} else if wParam == VK_RETURN && (app.Page == PageWelcome || app.Page == PageDone) {
-			handleControlClick(CtrlBtnPrimary)
 		}
 		return 0
 
-	case WM_TIMER:
-		app.mu.Lock()
-		app.AnimTick++
-		app.mu.Unlock()
-		pInvalidateRect.Call(hwnd, 0, 0)
-		return 0
-
-	case WM_APP_PROGRESS:
+	case WM_APP_REFRESH:
 		pInvalidateRect.Call(hwnd, 0, 0)
 		return 0
 
 	case WM_APP_DONE:
-		pKillTimer.Call(hwnd, 1)
-		app.Page = PageDone
+		if !app.IsUninstall && app.InstallErr == "" {
+			// Immediately transition into the Graphical Control Center & start server!
+			app.Mode = ModeLauncher
+			app.Tab = TabServer
+			reloadDashboards()
+			startServer()
+		} else {
+			app.InstPage = InstPageDone
+		}
 		pInvalidateRect.Call(hwnd, 0, 0)
 		return 0
 
-	case WM_CLOSE:
-		if app.Page != PageInstalling {
-			pPostQuitMessage.Call(0)
-		}
-		return 0
-
-	case WM_DESTROY:
+	case WM_CLOSE, WM_DESTROY:
+		stopServer()
 		pPostQuitMessage.Call(0)
 		return 0
 	}
@@ -1036,8 +1341,7 @@ func makeFont(height int32, weight int32, face string) uintptr {
 		0, 0, 0,
 		uintptr(weight),
 		0, 0, 0,
-		0, // DEFAULT_CHARSET
-		0, 0,
+		0, 0, 0,
 		CLEARTYPE_QUALITY,
 		0,
 		uintptr(unsafe.Pointer(u16(face))),
@@ -1045,88 +1349,36 @@ func makeFont(height int32, weight int32, face string) uintptr {
 	return f
 }
 
-func detectEnvironment() {
-	localAppData := os.Getenv("LOCALAPPDATA")
-	if localAppData == "" {
-		home, _ := os.UserHomeDir()
-		localAppData = filepath.Join(home, "AppData", "Local")
-	}
-	root := filepath.Join(localAppData, "SC Cockpit")
-	app.InstallDir = filepath.Join(root, "app")
-	app.UserDir = filepath.Join(root, "user", "dashboards")
-
-	if _, err := os.Stat(filepath.Join(app.InstallDir, "server.py")); err == nil {
-		app.ExistingInst = true
-	}
-
-	// Check command line flags
-	for _, arg := range os.Args[1:] {
-		lower := strings.ToLower(arg)
-		if lower == "--uninstall" || lower == "/uninstall" || lower == "-uninstall" {
-			app.IsUninstall = true
-			app.Page = PageUninstallConfirm
-		} else if lower == "-purge" || lower == "--purge" {
-			app.OptPurgeData = true
-		}
-	}
-
-	// Check Python 3 availability without flashing console windows
-	for _, cmdName := range []string{"py", "python"} {
-		if path, err := exec.LookPath(cmdName); err == nil && path != "" {
-			cmd := exec.Command(cmdName, "--version")
-			cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-			if out, err := cmd.CombinedOutput(); err == nil {
-				ver := strings.TrimSpace(string(out))
-				if strings.HasPrefix(ver, "Python 3") {
-					app.PythonFound = true
-					app.PythonVer = ver
-					break
-				}
-			}
-		}
-	}
-
-	if _, err := exec.LookPath("winget"); err == nil {
-		app.WingetFound = true
-		if !app.PythonFound {
-			app.OptWingetPy = true
-		}
-	}
-}
-
 func main() {
 	runtime.LockOSThread()
 	pSetProcessDPIAware.Call()
 
-	detectEnvironment()
+	initEnvironment()
 
-	// Determine DPI scale factor
 	screenDC, _, _ := user32.NewProc("GetDC").Call(0)
-	dpi, _, _ := pGetDeviceCaps.Call(screenDC, 88) // LOGPIXELSX
+	dpi, _, _ := pGetDeviceCaps.Call(screenDC, 88)
 	user32.NewProc("ReleaseDC").Call(0, screenDC)
 	if dpi < 96 {
 		dpi = 96
 	}
 	app.Scale = float64(dpi) / 96.0
 
-	app.Width = sc(760)
-	app.Height = sc(510)
+	app.Width = sc(920)
+	app.Height = sc(580)
 
 	app.CursorArrow, _, _ = pLoadCursorW.Call(0, IDC_ARROW)
 	app.CursorHand, _, _ = pLoadCursorW.Call(0, IDC_HAND)
 
-	app.FontHero = makeFont(22, FW_BOLD, "Bahnschrift")
-	app.FontTitle = makeFont(17, FW_BOLD, "Bahnschrift")
+	app.FontHero = makeFont(22, FW_BOLD, "Segoe UI")
+	app.FontTitle = makeFont(16, FW_BOLD, "Segoe UI")
 	app.FontSub = makeFont(14, FW_SEMIBOLD, "Segoe UI")
 	app.FontBody = makeFont(13, FW_NORMAL, "Segoe UI")
-	app.FontBold = makeFont(14, FW_SEMIBOLD, "Segoe UI")
+	app.FontBold = makeFont(13, FW_SEMIBOLD, "Segoe UI")
 	app.FontMono = makeFont(12, FW_SEMIBOLD, "Consolas")
-	app.FontSmall = makeFont(12, FW_NORMAL, "Segoe UI")
+	app.FontSmall = makeFont(11, FW_NORMAL, "Segoe UI")
 
 	hInst, _, _ := pGetModuleHandleW.Call(0)
-	className := u16("SCCockpitInstallerHUD")
-
-	// Load embedded application icon (resource ID 1)
+	className := u16("SCCockpitControlCenter")
 	hIcon, _, _ := pLoadIconW.Call(hInst, 1)
 
 	wc := WNDCLASSEXW{
@@ -1149,13 +1401,18 @@ func main() {
 	hwnd, _, _ := pCreateWindowExW.Call(
 		WS_EX_APPWINDOW,
 		uintptr(unsafe.Pointer(className)),
-		uintptr(unsafe.Pointer(u16("SC Cockpit Setup"))),
+		uintptr(unsafe.Pointer(u16("SC Cockpit"))),
 		WS_POPUP|WS_VISIBLE|WS_SYSMENU|WS_MINIMIZEBOX|WS_CLIPCHILDREN,
 		uintptr(winX), uintptr(winY),
 		uintptr(app.Width), uintptr(app.Height),
 		0, 0, hInst, 0,
 	)
 	app.Hwnd = hwnd
+
+	if app.Mode == ModeLauncher {
+		reloadDashboards()
+		startServer()
+	}
 
 	pShowWindow.Call(hwnd, SW_SHOWNORMAL)
 	pUpdateWindow.Call(hwnd)
@@ -1169,4 +1426,5 @@ func main() {
 		pTranslateMessage.Call(uintptr(unsafe.Pointer(&msg)))
 		pDispatchMessageW.Call(uintptr(unsafe.Pointer(&msg)))
 	}
+	stopServer()
 }

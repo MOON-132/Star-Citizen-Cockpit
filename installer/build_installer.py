@@ -128,10 +128,62 @@ def build_payload_zip(ico_path: Path, zip_path: Path) -> None:
                 zf.write(p, arcname=rel)
 
 
+def make_version_info_blob() -> bytes:
+    """Builds a valid Win32 VS_VERSION_INFO resource (RT_VERSION = 16) with Publisher & Product metadata."""
+    def align4(b: bytes) -> bytes:
+        rem = len(b) % 4
+        return b + (b"\x00" * (4 - rem) if rem else b"")
+
+    def make_node(key: str, val: bytes, w_type: int, children: list[bytes]) -> bytes:
+        k_utf16 = (key + "\x00").encode("utf-16le")
+        hdr_plus_key = align4(struct.pack("<HHH", 0, len(val) // (2 if w_type == 1 else 1), w_type) + k_utf16)
+        body = hdr_plus_key + align4(val)
+        for ch in children:
+            body = align4(body) + ch
+        return struct.pack("<H", len(body)) + body[2:]
+
+    def str_entry(k: str, v: str) -> bytes:
+        return make_node(k, (v + "\x00").encode("utf-16le"), 1, [])
+
+    strings = [
+        str_entry("CompanyName", "MOON-132 // Star Citizen Cockpit"),
+        str_entry("FileDescription", "SC Cockpit Control Center & Setup"),
+        str_entry("FileVersion", "0.2.0.0"),
+        str_entry("InternalName", "SC-Cockpit"),
+        str_entry("LegalCopyright", "MIT License - MOON-132"),
+        str_entry("OriginalFilename", "SC-Cockpit-Setup.exe"),
+        str_entry("ProductName", "SC Cockpit"),
+        str_entry("ProductVersion", "0.2.0.0"),
+    ]
+    str_table = make_node("040704B0", b"", 1, strings)
+    str_file_info = make_node("StringFileInfo", b"", 1, [str_table])
+    var_entry = make_node("Translation", struct.pack("<HH", 0x0407, 0x04B0), 0, [])
+    var_file_info = make_node("VarFileInfo", b"", 1, [var_entry])
+
+    fixed_info = struct.pack(
+        "<13I",
+        0xFEEF04BD,  # dwSignature
+        0x00010000,  # dwStrucVersion
+        0x00000002,  # dwFileVersionMS (0.2)
+        0x00000000,  # dwFileVersionLS (0.0)
+        0x00000002,  # dwProductVersionMS (0.2)
+        0x00000000,  # dwProductVersionLS (0.0)
+        0x0000003F,  # dwFileFlagsMask
+        0x00000000,  # dwFileFlags
+        0x00040004,  # dwFileOS (VOS_NT_WINDOWS32)
+        0x00000001,  # dwFileType (VFT_APP)
+        0x00000000,  # dwFileSubtype
+        0x00000000,  # dwFileDateMS
+        0x00000000,  # dwFileDateLS
+    )
+    return make_node("VS_VERSION_INFO", fixed_info, 0, [str_file_info, var_file_info])
+
+
 def build_coff_syso(ico_path: Path, syso_path: Path) -> None:
     """
     Generates a Windows x86_64 COFF (.syso) file containing a `.rsrc` section with:
       - RT_ICON (3) & RT_GROUP_ICON (14) so the .exe has the Star Citizen HUD icon
+      - RT_VERSION (16) so Windows Explorer shows Publisher & Product metadata
       - RT_MANIFEST (24) with Per-Monitor DPI awareness and asInvoker execution level
     """
     ico_bytes = ico_path.read_bytes()
@@ -144,11 +196,12 @@ def build_coff_syso(ico_path: Path, syso_path: Path) -> None:
         grp_entries.append(struct.pack("<BBBBHHIH", w, h, cc, rsv, planes, bitcnt, size, i + 1))
 
     grp_icon_data = struct.pack("<HHH", 0, 1, count) + b"".join(grp_entries)
+    version_data = make_version_info_blob()
 
     manifest_xml = b"""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0" xmlns:asmv3="urn:schemas-microsoft-com:asm.v3">
-  <assemblyIdentity version="0.2.0.0" processorArchitecture="amd64" name="MOON132.SCCockpit.Setup" type="win32"/>
-  <description>SC Cockpit Star Citizen Touch Dashboard Installer</description>
+  <assemblyIdentity version="0.2.0.0" processorArchitecture="amd64" name="MOON132.SCCockpit.ControlCenter" type="win32"/>
+  <description>SC Cockpit Control Center &amp; Setup</description>
   <trustInfo xmlns="urn:schemas-microsoft-com:asm.v3">
     <security>
       <requestedPrivileges>
@@ -164,21 +217,12 @@ def build_coff_syso(ico_path: Path, syso_path: Path) -> None:
   </asmv3:application>
 </assembly>"""
 
-    # Resource Types: 3 (RT_ICON), 14 (RT_GROUP_ICON), 24 (RT_MANIFEST)
-    # Build .rsrc directory tree:
-    # Level 1 (Root): 3 entries (Type 3, Type 14, Type 24)
-    # Level 2 (IDs):
-    #   - Type 3 has `count` entries (IDs 1..count)
-    #   - Type 14 has 1 entry (ID 1)
-    #   - Type 24 has 1 entry (ID 1)
-    # Level 3 (Langs):
-    #   - count + 2 language directories (each with 1 entry, lang 0x0409)
-    # Data Entries: count + 2 (16 bytes each)
-
-    total_items = count + 2
-    lvl1_size = 16 + 3 * 8
+    # Resource Types in ascending ID order: 3 (RT_ICON), 14 (RT_GROUP_ICON), 16 (RT_VERSION), 24 (RT_MANIFEST)
+    total_items = count + 3
+    lvl1_size = 16 + 4 * 8
     lvl2_icon_size = 16 + count * 8
     lvl2_grp_size = 16 + 1 * 8
+    lvl2_ver_size = 16 + 1 * 8
     lvl2_man_size = 16 + 1 * 8
     lvl3_total_size = total_items * (16 + 1 * 8)
     data_entries_size = total_items * 16
@@ -186,7 +230,8 @@ def build_coff_syso(ico_path: Path, syso_path: Path) -> None:
     off_lvl1 = 0
     off_lvl2_icon = off_lvl1 + lvl1_size
     off_lvl2_grp = off_lvl2_icon + lvl2_icon_size
-    off_lvl2_man = off_lvl2_grp + lvl2_grp_size
+    off_lvl2_ver = off_lvl2_grp + lvl2_grp_size
+    off_lvl2_man = off_lvl2_ver + lvl2_ver_size
     off_lvl3 = off_lvl2_man + lvl2_man_size
     off_data_entries = off_lvl3 + lvl3_total_size
     off_blobs = (off_data_entries + data_entries_size + 7) & ~7
@@ -201,9 +246,10 @@ def build_coff_syso(ico_path: Path, syso_path: Path) -> None:
         return struct.pack("<II", id_val, (target_off | HI) if is_subdir else target_off)
 
     # Level 1
-    rsrc += dir_hdr(3)
+    rsrc += dir_hdr(4)
     rsrc += dir_ent(3, off_lvl2_icon, True)
     rsrc += dir_ent(14, off_lvl2_grp, True)
+    rsrc += dir_ent(16, off_lvl2_ver, True)
     rsrc += dir_ent(24, off_lvl2_man, True)
 
     # Level 2: RT_ICON (1..count)
@@ -215,17 +261,21 @@ def build_coff_syso(ico_path: Path, syso_path: Path) -> None:
     rsrc += dir_hdr(1)
     rsrc += dir_ent(1, off_lvl3 + count * 24, True)
 
-    # Level 2: RT_MANIFEST (ID 1)
+    # Level 2: RT_VERSION (ID 1)
     rsrc += dir_hdr(1)
     rsrc += dir_ent(1, off_lvl3 + (count + 1) * 24, True)
+
+    # Level 2: RT_MANIFEST (ID 1)
+    rsrc += dir_hdr(1)
+    rsrc += dir_ent(1, off_lvl3 + (count + 2) * 24, True)
 
     # Level 3: Language dirs
     for i in range(total_items):
         rsrc += dir_hdr(1)
-        rsrc += dir_ent(0x0409, off_data_entries + i * 16, False)
+        rsrc += dir_ent(0x0407, off_data_entries + i * 16, False)
 
     # Prepare blobs and their offsets
-    all_blobs = icon_blobs + [grp_icon_data, manifest_xml]
+    all_blobs = icon_blobs + [grp_icon_data, version_data, manifest_xml]
     blob_area = bytearray()
     data_entries = bytearray()
     relocs = []
@@ -245,7 +295,6 @@ def build_coff_syso(ico_path: Path, syso_path: Path) -> None:
     rsrc += blob_area
 
     # Wrap in COFF x86_64 object (.syso)
-    # COFF Header (20 bytes) + 1 Section Header (40 bytes) + raw rsrc + relocs + 1 symbol (18 bytes) + string table (4 bytes)
     raw_ptr = 20 + 40
     reloc_ptr = raw_ptr + len(rsrc)
     sym_ptr = reloc_ptr + len(relocs) * 10

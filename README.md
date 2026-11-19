@@ -103,9 +103,12 @@ Mitgeliefert sind **Standard** (Flug, Energie, Quantum, Kampf) und **Mining**. D
 
 ## Deinstallieren
 
-Über Windows **Installierte Apps**, im Startmenü unter **SC Cockpit → Deinstallieren**, oder im Programmordner `SC-Cockpit-Setup.exe --uninstall` (bzw. `uninstall.bat`).
+Drei Möglichkeiten:
+1. **Direkt in der grafischen Anwendung**: Im **SC Cockpit Control Center** links auf **Einstellungen** klicken und unten auf **Deinstallieren...** klicken.
+2. Über Windows **Installierte Apps** oder im Startmenü unter **SC Cockpit → Deinstallieren**.
+3. Über `uninstall.bat` (oder `SC-Cockpit-Setup.exe --uninstall`).
 
-Im grafischen Deinstaller kann per Checkbox gewählt werden, ob nur das Programm und die Verknüpfungen entfernt werden (Standard: eigene Dashboards unter `%LOCALAPPDATA%\SC Cockpit\user` bleiben erhalten) oder ob alles inklusive eigener Dashboards gelöscht werden soll (`-Purge`):
+Dabei kann per Checkbox gewählt werden, ob nur das Programm und die Verknüpfungen entfernt werden (Standard: eigene Dashboards unter `%LOCALAPPDATA%\SC Cockpit\user` bleiben erhalten) oder ob alles inklusive eigener Dashboards gelöscht werden soll (`-Purge`):
 
 ```bat
 SC-Cockpit-Setup.exe --uninstall -Purge

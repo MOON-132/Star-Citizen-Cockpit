@@ -662,14 +662,16 @@ def lan_ips() -> list[str]:
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.connect(("8.8.8.8", 80))
-        ips.append(sock.getsockname()[0])
+        primary = sock.getsockname()[0]
         sock.close()
+        if not primary.startswith(("127.", "169.254.")):
+            ips.append(primary)
     except OSError:
         pass
     try:
         for info in socket.getaddrinfo(socket.gethostname(), None, socket.AF_INET):
             ip = info[4][0]
-            if not ip.startswith("127.") and ip not in ips:
+            if not ip.startswith(("127.", "169.254.")) and ip not in ips:
                 ips.append(ip)
     except OSError:
         pass
