@@ -11,7 +11,10 @@
   :root {
     --bg: #0b0e13;
     --bg-2: #121820;
+    --card: rgba(20, 27, 37, 0.86);
+    --card-solid: #141b25;
     --line: #243041;
+    --line-hi: #374a64;
     --text: #e7edf5;
     --muted: #8b9bb0;
     --amber: #e2a23a;
@@ -40,125 +43,382 @@
     min-height: 100%;
     display: flex;
     flex-direction: column;
+    position: relative;
     padding:
       calc(10px + env(safe-area-inset-top))
       calc(12px + env(safe-area-inset-right))
       calc(10px + env(safe-area-inset-bottom))
       calc(12px + env(safe-area-inset-left));
     background:
-      radial-gradient(1200px 400px at 10% -10%, rgba(226, 162, 58, 0.08), transparent 50%),
+      radial-gradient(1200px 420px at 10% -10%, rgba(226, 162, 58, 0.10), transparent 55%),
       var(--bg);
+  }
+  #bg-layer {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    opacity: 0.35;
+    transition: opacity 0.25s ease;
+  }
+  header, .sub, #telemetry-bar, nav, #editor, main, footer {
+    position: relative;
+    z-index: 1;
   }
   header, .sub {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    gap: 10px;
   }
-  header { padding-bottom: 8px; }
-  .sub { padding-bottom: 10px; }
+  header { padding-bottom: 6px; }
+  .sub { padding-bottom: 8px; flex-wrap: wrap; }
   .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
   .mark {
-    width: 14px; height: 28px; border-radius: 2px;
+    width: 12px; height: 30px; border-radius: 3px;
     background: linear-gradient(var(--amber), #8a5a12);
     box-shadow: 0 0 16px rgba(226, 162, 58, 0.45);
   }
   header strong { display: block; font-size: 18px; letter-spacing: 0.04em; }
-  #status, #board-meta { color: var(--muted); font-size: 13px; }
+  #status, #board-meta { color: var(--muted); font-size: 12px; }
   #status.on { color: var(--green); }
   #status.off { color: var(--danger); }
   .tools, .editor-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
-  button, .tab, select {
+  button, .tab, select, input {
     border: 1px solid var(--line);
     background: var(--bg-2);
     color: var(--text);
-    border-radius: 12px;
-    min-height: 44px;
-    padding: 0 14px;
+    border-radius: 10px;
+    min-height: 40px;
+    padding: 0 12px;
     font: inherit;
-    font-size: 14px;
+    font-size: 13px;
+    cursor: pointer;
   }
-  #board { min-width: 160px; max-width: 46vw; }
-  #arm[aria-pressed="true"], #edit[aria-pressed="true"] {
+  button:hover, select:hover { border-color: var(--line-hi); }
+  #board { min-width: 170px; max-width: 48vw; font-weight: 600; }
+  #arm[aria-pressed="true"] {
     background: #3a1612;
     border-color: var(--danger);
     color: #ffd0c8;
   }
-  #edit[aria-pressed="true"] { background: #2a2416; border-color: var(--amber); color: var(--amber); }
-  nav { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; }
-  .tab[aria-selected="true"] { border-color: var(--amber); color: var(--amber); }
-  main { flex: 1; overflow: auto; }
-  .page { display: none; }
-  .page.active { display: block; }
-  .group { margin-bottom: 16px; }
-  .group h2 {
-    margin: 0 0 8px;
-    font-size: 12px;
-    font-weight: 650;
-    letter-spacing: 0.14em;
+  #edit[aria-pressed="true"] {
+    background: #2a2416;
+    border-color: var(--amber);
+    color: var(--amber);
+  }
+
+  /* Live Star Citizen Telemetry Strip */
+  #telemetry-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+    gap: 8px;
+    margin-bottom: 10px;
+    padding: 8px 12px;
+    background: rgba(14, 19, 27, 0.88);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    backdrop-filter: blur(8px);
+  }
+  .tele-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .tele-head {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--muted);
   }
+  .tele-head b { color: var(--text); font-weight: 600; }
+  .tele-bars {
+    display: flex;
+    gap: 4px;
+    height: 7px;
+    border-radius: 4px;
+    overflow: hidden;
+    background: #090c11;
+  }
+  .tele-seg { height: 100%; transition: width 0.25s ease; }
+  .tele-pills { display: flex; gap: 5px; flex-wrap: wrap; }
+  .tele-pill {
+    font-size: 11px;
+    padding: 2px 7px;
+    border-radius: 6px;
+    background: #141c26;
+    border: 1px solid var(--line);
+    color: var(--muted);
+  }
+  .tele-pill.active {
+    color: var(--cyan);
+    border-color: var(--cyan);
+    background: rgba(62, 200, 196, 0.12);
+  }
+  .tele-pill.amber.active {
+    color: var(--amber);
+    border-color: var(--amber);
+    background: rgba(226, 162, 58, 0.14);
+  }
+
+  nav { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; }
+  .tab[aria-selected="true"] {
+    border-color: var(--amber);
+    color: var(--amber);
+    background: rgba(226, 162, 58, 0.12);
+    font-weight: 600;
+  }
+
+  main { flex: 1; overflow: auto; padding-bottom: 12px; }
+  .page { display: none; }
+  .page.active { display: block; }
+  .group {
+    margin-bottom: 14px;
+    padding: 12px;
+    border-radius: 14px;
+    background: rgba(16, 22, 31, 0.68);
+    border: 1px solid rgba(36, 48, 65, 0.75);
+    backdrop-filter: blur(6px);
+  }
+  .group-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .group h2 {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--amber);
+  }
   .grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 10px;
   }
+
+  /* Buttons & Baukasten Cards */
   .key {
     appearance: none;
-    background: #161d27;
+    background: var(--card);
     text-align: left;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     gap: 6px;
     min-height: 84px;
-    border-radius: 16px;
+    border-radius: 14px;
     padding: 12px 14px;
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(8px);
+    transition: transform 0.08s ease, border-color 0.15s ease, background 0.15s ease;
   }
-  .key b { font-size: 18px; font-weight: 680; }
-  .key small { color: var(--muted); font-size: 12px; }
-  .key.wide { grid-column: span 2; }
+  .key b { font-size: 16px; font-weight: 680; line-height: 1.2; }
+  .key small { color: var(--muted); font-size: 11px; font-family: Consolas, monospace; }
+  .key.wide, .key.span-2 { grid-column: span 2; }
+  .key.span-3 { grid-column: span 3; }
   .key.amber { box-shadow: inset 3px 0 0 var(--amber); }
   .key.cyan { box-shadow: inset 3px 0 0 var(--cyan); }
   .key.red { box-shadow: inset 3px 0 0 var(--red); }
   .key.blue { box-shadow: inset 3px 0 0 var(--blue); }
   .key.green { box-shadow: inset 3px 0 0 var(--green); }
   .key.slate { box-shadow: inset 3px 0 0 var(--slate); }
-  .key.on, .key.holding { background: #1c2836; border-color: #3d5270; }
+  .key.on, .key.holding { background: rgba(28, 42, 58, 0.94); border-color: var(--cyan); }
   .key.on b { color: var(--cyan); }
   .key.holding { border-color: var(--amber); }
   .key:active { transform: scale(0.985); }
-  .key.locked { opacity: 0.38; }
-  body.editing .key.selected { outline: 2px solid var(--amber); }
-  .banner, #editor {
-    margin-bottom: 10px;
-    padding: 10px 12px;
-    border: 1px solid #6a5420;
-    border-radius: 12px;
-    background: #241c10;
-    color: #f0d7a2;
-    font-size: 13px;
+  .key.locked { opacity: 0.45; }
+
+  /* Striped Hazard Safety Button (inspired by tablet-deck) */
+  .key.hazard-stripe::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 6px;
+    background: repeating-linear-gradient(
+      -45deg,
+      var(--red),
+      var(--red) 8px,
+      #1a0d0c 8px,
+      #1a0d0c 16px
+    );
   }
-  #editor { display: grid; gap: 8px; }
+
+  /* Interactive Shield & Power Widgets (Home-Assistant / Tablet-Deck style cards) */
+  .widget-card {
+    grid-column: span 2;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 175px;
+    backdrop-filter: blur(8px);
+  }
+  .widget-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--cyan);
+  }
+  .shield-compass {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr 1fr;
+    grid-template-rows: repeat(3, 44px);
+    gap: 6px;
+    align-items: stretch;
+  }
+  .sh-zone {
+    border: 1px solid var(--line-hi);
+    background: rgba(16, 24, 34, 0.9);
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px;
+  }
+  .sh-zone span { font-size: 11px; color: var(--cyan); font-family: Consolas, monospace; }
+  .sh-zone.reset { border-color: var(--amber); color: var(--amber); }
+
+  .power-bars-widget {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .pwr-col {
+    background: rgba(14, 20, 29, 0.9);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .pwr-meter {
+    width: 100%;
+    height: 10px;
+    background: #090c10;
+    border-radius: 5px;
+    overflow: hidden;
+  }
+  .pwr-fill { height: 100%; transition: width 0.2s ease; }
+
+  body.editing .key.selected, body.editing .widget-card.selected {
+    outline: 2px solid var(--amber);
+    box-shadow: 0 0 16px rgba(226, 162, 58, 0.35);
+  }
+
+  /* Home-Assistant / Tablet-Deck Modular Baukasten Editor */
+  #editor {
+    margin-bottom: 12px;
+    padding: 14px;
+    border: 1px solid var(--amber);
+    border-radius: 14px;
+    background: rgba(18, 23, 31, 0.96);
+    color: var(--text);
+    font-size: 13px;
+    display: grid;
+    gap: 12px;
+    backdrop-filter: blur(12px);
+  }
   #editor[hidden] { display: none; }
-  .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
-  #editor label { display: grid; gap: 4px; color: var(--muted); font-size: 12px; }
-  #editor input, #editor select { width: 100%; background: #10161e; }
-  .check { display: flex; align-items: center; gap: 8px; min-height: 44px; }
-  footer { color: var(--muted); font-size: 12px; padding-top: 6px; }
+  .editor-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--line);
+  }
+  .editor-cols {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 14px;
+  }
+  .editor-box {
+    background: #0e131a;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .editor-box h3 {
+    margin: 0;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--amber);
+  }
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 8px;
+  }
+  #editor label { display: grid; gap: 4px; color: var(--muted); font-size: 11px; }
+  #editor input, #editor select { width: 100%; background: #141c26; min-height: 36px; }
+  .check { display: flex !important; align-items: center; gap: 8px; min-height: 36px; color: var(--text) !important; }
+  .preset-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    max-height: 155px;
+    overflow-y: auto;
+    padding: 2px;
+  }
+  .chip {
+    min-height: 32px;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    background: #161f2b;
+    border: 1px solid var(--line);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .chip small { color: var(--amber); font-family: Consolas, monospace; }
+  .chip.widget { border-color: var(--cyan); color: var(--cyan); }
+  .bg-thumbs { display: flex; gap: 6px; flex-wrap: wrap; }
+  .bg-btn { min-height: 32px; padding: 0 10px; font-size: 12px; }
+
+  footer { color: var(--muted); font-size: 12px; padding-top: 6px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
   #toast {
-    position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
-    background: #3a1612; color: #ffd7d1; border: 1px solid var(--danger);
-    border-radius: 12px; padding: 10px 14px; max-width: min(520px, calc(100% - 24px));
+    position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%);
+    background: #1c2533; color: var(--text); border: 1px solid var(--amber);
+    border-radius: 12px; padding: 10px 16px; max-width: min(540px, calc(100% - 24px));
+    z-index: 100; box-shadow: 0 8px 24px rgba(0,0,0,0.6);
   }
   @media (max-width: 720px) {
     .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .key.wide { grid-column: span 2; }
+    .key.wide, .key.span-2, .key.span-3, .widget-card { grid-column: span 2; }
   }
 </style>
 </head>
 <body>
+<div id="bg-layer"></div>
+
 <header>
   <div class="brand">
     <span class="mark"></span>
@@ -168,61 +428,229 @@
     </div>
   </div>
   <div class="tools">
-    <button id="edit" type="button" aria-pressed="false">Anpassen</button>
+    <button id="edit" type="button" aria-pressed="false">Baukasten / Anpassen</button>
     <button id="arm" type="button" aria-pressed="false">Gefahr AUS</button>
     <button id="release" type="button">Loslassen</button>
     <button id="full" type="button">Vollbild</button>
   </div>
 </header>
-<div class="sub">
-  <select id="board" aria-label="Dashboard"></select>
-  <span id="board-meta"></span>
-</div>
-<nav id="tabs"></nav>
-<section id="editor" hidden>
-  <div class="editor-actions">
-    <button id="save" type="button">Speichern</button>
-    <button id="copy" type="button">Kopie</button>
-    <button id="fresh" type="button">Neu</button>
-    <button id="remove-board" type="button">Dashboard löschen</button>
-    <button id="done" type="button">Fertig</button>
+
+<!-- Live Star Citizen & Ship Telemetry Bar -->
+<section id="telemetry-bar">
+  <div class="tele-cell">
+    <div class="tele-head"><span>ENERGIE-DREIECK</span><b id="tele-pwr-txt">W:33% E:34% S:33%</b></div>
+    <div class="tele-bars">
+      <div id="bar-wep" class="tele-seg" style="width:33%;background:var(--red)"></div>
+      <div id="bar-eng" class="tele-seg" style="width:34%;background:var(--amber)"></div>
+      <div id="bar-shd" class="tele-seg" style="width:33%;background:var(--cyan)"></div>
+    </div>
   </div>
-  <p id="edit-hint">Button antippen, dann die Felder ändern. Speichern legt eine eigene Kopie an, die mitgelieferte Datei bleibt erhalten.</p>
-  <div class="form-grid">
-    <label>Text<input id="f-label" maxlength="40"></label>
-    <label>Hinweis<input id="f-hint" maxlength="60" placeholder="z. B. R-Alt + R"></label>
-    <label>Tasten<input id="f-keys" placeholder="n oder ralt+r"></label>
-    <label>Art
-      <select id="f-mode">
-        <option value="tap">Tippen</option>
-        <option value="toggle">Umschalten</option>
-        <option value="hold">Halten</option>
-      </select>
-    </label>
-    <label>Farbe
-      <select id="f-color">
-        <option value="amber">Amber</option>
-        <option value="cyan">Cyan</option>
-        <option value="red">Rot</option>
-        <option value="blue">Blau</option>
-        <option value="green">Grün</option>
-        <option value="slate">Grau</option>
-      </select>
-    </label>
-    <label class="check"><input id="f-wide" type="checkbox"> Breit</label>
-    <label class="check"><input id="f-danger" type="checkbox"> Gefahr</label>
+  <div class="tele-cell">
+    <div class="tele-head"><span>SCHILD-SEKTOREN</span><b id="tele-shd-txt">V:25% H:25% L:25% R:25%</b></div>
+    <div class="tele-bars">
+      <div id="bar-sf" class="tele-seg" style="width:25%;background:var(--cyan)"></div>
+      <div id="bar-sb" class="tele-seg" style="width:25%;background:#2b8f8c"></div>
+      <div id="bar-sl" class="tele-seg" style="width:25%;background:#3ea8ff"></div>
+      <div id="bar-sr" class="tele-seg" style="width:25%;background:#26689e"></div>
+    </div>
   </div>
-  <div class="editor-actions">
-    <button id="apply" type="button">Button übernehmen</button>
-    <button id="remove-btn" type="button">Button löschen</button>
-    <button id="add-btn" type="button">Button hinzufügen</button>
-    <button id="add-page" type="button">Seite hinzufügen</button>
+  <div class="tele-cell">
+    <div class="tele-head"><span id="tele-ship">SCHIFFSSYSTEME</span><b id="tele-mode">SCM</b></div>
+    <div class="tele-pills">
+      <span id="pill-pwr" class="tele-pill active">PWR</span>
+      <span id="pill-gear" class="tele-pill active">GEAR</span>
+      <span id="pill-vtol" class="tele-pill">VTOL</span>
+      <span id="pill-light" class="tele-pill">LICHT</span>
+      <span id="pill- cpl" class="tele-pill amber">DECOUPLED</span>
+    </div>
   </div>
 </section>
+
+<div class="sub">
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <select id="board" aria-label="Dashboard"></select>
+    <span id="board-meta"></span>
+  </div>
+  <small id="last-act" style="color:var(--muted);font-family:Consolas,monospace"></small>
+</div>
+
+<nav id="tabs"></nav>
+
+<!-- Modular Baukasten Editor (Home Assistant & Tablet Deck Inspired) -->
+<section id="editor" hidden>
+  <div class="editor-top">
+    <div>
+      <strong style="color:var(--amber)">MODULARER COCKPIT-BAUKASTEN</strong>
+      <div style="color:var(--muted);font-size:12px">Presets per Klick einfügen, Kacheln antippen zum Anpassen oder Hintergrundbild für das Dashboard wählen.</div>
+    </div>
+    <div class="editor-actions">
+      <button id="sync-sc" type="button" style="border-color:var(--cyan);color:var(--cyan)">SC-Tasten aus Spiel lesen</button>
+      <button id="save" type="button" style="border-color:var(--amber);color:var(--amber);font-weight:700">Speichern</button>
+      <button id="copy" type="button">Als Kopie speichern</button>
+      <button id="fresh" type="button">+ Neues Dashboard</button>
+      <button id="remove-board" type="button" style="border-color:var(--red);color:var(--red)">Löschen</button>
+      <button id="done" type="button">Fertig</button>
+    </div>
+  </div>
+
+  <div class="editor-cols">
+    <!-- Column 1: Star Citizen Action Presets & Smart Widgets -->
+    <div class="editor-box">
+      <h3>1. Baukasten-Presets & Live-Widgets (1-Klick Einfügen)</h3>
+      <div style="display:flex;gap:6px">
+        <select id="preset-cat">
+          <option value="all">Alle Kategorien</option>
+          <option value="widgets">★ Live-Widgets (Schilde / Energie / Telemetrie)</option>
+          <option value="start">Start, Strom & Landung</option>
+          <option value="flug">Flug, Quantum & IFCS</option>
+          <option value="kampf">Kampf, Schilde & Abwehr</option>
+          <option value="industrie">Mining & Salvage</option>
+        </select>
+        <input id="preset-search" placeholder="Preset suchen (z.B. Flight Ready)...">
+      </div>
+      <div id="preset-list" class="preset-chips"></div>
+      <div class="editor-actions" style="justify-content:flex-start;padding-top:4px">
+        <button id="add-page" type="button">+ Neue Seite (Tab)</button>
+        <button id="add-group" type="button">+ Neue Gruppe</button>
+        <button id="add-btn" type="button">+ Leere Taste</button>
+      </div>
+    </div>
+
+    <!-- Column 2: Selected Tile / Button Inspector -->
+    <div class="editor-box">
+      <h3>2. Gewählte Kachel bearbeiten</h3>
+      <div class="form-grid">
+        <label>Beschriftung<input id="f-label" maxlength="40" placeholder="z.B. Flight Ready"></label>
+        <label>Hinweis / Untertitel<input id="f-hint" maxlength="60" placeholder="z.B. R-Alt + R"></label>
+        <label>Tasten-Kombination<input id="f-keys" placeholder="ralt+r oder f5"></label>
+        <label>Auslöse-Art
+          <select id="f-mode">
+            <option value="tap">Impuls / Tippen (80ms)</option>
+            <option value="toggle">Schalter (Umschalten)</option>
+            <option value="hold">Gedrückthalten (Hold)</option>
+          </select>
+        </label>
+        <label>Farbe
+          <select id="f-color">
+            <option value="amber">Amber (Antrieb/Haupt)</option>
+            <option value="cyan">Cyan (Schilde/System)</option>
+            <option value="red">Rot (Waffen/Gefahr)</option>
+            <option value="blue">Blau (Flug/Navigation)</option>
+            <option value="green">Grün (Strom/Bereit)</option>
+            <option value="slate">Stahlgrau (Standard)</option>
+          </select>
+        </label>
+        <label>Kachel-Breite
+          <select id="f-span">
+            <option value="1">1x Standard</option>
+            <option value="2">2x Breit</option>
+            <option value="3">3x Banner</option>
+          </select>
+        </label>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <label class="check"><input id="f-danger" type="checkbox"> Gesichert (Gefahr-Schutzstreifen)</label>
+        <div class="editor-actions">
+          <button id="apply" type="button" style="border-color:var(--cyan);color:var(--cyan)">Kachel übernehmen</button>
+          <button id="remove-btn" type="button" style="border-color:var(--red);color:var(--red)">Kachel entfernen</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Column 3: Custom Background & Theme Settings -->
+    <div class="editor-box">
+      <h3>3. Hintergrundbild & Cockpit-Design</h3>
+      <div class="bg-thumbs">
+        <button type="button" class="bg-btn" data-bg="">Standard Void</button>
+        <button type="button" class="bg-btn" data-bg="preset:aegis">Aegis Tactical Grid</button>
+        <button type="button" class="bg-btn" data-bg="preset:crusader">Crusader Horizon</button>
+        <button type="button" class="bg-btn" data-bg="preset:drake">Drake Industrial</button>
+        <button type="button" class="bg-btn" data-bg="preset:starmap">Quantum Starmap</button>
+      </div>
+      <div class="form-grid">
+        <label>Eigene Bild-URL oder Datei
+          <input id="f-bg-url" placeholder="https://... oder Bilddatei wählen">
+        </label>
+        <label>Eigenes Bild hochladen
+          <input id="f-bg-file" type="file" accept="image/*" style="padding:4px">
+        </label>
+      </div>
+      <label>Hintergrund-Deckkraft (<span id="bg-op-val">35%</span>)
+        <input id="f-bg-opacity" type="range" min="5" max="95" value="35">
+      </label>
+    </div>
+  </div>
+</section>
+
 <main id="pages"></main>
 <footer id="foot"></footer>
 <div id="toast" hidden></div>
+
 <script>
+// Built-in Star Citizen Baukasten Presets (inspired by tablet-deck & SC 4.x Default Keybinds)
+const SC_PRESETS = [
+  // Smart Interactive Live Widgets
+  { cat: "widgets", kind: "shield", label: "Schild-Kompass (Interaktiv)", hint: "Vorn/Hinten/Links/Rechts/Reset", keys: ["num5"], color: "cyan", wide: true },
+  { cat: "widgets", kind: "power", label: "Energie-Dreieck (Live-Widget)", hint: "Waffen (F5) · Antrieb (F6) · Schilde (F7)", keys: ["f8"], color: "amber", wide: true },
+  { cat: "widgets", kind: "telemetry", label: "Schiffs-TelemetrieMonitor", hint: "Live Status & System-Anzeige", keys: ["f1"], color: "blue", wide: true },
+
+  // Start, Strom & Landung
+  { cat: "start", sc: "v_flightready", label: "Flight Ready", hint: "R-Alt + R", keys: ["ralt", "r"], mode: "tap", color: "green", wide: true },
+  { cat: "start", sc: "v_power_toggle", label: "Hauptstrom (Power)", hint: "U", keys: ["u"], mode: "toggle", color: "green" },
+  { cat: "start", sc: "v_power_toggle_thrusters", label: "Triebwerke Ein/Aus", hint: "I", keys: ["i"], mode: "toggle", color: "amber" },
+  { cat: "start", sc: "v_power_toggle_weapons", label: "Waffen-Strom", hint: "P", keys: ["p"], mode: "toggle", color: "red" },
+  { cat: "start", sc: "v_power_toggle_shields", label: "Schild-Strom", hint: "O", keys: ["o"], mode: "toggle", color: "cyan" },
+  { cat: "start", sc: "v_toggle_landing_system", label: "Fahrwerk", hint: "N", keys: ["n"], mode: "toggle", color: "cyan" },
+  { cat: "start", sc: "v_autoland", label: "Autolandung", hint: "N gedrückt", keys: ["n"], mode: "hold", color: "cyan" },
+  { cat: "start", sc: "v_atc_request", label: "Landeerlaubnis (ATC)", hint: "L-Alt + N", keys: ["lalt", "n"], mode: "tap", color: "amber" },
+  { cat: "start", sc: "v_vtol_toggle", label: "VTOL Düsen", hint: "K", keys: ["k"], mode: "toggle", color: "cyan" },
+  { cat: "start", sc: "v_lights", label: "Scheinwerfer", hint: "L", keys: ["l"], mode: "toggle", color: "amber" },
+  { cat: "start", sc: "v_toggle_all_doors", label: "Alle Türen", hint: "R-Alt + K", keys: ["ralt", "k"], mode: "toggle", color: "slate" },
+  { cat: "start", sc: "v_lock_all_doors", label: "Türen verriegeln", hint: "R-Alt + L", keys: ["ralt", "l"], mode: "toggle", color: "slate" },
+
+  // Flug, Quantum & IFCS
+  { cat: "flug", sc: "v_toggle_quantum_mode", label: "Master Mode (SCM/NAV)", hint: "B halten", keys: ["b"], mode: "hold", color: "amber", wide: true },
+  { cat: "flug", sc: "v_afterburner", label: "Boost / Nachbrenner", hint: "L-Shift halten", keys: ["lshift"], mode: "hold", color: "red", wide: true },
+  { cat: "flug", sc: "v_ifcs_vector_decoupling_toggle", label: "Decoupled Mode", hint: "C", keys: ["c"], mode: "toggle", color: "blue" },
+  { cat: "flug", sc: "v_ifcs_toggle_cruise_control", label: "Tempomat (Cruise)", hint: "L-Alt + C", keys: ["lalt", "c"], mode: "toggle", color: "blue" },
+  { cat: "flug", sc: "v_ifcs_toggle_esp", label: "ESP Stabilität", hint: "R-Alt + O", keys: ["ralt", "o"], mode: "toggle", color: "blue" },
+  { cat: "flug", sc: "v_ifcs_toggle_gforce_safety", label: "G-Safe Schutz", hint: "R-Alt + G", keys: ["ralt", "g"], mode: "toggle", color: "blue" },
+  { cat: "flug", sc: "v_invoke_ping", label: "Radar Ping", hint: "Tab halten", keys: ["tab"], mode: "hold", color: "cyan" },
+  { cat: "flug", sc: "v_toggle_scan_mode", label: "Scan-Modus", hint: "V", keys: ["v"], mode: "toggle", color: "cyan" },
+  { cat: "flug", sc: "mobiglas", label: "mobiGlas", hint: "F1", keys: ["f1"], mode: "tap", color: "blue" },
+  { cat: "flug", sc: "v_starmap", label: "Sternkarte (Starmap)", hint: "F2", keys: ["f2"], mode: "tap", color: "blue" },
+  { cat: "flug", sc: "visor_wipe", label: "Helmvisier abwischen", hint: "L-Alt + X", keys: ["lalt", "x"], mode: "tap", color: "slate" },
+
+  // Kampf, Schilde & Abwehr
+  { cat: "kampf", sc: "v_engineering_assignment_weapons_increase", label: "Energie -> Waffen", hint: "F5", keys: ["f5"], mode: "tap", color: "red" },
+  { cat: "kampf", sc: "v_engineering_assignment_engine_increase", label: "Energie -> Antrieb", hint: "F6", keys: ["f6"], mode: "tap", color: "amber" },
+  { cat: "kampf", sc: "v_engineering_assignment_shields_increase", label: "Energie -> Schilde", hint: "F7", keys: ["f7"], mode: "tap", color: "cyan" },
+  { cat: "kampf", sc: "v_engineering_assignment_reset", label: "Energie Ausgleich", hint: "F8", keys: ["f8"], mode: "tap", color: "slate" },
+  { cat: "kampf", sc: "v_target_nearest_hostile", label: "Nächster Feind", hint: "T", keys: ["t"], mode: "tap", color: "red" },
+  { cat: "kampf", sc: "v_weapon_gimbals_state_toggle", label: "Gimbal Modus", hint: "G", keys: ["g"], mode: "tap", color: "blue" },
+  { cat: "kampf", sc: "v_weapon_countermeasure_decoy_launch", label: "Täuschkörper (Flare)", hint: "H", keys: ["h"], mode: "tap", color: "amber" },
+  { cat: "kampf", sc: "v_weapon_countermeasure_noise_launch", label: "Störfeld (Noise)", hint: "J", keys: ["j"], mode: "tap", color: "cyan" },
+  { cat: "kampf", sc: "v_attack1", label: "Waffengruppe 1", hint: "Maus Links", keys: ["mouse1"], mode: "hold", color: "red", danger: true, wide: true },
+  { cat: "kampf", sc: "v_attack2", label: "Waffengruppe 2", hint: "Maus Rechts", keys: ["mouse2"], mode: "hold", color: "red", danger: true, wide: true },
+  { cat: "kampf", sc: "v_eject", label: "Schleudersitz", hint: "R-Alt + Y", keys: ["ralt", "y"], mode: "hold", color: "red", danger: true },
+  { cat: "kampf", sc: "v_self_destruct", label: "Selbstzerstörung", hint: "L-Alt + Backspace", keys: ["lalt", "backspace"], mode: "hold", color: "red", danger: true },
+
+  // Industrie: Mining & Salvage
+  { cat: "industrie", sc: "v_toggle_mining_mode", label: "Mining-Modus", hint: "M", keys: ["m"], mode: "toggle", color: "amber", wide: true },
+  { cat: "industrie", sc: "v_mining_laser", label: "Mining-Laser", hint: "Maus Links", keys: ["mouse1"], mode: "hold", color: "red", danger: true, wide: true },
+  { cat: "industrie", sc: "v_mining_use_consumable1", label: "Mining-Modul 1", hint: "L-Alt + 1", keys: ["lalt", "1"], mode: "tap", color: "cyan" },
+  { cat: "industrie", sc: "v_mining_use_consumable2", label: "Mining-Modul 2", hint: "L-Alt + 2", keys: ["lalt", "2"], mode: "tap", color: "cyan" },
+  { cat: "industrie", sc: "v_mining_use_consumable3", label: "Mining-Modul 3", hint: "L-Alt + 3", keys: ["lalt", "3"], mode: "tap", color: "cyan" },
+  { cat: "industrie", sc: "v_jettison_volatile_cargo", label: "Fracht abwerfen", hint: "L-Alt + J", keys: ["lalt", "j"], mode: "tap", color: "red", danger: true }
+];
+
+const BG_PRESETS = {
+  "preset:aegis": "radial-gradient(circle at 50% 25%, rgba(62,200,196,0.26), transparent 60%), repeating-linear-gradient(0deg, rgba(62,200,196,0.06) 0px, rgba(62,200,196,0.06) 1px, transparent 1px, transparent 32px), repeating-linear-gradient(90deg, rgba(62,200,196,0.06) 0px, rgba(62,200,196,0.06) 1px, transparent 1px, transparent 32px), linear-gradient(180deg, #071318 0%, #0b0e13 100%)",
+  "preset:crusader": "radial-gradient(900px 500px at 80% 10%, rgba(106,164,255,0.32), transparent 65%), radial-gradient(700px 450px at 15% 85%, rgba(226,162,58,0.22), transparent 60%), linear-gradient(135deg, #0f1928 0%, #0a0e14 100%)",
+  "preset:drake": "repeating-linear-gradient(-45deg, rgba(226,162,58,0.07) 0px, rgba(226,162,58,0.07) 14px, transparent 14px, transparent 28px), radial-gradient(circle at 20% 20%, rgba(225,91,76,0.22), transparent 60%), linear-gradient(180deg, #18130e 0%, #0b0d10 100%)",
+  "preset:starmap": "radial-gradient(2px 2px at 20% 30%, #fff, transparent), radial-gradient(2px 2px at 75% 18%, #3ec8c4, transparent), radial-gradient(2px 2px at 42% 72%, #e2a23a, transparent), radial-gradient(750px 750px at 50% 50%, rgba(62,200,196,0.18), transparent 70%), linear-gradient(180deg, #050a12 0%, #09131c 100%)"
+};
+
 const statusEl = document.getElementById("status");
 const tabsEl = document.getElementById("tabs");
 const pagesEl = document.getElementById("pages");
@@ -231,14 +659,23 @@ const armEl = document.getElementById("arm");
 const editEl = document.getElementById("edit");
 const boardEl = document.getElementById("board");
 const editorEl = document.getElementById("editor");
+const bgLayerEl = document.getElementById("bg-layer");
 const held = new Set();
 const toggled = new Set();
+
 let token = localStorage.getItem("sc-token") || "";
 let armed = false;
 let editing = false;
 let toastTimer = 0;
 let current = null;
 let selected = null;
+let liveTelemetry = {
+  power: { weapons: 33, engines: 34, shields: 33 },
+  shields: { front: 25, back: 25, left: 25, right: 25 },
+  systems: { gear: true, power_all: true, vtol: false, lights: false, decoupled: false, master_mode: "SCM" },
+  sc_ship: "SCHIFFSSYSTEME",
+  last_action: "-"
+};
 
 function toast(text) {
   toastEl.hidden = false;
@@ -246,13 +683,15 @@ function toast(text) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => { toastEl.hidden = true; }, 3200);
 }
+
 function headers() {
   const h = { "Content-Type": "application/json" };
   if (token) h["X-Token"] = token;
   return h;
 }
+
 async function api(path, options) {
-  const res = await fetch(path, options);
+  const res = await fetch(path, Object.assign({ cache: "no-store" }, options || {}));
   if (res.status === 401) {
     token = prompt("Token vom Gaming-PC (config.local.json)") || "";
     if (token) localStorage.setItem("sc-token", token);
@@ -262,115 +701,251 @@ async function api(path, options) {
   if (!res.ok) throw new Error(data.error || ("HTTP " + res.status));
   return data;
 }
+
 function slug(text) {
   return (text || "").toLowerCase()
     .replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss")
     .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "dashboard";
 }
+
 function parseKeys(text) {
   return text.split(/[+,]/).map((part) => part.trim().toLowerCase()).filter(Boolean);
 }
-async function send(button, mode) {
+
+async function sendKeys(id, keys, mode = "tap") {
   if (editing) return;
-  if (button.danger && !armed && mode !== "up") {
-    toast("Zuerst Gefahr AN schalten");
-    return;
-  }
   try {
-    await api("/api/press", {
+    const res = await api("/api/press", {
       method: "POST",
       headers: headers(),
       keepalive: true,
-      body: JSON.stringify({ id: button.id, keys: button.keys, mode })
+      body: JSON.stringify({ id, keys, mode })
     });
+    if (res.telemetry) updateTelemetryUI(res.telemetry);
   } catch (err) {
     statusEl.className = "off";
     statusEl.textContent = "Fehler: " + err.message;
     if (mode !== "down") toast(err.message);
   }
 }
+
+async function send(button, mode) {
+  if (editing) return;
+  if (button.danger && !armed && mode !== "up") {
+    toast("Gesicherte Taste: zuerst oben 'Gefahr AN' schalten");
+    return;
+  }
+  await sendKeys(button.id, button.keys, mode);
+}
+
+function updateTelemetryUI(t) {
+  if (!t) return;
+  liveTelemetry = t;
+  const p = t.power || { weapons: 33, engines: 34, shields: 33 };
+  const s = t.shields || { front: 25, back: 25, left: 25, right: 25 };
+  const sys = t.systems || {};
+
+  document.getElementById("tele-pwr-txt").textContent = `W:${p.weapons}% E:${p.engines}% S:${p.shields}%`;
+  document.getElementById("bar-wep").style.width = p.weapons + "%";
+  document.getElementById("bar-eng").style.width = p.engines + "%";
+  document.getElementById("bar-shd").style.width = p.shields + "%";
+
+  document.getElementById("tele-shd-txt").textContent = `V:${s.front}% H:${s.back}% L:${s.left}% R:${s.right}%`;
+  document.getElementById("bar-sf").style.width = s.front + "%";
+  document.getElementById("bar-sb").style.width = s.back + "%";
+  document.getElementById("bar-sl").style.width = s.left + "%";
+  document.getElementById("bar-sr").style.width = s.right + "%";
+
+  document.getElementById("tele-ship").textContent = t.sc_ship || "SCHIFFSSYSTEME";
+  document.getElementById("tele-mode").textContent = sys.master_mode || "SCM";
+  document.getElementById("pill-pwr").classList.toggle("active", !!sys.power_all);
+  document.getElementById("pill-gear").classList.toggle("active", !!sys.gear);
+  document.getElementById("pill-vtol").classList.toggle("active", !!sys.vtol);
+  document.getElementById("pill-light").classList.toggle("active", !!sys.lights);
+  document.getElementById("pill- cpl")?.classList.toggle("active", !!sys.decoupled);
+
+  if (t.last_action && t.last_action !== "-") {
+    document.getElementById("last-act").textContent = "Letzte Aktion: " + t.last_action;
+  }
+
+  // Update embedded live widgets if present on active page
+  document.querySelectorAll("[data-live-shd]").forEach((el) => {
+    const zone = el.getAttribute("data-live-shd");
+    if (s[zone] !== undefined) el.textContent = s[zone] + "%";
+  });
+  document.querySelectorAll("[data-live-pwr]").forEach((el) => {
+    const k = el.getAttribute("data-live-pwr");
+    if (p[k] !== undefined) {
+      el.style.width = p[k] + "%";
+      const lbl = el.parentElement?.parentElement?.querySelector(".pwr-pct");
+      if (lbl) lbl.textContent = p[k] + "%";
+    }
+  });
+}
+
+function applyBackground(data) {
+  const bg = (data?.background || "").trim();
+  const op = data?.bg_opacity !== undefined ? Number(data.bg_opacity) : 0.35;
+  bgLayerEl.style.opacity = String(op);
+  document.getElementById("f-bg-opacity").value = String(Math.round(op * 100));
+  document.getElementById("bg-op-val").textContent = Math.round(op * 100) + "%";
+  document.getElementById("f-bg-url").value = bg.startsWith("data:") ? "(Eigenes Bild geladen)" : bg;
+
+  if (!bg) {
+    bgLayerEl.style.backgroundImage = "none";
+  } else if (BG_PRESETS[bg]) {
+    bgLayerEl.style.backgroundImage = BG_PRESETS[bg];
+  } else {
+    bgLayerEl.style.backgroundImage = `url("${bg.replace(/"/g, '\\"')}")`;
+  }
+}
+
 function buttonAt(ref) {
   return current?.pages?.[ref.pi]?.groups?.[ref.gi]?.buttons?.[ref.bi] || null;
 }
+
 function fillForm(button) {
   document.getElementById("f-label").value = button?.label || "";
   document.getElementById("f-hint").value = button?.hint || "";
   document.getElementById("f-keys").value = (button?.keys || []).join("+");
   document.getElementById("f-mode").value = button?.mode || "tap";
   document.getElementById("f-color").value = button?.color || "slate";
-  document.getElementById("f-wide").checked = !!button?.wide;
+  const span = button?.span || (button?.wide ? 2 : 1);
+  document.getElementById("f-span").value = String(span);
   document.getElementById("f-danger").checked = !!button?.danger;
 }
+
 function selectButton(ref) {
   selected = ref;
-  document.querySelectorAll(".key").forEach((el) => {
+  document.querySelectorAll(".key, .widget-card").forEach((el) => {
     el.classList.toggle("selected", el.dataset.pi === String(ref.pi) && el.dataset.gi === String(ref.gi) && el.dataset.bi === String(ref.bi));
   });
   fillForm(buttonAt(ref));
 }
-function render(data) {
-  current = data;
-  document.getElementById("board-meta").textContent = data._source === "local" ? "eigenes Dashboard" : "mitgeliefert";
-  document.getElementById("remove-board").hidden = data._source !== "local";
-  tabsEl.innerHTML = "";
-  pagesEl.innerHTML = "";
-  (data.pages || []).forEach((page, pi) => {
-    const tab = document.createElement("button");
-    tab.type = "button";
-    tab.className = "tab";
-    tab.textContent = page.label || page.id;
-    tab.setAttribute("aria-selected", pi === 0 ? "true" : "false");
-    tab.addEventListener("click", () => activatePage(pi));
-    tabsEl.appendChild(tab);
-    const section = document.createElement("section");
-    section.className = "page" + (pi === 0 ? " active" : "");
-    section.dataset.index = String(pi);
-    (page.groups || []).forEach((group, gi) => {
-      const wrap = document.createElement("div");
-      wrap.className = "group";
-      const title = document.createElement("h2");
-      title.textContent = group.title || "";
-      const grid = document.createElement("div");
-      grid.className = "grid";
-      (group.buttons || []).forEach((button, bi) => grid.appendChild(makeButton(button, { pi, gi, bi })));
-      wrap.append(title, grid);
-      section.appendChild(wrap);
-    });
-    pagesEl.appendChild(section);
+
+function makeWidgetCard(button, ref) {
+  const card = document.createElement("div");
+  card.className = "widget-card";
+  card.dataset.pi = String(ref.pi);
+  card.dataset.gi = String(ref.gi);
+  card.dataset.bi = String(ref.bi);
+
+  card.addEventListener("click", (e) => {
+    if (editing) {
+      e.preventDefault();
+      selectButton(ref);
+    }
   });
-  const where = data._source === "local" ? "eigene Datei" : "mitgeliefert, Speichern erzeugt eine eigene Kopie";
-  document.getElementById("foot").textContent = (data.title || data.id) + " · " + where + " · diese Adresse auf jedem Gerät im WLAN öffnen";
-  if (selected) selectButton(selected);
+
+  if (button.kind === "shield") {
+    const s = liveTelemetry.shields || { front: 25, back: 25, left: 25, right: 25 };
+    card.innerHTML = `
+      <div class="widget-title"><span>❖ ${button.label || "SCHILD-VERTEILUNG"}</span><small style="color:var(--muted)">Sektor antippen</small></div>
+      <div class="shield-compass">
+        <div></div>
+        <button type="button" class="sh-zone" data-keys="num8">VORN<span data-live-shd="front">${s.front}%</span></button>
+        <div></div>
+        <button type="button" class="sh-zone" data-keys="num4">LINKS<span data-live-shd="left">${s.left}%</span></button>
+        <button type="button" class="sh-zone reset" data-keys="num5">AUSGLEICH<span>RESET (NP5)</span></button>
+        <button type="button" class="sh-zone" data-keys="num6">RECHTS<span data-live-shd="right">${s.right}%</span></button>
+        <div></div>
+        <button type="button" class="sh-zone" data-keys="num2">HINTEN<span data-live-shd="back">${s.back}%</span></button>
+        <div></div>
+      </div>
+    `;
+    card.querySelectorAll(".sh-zone").forEach((btn) => {
+      btn.addEventListener("pointerup", (ev) => {
+        if (editing) return;
+        ev.stopPropagation();
+        const k = btn.getAttribute("data-keys").split("+");
+        sendKeys(button.id + "-" + k[0], k, "tap");
+      });
+    });
+  } else if (button.kind === "power") {
+    const p = liveTelemetry.power || { weapons: 33, engines: 34, shields: 33 };
+    card.innerHTML = `
+      <div class="widget-title" style="color:var(--amber)">
+        <span>⚡ ${button.label || "ENERGIE-DREIECK"}</span>
+        <button type="button" class="bg-btn" data-pwr-key="f8">Reset (F8)</button>
+      </div>
+      <div class="power-bars-widget">
+        <button type="button" class="pwr-col" data-pwr-key="f5">
+          <strong style="color:var(--red)">WAFFEN</strong>
+          <span class="pwr-pct" style="font-family:Consolas,monospace">${p.weapons}%</span>
+          <div class="pwr-meter"><div class="pwr-fill" data-live-pwr="weapons" style="width:${p.weapons}%;background:var(--red)"></div></div>
+          <small style="color:var(--muted)">+ F5</small>
+        </button>
+        <button type="button" class="pwr-col" data-pwr-key="f6">
+          <strong style="color:var(--amber)">ANTRIEB</strong>
+          <span class="pwr-pct" style="font-family:Consolas,monospace">${p.engines}%</span>
+          <div class="pwr-meter"><div class="pwr-fill" data-live-pwr="engines" style="width:${p.engines}%;background:var(--amber)"></div></div>
+          <small style="color:var(--muted)">+ F6</small>
+        </button>
+        <button type="button" class="pwr-col" data-pwr-key="f7">
+          <strong style="color:var(--cyan)">SCHILDE</strong>
+          <span class="pwr-pct" style="font-family:Consolas,monospace">${p.shields}%</span>
+          <div class="pwr-meter"><div class="pwr-fill" data-live-pwr="shields" style="width:${p.shields}%;background:var(--cyan)"></div></div>
+          <small style="color:var(--muted)">+ F7</small>
+        </button>
+      </div>
+    `;
+    card.querySelectorAll("[data-pwr-key]").forEach((btn) => {
+      btn.addEventListener("pointerup", (ev) => {
+        if (editing) return;
+        ev.stopPropagation();
+        const k = btn.getAttribute("data-pwr-key");
+        sendKeys("pwr-" + k, [k], "tap");
+      });
+    });
+  } else {
+    card.innerHTML = `
+      <div class="widget-title" style="color:var(--blue)"><span>◈ ${button.label || "SCHIFFS-TELEMETRIE"}</span><small>LIVE</small></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px">
+        <div style="background:#0e141d;padding:10px;border-radius:8px">
+          <div style="color:var(--muted);font-size:11px">AKTIVES SCHIFF</div>
+          <strong style="color:var(--cyan)">${liveTelemetry.sc_ship || "AEGIS COCKPIT"}</strong>
+        </div>
+        <div style="background:#0e141d;padding:10px;border-radius:8px">
+          <div style="color:var(--muted);font-size:11px">MASTER MODE</div>
+          <strong style="color:var(--amber)">${liveTelemetry.systems?.master_mode || "SCM"}</strong>
+        </div>
+      </div>
+    `;
+  }
+  return card;
 }
-function activatePage(index) {
-  document.querySelectorAll(".tab").forEach((tab, i) => tab.setAttribute("aria-selected", i === index ? "true" : "false"));
-  document.querySelectorAll(".page").forEach((page) => page.classList.toggle("active", Number(page.dataset.index) === index));
-}
-function activePageIndex() {
-  const el = document.querySelector(".page.active");
-  return el ? Number(el.dataset.index) : 0;
-}
+
 function makeButton(button, ref) {
+  if (button.kind && ["shield", "power", "telemetry"].includes(button.kind)) {
+    return makeWidgetCard(button, ref);
+  }
   const el = document.createElement("button");
   el.type = "button";
-  el.className = "key " + (button.color || "slate") + (button.wide ? " wide" : "");
-  if (button.danger) el.classList.add("locked");
+  const span = button.span || (button.wide ? 2 : 1);
+  el.className = "key " + (button.color || "slate") + (span > 1 ? ` span-${span}` : "");
+  if (button.danger) {
+    el.classList.add("hazard-stripe");
+    if (!armed) el.classList.add("locked");
+  }
   el.dataset.pi = String(ref.pi);
   el.dataset.gi = String(ref.gi);
   el.dataset.bi = String(ref.bi);
   el.innerHTML = "<b></b><small></small>";
   el.querySelector("b").textContent = button.label || button.id;
-  el.querySelector("small").textContent = button.hint || (button.keys || []).join("+");
+  el.querySelector("small").textContent = button.hint || (button.keys || []).join("+").toUpperCase();
+
   const refreshLock = () => { if (button.danger) el.classList.toggle("locked", !armed); };
   el._refreshLock = refreshLock;
+
   const pick = (event) => {
     event.preventDefault();
     selectButton(ref);
   };
+
   if (button.mode === "hold") {
     const down = (event) => {
       if (editing) return pick(event);
-      if (button.danger && !armed) { toast("Zuerst Gefahr AN schalten"); return; }
+      if (button.danger && !armed) { toast("Zuerst oben 'Gefahr AN' schalten"); return; }
       event.preventDefault();
       el.setPointerCapture?.(event.pointerId);
       held.add(button.id);
@@ -389,7 +964,7 @@ function makeButton(button, ref) {
   } else {
     el.addEventListener("pointerup", (event) => {
       if (editing) return pick(event);
-      if (button.danger && !armed) { toast("Zuerst Gefahr AN schalten"); return; }
+      if (button.danger && !armed) { toast("Zuerst oben 'Gefahr AN' schalten"); return; }
       if (button.mode === "toggle") {
         if (toggled.has(button.id)) toggled.delete(button.id);
         else toggled.add(button.id);
@@ -400,53 +975,209 @@ function makeButton(button, ref) {
   }
   return el;
 }
+
+function render(data, keepPageIndex) {
+  current = data;
+  localStorage.setItem("sc-last-board", data.id || "standard");
+  localStorage.setItem("sc-cached-layout-" + (data.id || "standard"), JSON.stringify(data));
+  applyBackground(data);
+
+  document.getElementById("board-meta").textContent = data._source === "local" ? "Eigenes Dashboard" : "Mitgeliefert (Baukasten speichert eigene Kopie)";
+  document.getElementById("remove-board").hidden = data._source !== "local";
+
+  const activeIdx = keepPageIndex !== undefined ? keepPageIndex : 0;
+  tabsEl.innerHTML = "";
+  pagesEl.innerHTML = "";
+
+  (data.pages || []).forEach((page, pi) => {
+    const isAct = pi === activeIdx;
+    const tab = document.createElement("button");
+    tab.type = "button";
+    tab.className = "tab";
+    tab.textContent = page.label || page.id;
+    tab.setAttribute("aria-selected", isAct ? "true" : "false");
+    tab.addEventListener("click", () => activatePage(pi));
+    tabsEl.appendChild(tab);
+
+    const section = document.createElement("section");
+    section.className = "page" + (isAct ? " active" : "");
+    section.dataset.index = String(pi);
+
+    (page.groups || []).forEach((group, gi) => {
+      const wrap = document.createElement("div");
+      wrap.className = "group";
+      const hdr = document.createElement("div");
+      hdr.className = "group-header";
+      const title = document.createElement("h2");
+      title.textContent = group.title || "Steuerung";
+      hdr.appendChild(title);
+
+      if (editing) {
+        const renameBtn = document.createElement("button");
+        renameBtn.type = "button";
+        renameBtn.className = "bg-btn";
+        renameBtn.textContent = "Gruppe umbenennen";
+        renameBtn.addEventListener("click", () => {
+          const nt = prompt("Name der Gruppe:", group.title || "Steuerung");
+          if (nt) {
+            group.title = nt.slice(0, 40);
+            render(current, activePageIndex());
+          }
+        });
+        hdr.appendChild(renameBtn);
+      }
+
+      const grid = document.createElement("div");
+      grid.className = "grid";
+      (group.buttons || []).forEach((button, bi) => grid.appendChild(makeButton(button, { pi, gi, bi })));
+      wrap.append(hdr, grid);
+      section.appendChild(wrap);
+    });
+    pagesEl.appendChild(section);
+  });
+
+  const where = data._source === "local" ? "eigene Datei" : "Vorlage";
+  document.getElementById("foot").innerHTML = `<span><b>${data.title || data.id}</b> · ${where}</span><span>Baukasten-System & Live-Telemetrie aktiv</span>`;
+  if (selected) selectButton(selected);
+}
+
+function activatePage(index) {
+  document.querySelectorAll(".tab").forEach((tab, i) => tab.setAttribute("aria-selected", i === index ? "true" : "false"));
+  document.querySelectorAll(".page").forEach((page) => page.classList.toggle("active", Number(page.dataset.index) === index));
+}
+
+function activePageIndex() {
+  const el = document.querySelector(".page.active");
+  return el ? Number(el.dataset.index) : 0;
+}
+
+// Render Preset Catalog in Baukasten Editor
+function renderPresets() {
+  const cat = document.getElementById("preset-cat").value;
+  const q = (document.getElementById("preset-search").value || "").trim().toLowerCase();
+  const listEl = document.getElementById("preset-list");
+  listEl.innerHTML = "";
+
+  SC_PRESETS.filter((p) => {
+    if (cat !== "all" && p.cat !== cat) return false;
+    if (q && !p.label.toLowerCase().includes(q) && !(p.hint || "").toLowerCase().includes(q)) return false;
+    return true;
+  }).forEach((p) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "chip" + (p.kind ? " widget" : "");
+    btn.innerHTML = `<span>+ ${p.label}</span><small>${p.hint || p.keys.join("+")}</small>`;
+    btn.addEventListener("click", () => insertPresetIntoPage(p));
+    listEl.appendChild(btn);
+  });
+}
+
+function insertPresetIntoPage(preset) {
+  if (!current) return;
+  const pi = activePageIndex();
+  const page = current.pages[pi];
+  const gi = selected && selected.pi === pi ? selected.gi : (page.groups.length - 1);
+  if (!page.groups.length) page.groups.push({ title: "Steuerung", buttons: [] });
+  const targetGroup = page.groups[Math.max(0, gi)];
+
+  const newBtn = {
+    id: slug(preset.label) + "-" + Math.floor(Math.random() * 900 + 100),
+    label: preset.label,
+    hint: preset.hint || preset.keys.join("+").toUpperCase(),
+    keys: [...preset.keys],
+    mode: preset.mode || "tap",
+    color: preset.color || "amber",
+    wide: !!preset.wide,
+    span: preset.wide ? 2 : 1,
+    danger: !!preset.danger
+  };
+  if (preset.kind) newBtn.kind = preset.kind;
+  if (preset.sc) newBtn.sc = preset.sc;
+
+  targetGroup.buttons.push(newBtn);
+  const bi = targetGroup.buttons.length - 1;
+  render(current, pi);
+  selectButton({ pi, gi: Math.max(0, gi), bi });
+  toast(`Baustein '${preset.label}' eingefügt`);
+}
+
 function applyForm(showToast) {
-  if (!selected) { toast("Zuerst einen Button antippen"); return false; }
+  if (!selected) { toast("Zuerst eine Kachel antippen"); return false; }
   const button = buttonAt(selected);
   if (!button) return false;
   const keys = parseKeys(document.getElementById("f-keys").value);
-  if (!keys.length || keys.length > 4) { toast("1 bis 4 Tasten, z. B. ralt+r"); return false; }
+  if (!button.kind && (!keys.length || keys.length > 4)) {
+    toast("Bitte 1 bis 4 Tasten angeben (z. B. ralt+r)");
+    return false;
+  }
   button.label = document.getElementById("f-label").value.trim() || button.label;
   button.hint = document.getElementById("f-hint").value.trim();
-  button.keys = keys;
+  if (keys.length) button.keys = keys;
   button.mode = document.getElementById("f-mode").value;
   button.color = document.getElementById("f-color").value;
-  button.wide = document.getElementById("f-wide").checked;
+  const span = Number(document.getElementById("f-span").value) || 1;
+  button.span = span;
+  button.wide = span >= 2;
   button.danger = document.getElementById("f-danger").checked;
+
   const keep = selected;
-  render(current);
+  const pi = activePageIndex();
+  render(current, pi);
   selectButton(keep);
-  if (showToast) toast("Übernommen, noch nicht gespeichert");
+  if (showToast) toast("Kachel aktualisiert (bitte noch auf Speichern klicken)");
   return true;
 }
+
 function payload() {
   return {
     id: current.id,
     title: current.title,
+    background: current.background || "",
+    bg_opacity: current.bg_opacity !== undefined ? current.bg_opacity : 0.35,
     pages: current.pages,
     activate: true
   };
 }
+
 async function refreshList(selectId) {
   const list = await api("/api/dashboards");
   boardEl.innerHTML = "";
-  list.dashboards.forEach((item) => {
+  (list.dashboards || []).forEach((item) => {
     const option = document.createElement("option");
     option.value = item.id;
     option.textContent = item.title + (item.source === "local" ? " · eigen" : "");
     boardEl.appendChild(option);
   });
-  const id = selectId || list.active;
-  if ([...boardEl.options].some((option) => option.value === id)) boardEl.value = id;
-  return id;
+  const wanted = selectId || list.active || localStorage.getItem("sc-last-board") || (list.dashboards?.[0]?.id) || "standard";
+  if ([...boardEl.options].some((option) => option.value === wanted)) {
+    boardEl.value = wanted;
+  } else if (boardEl.options.length > 0) {
+    boardEl.selectedIndex = 0;
+  }
+  return boardEl.value || wanted;
 }
+
 async function openBoard(id) {
   held.clear();
   selected = null;
-  const data = await api("/api/dashboard/" + encodeURIComponent(id));
-  render(data);
-  api("/api/active", { method: "POST", headers: headers(), body: JSON.stringify({ id }) }).catch(() => {});
+  const targetId = id || "standard";
+  try {
+    const data = await api("/api/dashboard/" + encodeURIComponent(targetId));
+    render(data, 0);
+    api("/api/active", { method: "POST", headers: headers(), body: JSON.stringify({ id: data.id }) }).catch(() => {});
+  } catch (err) {
+    // Fallback to /api/layout or cached layout so reload NEVER shows a blank page!
+    try {
+      const fallback = await api("/api/layout");
+      render(fallback, 0);
+    } catch (_e2) {
+      const cached = localStorage.getItem("sc-cached-layout-" + targetId);
+      if (cached) render(JSON.parse(cached), 0);
+      else throw err;
+    }
+  }
 }
+
 async function saveBoard() {
   if (selected && !applyForm(false)) return;
   try {
@@ -455,38 +1186,128 @@ async function saveBoard() {
       headers: headers(),
       body: JSON.stringify(payload())
     });
+    const pi = activePageIndex();
     await refreshList(saved.id);
-    render(saved);
-    toast("Gespeichert");
+    render(saved, pi);
+    toast("Dashboard gespeichert!");
   } catch (err) { toast(err.message); }
 }
-editEl.addEventListener("click", async () => {
+
+// Event Listeners
+document.getElementById("preset-cat").addEventListener("change", renderPresets);
+document.getElementById("preset-search").addEventListener("input", renderPresets);
+
+document.querySelectorAll(".bg-btn[data-bg]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    if (!current) return;
+    current.background = btn.getAttribute("data-bg");
+    applyBackground(current);
+  });
+});
+
+document.getElementById("f-bg-url").addEventListener("change", (e) => {
+  if (!current) return;
+  const val = e.target.value.trim();
+  if (!val.startsWith("(")) {
+    current.background = val;
+    applyBackground(current);
+  }
+});
+
+document.getElementById("f-bg-file").addEventListener("change", (e) => {
+  const file = e.target.files?.[0];
+  if (!file || !current) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    // Downscale image on canvas so JSON stays compact & fast
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      const maxW = 1280;
+      const scale = Math.min(1, maxW / img.width);
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      current.background = canvas.toDataURL("image/jpeg", 0.78);
+      applyBackground(current);
+      toast("Hintergrundbild geladen (Speichern nicht vergessen)");
+    };
+    img.src = String(reader.result);
+  };
+  reader.readAsDataURL(file);
+});
+
+document.getElementById("f-bg-opacity").addEventListener("input", (e) => {
+  if (!current) return;
+  current.bg_opacity = Number(e.target.value) / 100;
+  applyBackground(current);
+});
+
+document.getElementById("sync-sc").addEventListener("click", async () => {
+  try {
+    const res = await api("/api/sc-bindings");
+    if (!res.found) {
+      toast("Keine lokale Star Citizen actionmaps.xml gefunden — Standard-Presets aktiv.");
+      return;
+    }
+    const map = res.bindings || {};
+    let updated = 0;
+    for (const page of current?.pages || []) {
+      for (const group of page.groups || []) {
+        for (const btn of group.buttons || []) {
+          if (btn.sc && map[btn.sc]) {
+            btn.keys = map[btn.sc];
+            btn.hint = map[btn.sc].join("+").toUpperCase();
+            updated++;
+          }
+        }
+      }
+    }
+    render(current, activePageIndex());
+    toast(`Star Citizen Profil gelesen (${updated} Tasten synchronisiert)`);
+  } catch (err) { toast(err.message); }
+});
+
+editEl.addEventListener("click", () => {
   editing = !editing;
   editEl.setAttribute("aria-pressed", editing ? "true" : "false");
-  editEl.textContent = editing ? "Anpassen AN" : "Anpassen";
+  editEl.textContent = editing ? "Baukasten AN" : "Baukasten / Anpassen";
   editorEl.hidden = !editing;
   document.body.classList.toggle("editing", editing);
   if (editing) {
+    renderPresets();
     held.clear();
     api("/api/release", { method: "POST", headers: headers(), body: "{}" }).catch(() => {});
   }
+  if (current) render(current, activePageIndex());
 });
+
 document.getElementById("done").addEventListener("click", () => editEl.click());
 document.getElementById("apply").addEventListener("click", () => applyForm(true));
 document.getElementById("save").addEventListener("click", saveBoard);
+
 document.getElementById("fresh").addEventListener("click", async () => {
-  const title = prompt("Name des neuen Dashboards", "Mein Schiff");
+  const title = prompt("Name des neuen Dashboards:", "Mein Schiff");
   if (!title) return;
   const id = slug(title);
   const body = {
     title,
+    background: "preset:aegis",
+    bg_opacity: 0.4,
     activate: true,
     pages: [{
-      id: "seite",
-      label: "Seite 1",
+      id: "cockpit",
+      label: "Cockpit & Systeme",
       groups: [{
-        title: "Steuerung",
-        buttons: [{ id: "neu", label: "Neuer Button", hint: "N", keys: ["n"], mode: "tap", color: "amber" }]
+        title: "Hauptsysteme",
+        buttons: [
+          { id: "flight-ready", sc: "v_flightready", label: "Flight Ready", hint: "R-Alt + R", keys: ["ralt", "r"], mode: "tap", color: "green", wide: true },
+          { id: "gear", sc: "v_toggle_landing_system", label: "Fahrwerk", hint: "N", keys: ["n"], mode: "toggle", color: "cyan" },
+          { id: "lights", sc: "v_lights", label: "Lichter", hint: "L", keys: ["l"], mode: "toggle", color: "amber" },
+          { id: "pwr-widget", kind: "power", label: "Energie-Dreieck", hint: "F5 / F6 / F7 / F8", keys: ["f8"], mode: "tap", color: "amber", wide: true },
+          { id: "shd-widget", kind: "shield", label: "Schild-Kompass", hint: "Sektoren", keys: ["num5"], mode: "tap", color: "cyan", wide: true }
+        ]
       }]
     }]
   };
@@ -495,100 +1316,139 @@ document.getElementById("fresh").addEventListener("click", async () => {
       method: "PUT", headers: headers(), body: JSON.stringify(body)
     });
     await refreshList(saved.id);
-    render(saved);
-    toast("Dashboard angelegt");
+    render(saved, 0);
+    toast("Neues Baukasten-Dashboard angelegt!");
   } catch (err) { toast(err.message); }
 });
+
 document.getElementById("copy").addEventListener("click", async () => {
-  const title = prompt("Name der Kopie", (current.title || "Dashboard") + " Kopie");
+  const title = prompt("Name der Kopie:", (current.title || "Dashboard") + " Kopie");
   if (!title) return;
   const id = slug(title);
   try {
     const saved = await api("/api/dashboard/" + encodeURIComponent(id), {
       method: "PUT",
       headers: headers(),
-      body: JSON.stringify({ title, pages: current.pages, activate: true })
+      body: JSON.stringify({
+        title,
+        background: current.background || "",
+        bg_opacity: current.bg_opacity !== undefined ? current.bg_opacity : 0.35,
+        pages: current.pages,
+        activate: true
+      })
     });
     await refreshList(saved.id);
-    render(saved);
+    render(saved, activePageIndex());
     toast("Kopie gespeichert");
   } catch (err) { toast(err.message); }
 });
+
 document.getElementById("remove-board").addEventListener("click", async () => {
   if (current._source !== "local") return;
-  if (!confirm("Eigene Kopie von " + current.title + " löschen?")) return;
+  if (!confirm("Eigene Kopie von " + current.title + " wirklich löschen?")) return;
   try {
     await api("/api/dashboard/" + encodeURIComponent(current.id), { method: "DELETE" });
     const id = await refreshList("standard");
-    await openBoard(boardEl.value || id);
+    await openBoard(id);
     toast("Eigene Kopie gelöscht");
   } catch (err) { toast(err.message); }
 });
+
 document.getElementById("remove-btn").addEventListener("click", () => {
   if (!selected) return;
-  const buttons = current.pages[selected.pi].groups[selected.gi].buttons;
-  if (buttons.length < 2 && current.pages.length < 2) { toast("Der letzte Button bleibt"); return; }
+  const pi = selected.pi;
+  const buttons = current.pages[pi].groups[selected.gi].buttons;
+  if (buttons.length < 2 && current.pages[pi].groups.length < 2 && current.pages.length < 2) {
+    toast("Mindestens eine Kachel muss im Dashboard bleiben");
+    return;
+  }
   buttons.splice(selected.bi, 1);
-  current.pages[selected.pi].groups = current.pages[selected.pi].groups.filter((group) => group.buttons.length);
-  if (!current.pages[selected.pi].groups.length) current.pages.splice(selected.pi, 1);
+  current.pages[pi].groups = current.pages[pi].groups.filter((g) => g.buttons.length);
+  if (!current.pages[pi].groups.length) current.pages.splice(pi, 1);
   selected = null;
   fillForm(null);
-  render(current);
+  render(current, Math.min(pi, current.pages.length - 1));
 });
+
 document.getElementById("add-btn").addEventListener("click", () => {
   const pi = activePageIndex();
   const page = current.pages[pi];
   if (!page.groups.length) page.groups.push({ title: "Steuerung", buttons: [] });
-  page.groups[0].buttons.push({
-    id: "neu-" + Date.now(),
-    label: "Neuer Button",
-    hint: "",
+  const gi = page.groups.length - 1;
+  page.groups[gi].buttons.push({
+    id: "taste-" + Math.floor(Math.random() * 900 + 100),
+    label: "Neue Taste",
+    hint: "N",
     keys: ["n"],
     mode: "tap",
     color: "slate"
   });
-  const bi = page.groups[0].buttons.length - 1;
-  render(current);
-  activatePage(pi);
-  selectButton({ pi, gi: 0, bi });
+  const bi = page.groups[gi].buttons.length - 1;
+  render(current, pi);
+  selectButton({ pi, gi, bi });
 });
+
+document.getElementById("add-group").addEventListener("click", () => {
+  const title = prompt("Name der neuen Gruppe:", "Neue Sektion");
+  if (!title) return;
+  const pi = activePageIndex();
+  current.pages[pi].groups.push({
+    title: title.slice(0, 40),
+    buttons: [{
+      id: "flight-ready-" + Math.floor(Math.random() * 900 + 100),
+      label: "Flight Ready",
+      hint: "R-Alt + R",
+      keys: ["ralt", "r"],
+      mode: "tap",
+      color: "amber"
+    }]
+  });
+  const gi = current.pages[pi].groups.length - 1;
+  render(current, pi);
+  selectButton({ pi, gi, bi: 0 });
+});
+
 document.getElementById("add-page").addEventListener("click", () => {
-  const label = prompt("Name der Seite", "Seite " + (current.pages.length + 1));
+  const label = prompt("Name der neuen Seite (Tab):", "Seite " + (current.pages.length + 1));
   if (!label) return;
   current.pages.push({
     id: slug(label),
     label: label.slice(0, 24),
     groups: [{
       title: "Steuerung",
-      buttons: [{ id: "neu-" + Date.now(), label: "Neuer Button", hint: "", keys: ["n"], mode: "tap", color: "slate" }]
+      buttons: [{ id: "neu-" + Date.now(), label: "Flight Ready", hint: "R-Alt + R", keys: ["ralt", "r"], mode: "tap", color: "amber" }]
     }]
   });
-  render(current);
-  activatePage(current.pages.length - 1);
+  render(current, current.pages.length - 1);
 });
+
 boardEl.addEventListener("change", () => {
-  if (editing && current && boardEl.value !== current.id && !confirm("Ohne Speichern wechseln?")) {
+  if (editing && current && boardEl.value !== current.id && !confirm("Ohne Speichern das Dashboard wechseln?")) {
     boardEl.value = current.id;
     return;
   }
   openBoard(boardEl.value).catch((err) => toast(err.message));
 });
+
 armEl.addEventListener("click", () => {
   armed = !armed;
   armEl.setAttribute("aria-pressed", armed ? "true" : "false");
   armEl.textContent = armed ? "Gefahr AN" : "Gefahr AUS";
   document.querySelectorAll(".key").forEach((el) => el._refreshLock && el._refreshLock());
 });
+
 document.getElementById("release").addEventListener("click", async () => {
   held.clear();
   document.querySelectorAll(".holding").forEach((el) => el.classList.remove("holding"));
   try { await api("/api/release", { method: "POST", headers: headers(), body: "{}" }); }
   catch (err) { toast(err.message); }
 });
+
 document.getElementById("full").addEventListener("click", () => {
   if (!document.fullscreenElement) document.documentElement.requestFullscreen?.();
   else document.exitFullscreen?.();
 });
+
 setInterval(() => {
   if (editing) return;
   held.forEach((id) => {
@@ -596,6 +1456,7 @@ setInterval(() => {
     if (button) send(button, "down");
   });
 }, 1000);
+
 function findButton(id) {
   for (const page of current?.pages || []) {
     for (const group of page.groups || []) {
@@ -606,29 +1467,48 @@ function findButton(id) {
   }
   return null;
 }
+
 async function health() {
   try {
     const data = await api("/api/health");
     statusEl.className = "on";
-    statusEl.textContent = data.dry_run ? "Trockenlauf, keine echten Tasten" : "PC verbunden";
+    statusEl.textContent = data.dry_run ? "Trockenlauf · Verbunden" : "PC verbunden · Live";
+    if (data.telemetry) updateTelemetryUI(data.telemetry);
+    if (!current) {
+      const id = await refreshList();
+      await openBoard(id);
+    }
   } catch (err) {
     statusEl.className = "off";
-    statusEl.textContent = "keine Verbindung";
+    statusEl.textContent = "Verbinde mit PC...";
   }
 }
+
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") {
     held.clear();
     fetch("/api/release", { method: "POST", headers: headers(), body: "{}", keepalive: true }).catch(() => {});
   }
 });
-refreshList().then((id) => openBoard(boardEl.value || id)).catch((err) => {
-  statusEl.className = "off";
-  statusEl.textContent = err.message;
-  toast(err.message);
-});
+
+// Resilient Startup with automatic retry & cache fallback so page reload never stays blank
+async function initCockpit() {
+  try {
+    const id = await refreshList();
+    await openBoard(id);
+  } catch (err) {
+    const lastId = localStorage.getItem("sc-last-board") || "standard";
+    const cached = localStorage.getItem("sc-cached-layout-" + lastId);
+    if (cached) {
+      try { render(JSON.parse(cached), 0); } catch (_e) {}
+    }
+    setTimeout(initCockpit, 1500);
+  }
+}
+
+initCockpit();
 health();
-setInterval(health, 3000);
+setInterval(health, 2000);
 </script>
 </body>
 </html>

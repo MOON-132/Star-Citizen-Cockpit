@@ -237,6 +237,7 @@ const (
 
 	// Dashboards Tab Controls
 	CtrlBtnNewDash
+	CtrlBtnSyncSCBindings
 	CtrlBtnOpenDashFolder
 	CtrlBtnReloadDash
 
@@ -898,12 +899,14 @@ func paintTabDashboards(hdc uintptr, cx, cw, h int32) {
 		RECT{cx, sc(56), cx + cw, sc(80)}, app.FontBody, colMuted, DT_LEFT|DT_SINGLELINE)
 
 	// Top Action Buttons
-	btnNew := RECT{cx, sc(92), cx + sc(185), sc(128)}
-	btnFolder := RECT{btnNew.Right + sc(12), sc(92), btnNew.Right + sc(235), sc(128)}
-	btnReload := RECT{btnFolder.Right + sc(12), sc(92), btnFolder.Right + sc(150), sc(128)}
+	btnNew := RECT{cx, sc(92), cx + sc(170), sc(128)}
+	btnSync := RECT{btnNew.Right + sc(10), sc(92), btnNew.Right + sc(200), sc(128)}
+	btnFolder := RECT{btnSync.Right + sc(10), sc(92), btnSync.Right + sc(185), sc(128)}
+	btnReload := RECT{btnFolder.Right + sc(10), sc(92), btnFolder.Right + sc(125), sc(128)}
 
 	drawButton(hdc, CtrlBtnNewDash, btnNew, "+ Neues Dashboard", "amber")
-	drawButton(hdc, CtrlBtnOpenDashFolder, btnFolder, "Dashboard-Ordner öffnen", "secondary")
+	drawButton(hdc, CtrlBtnSyncSCBindings, btnSync, "SC-Tasten aus Spiel lesen", "cyan")
+	drawButton(hdc, CtrlBtnOpenDashFolder, btnFolder, "Dashboard-Ordner", "secondary")
 	drawButton(hdc, CtrlBtnReloadDash, btnReload, "Aktualisieren", "secondary")
 
 	// Dashboard List Cards
@@ -1126,8 +1129,11 @@ func handleControlClick(id int) {
 		if err != nil {
 			app.ToastMsg = "Fehler: " + err.Error()
 		} else {
-			app.ToastMsg = fmt.Sprintf("Neues Dashboard '%s.json' angelegt.", newID)
+			app.ToastMsg = fmt.Sprintf("Neues Baukasten-Dashboard '%s.json' angelegt.", newID)
 		}
+	case CtrlBtnSyncSCBindings:
+		msg := syncStarCitizenActionmaps()
+		app.ToastMsg = msg
 	case CtrlBtnOpenDashFolder:
 		_ = os.MkdirAll(app.UserDashDir, 0755)
 		pShellExecuteW.Call(0, u16ptr("open"), u16ptr(app.UserDashDir), 0, 0, SW_SHOWNORMAL)

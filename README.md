@@ -58,48 +58,34 @@ Wenn Windows nach der Firewall fragt: Zugriff nur im privaten Netzwerk erlauben.
 
 Läuft Star Citizen als Administrator, die Verknüpfung **SC Cockpit (Administrator)** verwenden. Ein normales Fenster darf an ein Administrator-Fenster keine Tasten senden.
 
-## Bedienen
+## Bedienen & Live-Telemetrie
 
-Oben steht, ob der PC verbunden ist. Daneben die Dashboard-Liste, darunter die Seiten des gewählten Dashboards.
+Oben steht der Verbindungsstatus zum PC sowie die **Live-Telemetrie-Leiste**:
+- **Energie-Dreieck (Live)**: Zeigt die aktuelle prozentuale Verteilung auf **Waffen (F5)**, **Antrieb (F6)** und **Schilde (F7)**.
+- **Schild-Sektoren (Live)**: Zeigt die Verteilung auf **Vorn**, **Hinten**, **Links** und **Rechts**.
+- **Schiffssysteme & Star Citizen Status**: Erkennt automatisch über die lokale Star Citizen `Game.log`, welches Schiff aktiv ist, und zeigt den Status von Hauptstrom (`PWR`), Fahrwerk (`GEAR`), `VTOL`, `LICHT`, `DECOUPLED` sowie den `Master Mode` (`SCM` / `NAV`). Über `POST /api/telemetry` können zudem externe Tools Live-Werte ans Dashboard senden.
 
 | Element | Wirkung |
 | --- | --- |
-| Dashboard-Liste | Wechselt das Panel. Die Wahl bleibt auf dem PC gespeichert. |
-| Tab | Seite innerhalb des Dashboards, zum Beispiel Flug oder Energie. |
-| Taste | Sendet den hinterlegten Keybind. |
-| **Gefahr AUS / AN** | Waffen, Laser und Abwerfen sind gesperrt, bis das auf AN steht. Gilt nur in dieser Browser-Ansicht. |
-| **Loslassen** | Alle Tasten, die hängengeblieben sein könnten, werden losgelassen. |
-| **Vollbild** | Blendet die Browser-Leiste aus. Auf dem Tablet danach „Zum Startbildschirm hinzufügen“, wenn der Browser das anbietet. |
-| **Anpassen** | Editor. In dem Modus werden keine Tasten ins Spiel gesendet. |
+| Dashboard-Liste | Wechselt das Panel. Die Wahl bleibt auf dem PC und lokal im Browser gespeichert (auch bei einem Seiten-Reload sofort verfügbar). |
+| Tab | Seite innerhalb des Dashboards, zum Beispiel Flug, Energie & Schilde oder Kampf. |
+| Taste / Widget | Sendet den hinterlegten Keybind (Standard-Impuls 80 ms wie in `tablet-deck`, oder `hold` solange der Finger gedrückt bleibt). |
+| **Gefahr AUS / AN** | Gesicherte Tasten (mit gelb-rotem Warnstreifen wie Waffen, Laser, Selbstzerstörung, Abwerfen) sind gesperrt, bis das auf AN steht. |
+| **Loslassen** | Alle Tasten, die hängengeblieben sein könnten, werden sofort losgelassen. |
+| **Vollbild** | Blendet die Browser-Leiste aus. |
+| **Baukasten / Anpassen** | Öffnet den modularen Baukasten-Editor (inspiriert von Home Assistant & Tablet Deck). |
 
-Halten heißt: Finger drauf, Taste bleibt unten, Finger weg, Taste geht hoch. Schaltet das Display ab, lässt der Server die Taste nach wenigen Sekunden selbst los.
-
-`Umschalten` auf einem Button merkt sich die Farbe nur auf dem Gerät. Das Spiel sagt dem Panel nicht, ob das Fahrwerk wirklich draußen ist.
-
-## Eigenes Dashboard
+## Eigenes Dashboard (Modularer Baukasten & Hintergrundbilder)
 
 Drei Wege, dasselbe Format. Details, erlaubte Tasten und die Default-Belegung stehen in [docs/DASHBOARD.md](docs/DASHBOARD.md).
 
-**Im Browser.** **Anpassen**, Button antippen, Text und Tasten ändern, **Speichern**. **Neu** legt ein leeres Dashboard an, **Kopie** dupliziert das aktuelle. Speichern schreibt immer in deinen Ordner. Ein mitgeliefertes Dashboard wird dabei nicht überschrieben, sondern nur überdeckt. **Dashboard löschen** entfernt diese eigene Fassung.
-
-**Als Datei.** `docs/beispiel.json` in den lokalen Dashboard-Ordner kopieren, Dateiname und `id` ändern, Seite neu laden.
-
-**Mit einer KI.** Der Auftrag muss auf die Referenz zeigen, sonst erfindet das Modell Tasten und Felder. Sinnvoller Auftrag:
-
-```text
-Lies docs/DASHBOARD.md und docs/dashboard.schema.json im Repository
-https://github.com/MOON-132/sc-cockpit
-und erzeuge ein Dashboard für die Prospector.
-Nur Funktionen, deren Tasten in der Default-Tabelle stehen oder die ich hier nenne.
-Schreibe die Datei dashboards/local/prospector.json.
-Keine Makros, keine Selbstzerstörung.
-```
-
-Eigene Keybinds aus dem Spiel dazulegen, wenn sie vom Standard abweichen. Export im Spiel: Optionen, Keybindings, Advanced Controls Customization, Control Profiles. Pfad:
-
-`Roberts Space Industries\StarCitizen\LIVE\USER\Client\0\Controls\Mappings\`
-
-Mitgeliefert sind **Standard** (Flug, Energie, Quantum, Kampf) und **Mining**. Die Tasten dort sind Defaults um Alpha 4.10, keine Garantie für dein Profil.
+1. **Modularer Baukasten im Browser (`Baukasten / Anpassen`)**:
+   - **1-Klick Star Citizen Presets**: Aus über 35 fertigen Star-Citizen-Bausteinen wählen (z. B. *Flight Ready = R-Alt + R*, *Fahrwerk = N*, *Landeerlaubnis = L-Alt + N*, *Master Mode = B*, *Täuschkörper*, *Mining-Module*) oder danach suchen — ein Klick fügt den fertigen Baustein sofort in die aktuelle Seite ein.
+   - **Interaktive Live-Widgets**: Füge per Klick komplette Spezial-Kacheln wie den **Schild-Kompass (Interaktiv)** oder das **Energie-Dreieck (Live-Widget)** wie in Home Assistant hinzu.
+   - **SC-Tasten aus Spiel lesen**: Ein Klick auf **SC-Tasten aus Spiel lesen** durchsucht automatisch deine lokale Star-Citizen-Installation (`LIVE/user/client/0/Profiles/default/actionmaps.xml`) und übernimmt deine echten Keybinds ins Dashboard.
+   - **Eigene Hintergrundbilder & Cockpit-Themes**: Wähle zwischen fertigen Star-Citizen-Themes (*Aegis Tactical Grid*, *Crusader Horizon*, *Drake Industrial*, *Quantum Starmap*), füge eine Bild-URL ein oder lade ein **eigenes Hintergrundbild** direkt vom Gerät hoch — inklusive einstellbarer Deckkraft (`5%` bis `95%`).
+2. **Als Datei**: `docs/beispiel.json` in den lokalen Dashboard-Ordner kopieren, Dateiname und `id` ändern, Seite neu laden.
+3. **Mit einer KI**: Siehe Beispiel-Prompt in [docs/DASHBOARD.md](docs/DASHBOARD.md).
 
 ## Deinstallieren
 

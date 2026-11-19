@@ -127,10 +127,39 @@
     },
     {
       "id": "energie",
-      "label": "Energie",
+      "label": "Energie & Schilde",
       "groups": [
         {
-          "title": "Power-Dreieck",
+          "title": "Live Energie- & Schild-Steuerung",
+          "buttons": [
+            {
+              "id": "live-power-triangle",
+              "kind": "power",
+              "label": "Energie-Dreieck (Live)",
+              "hint": "F5 / F6 / F7 / F8",
+              "keys": [
+                "f8"
+              ],
+              "mode": "tap",
+              "color": "amber",
+              "wide": true
+            },
+            {
+              "id": "live-shield-compass",
+              "kind": "shield",
+              "label": "Schild-Kompass (Sektoren)",
+              "hint": "Vorn / Hinten / Links / Rechts",
+              "keys": [
+                "num5"
+              ],
+              "mode": "tap",
+              "color": "cyan",
+              "wide": true
+            }
+          ]
+        },
+        {
+          "title": "Power-Dreieck Tasten",
           "buttons": [
             {
               "id": "pwr-weapons",

@@ -411,26 +411,31 @@ func createNewDashboard() (string, error) {
 	}
 
 	template := map[string]interface{}{
-		"id":    newID,
-		"title": fmt.Sprintf("Eigenes Schiff %d", n-1),
+		"id":         newID,
+		"title":      fmt.Sprintf("Eigenes Schiff %d", n-1),
+		"background": "preset:aegis",
+		"bg_opacity": 0.40,
 		"pages": []map[string]interface{}{
 			{
 				"id":    "flug",
-				"label": "Flug & Systeme",
+				"label": "Cockpit & Systeme",
 				"groups": []map[string]interface{}{
 					{
-						"title": "Hauptsysteme",
+						"title": "Hauptsysteme (Baukasten)",
 						"buttons": []map[string]interface{}{
 							{
 								"id":    "flight-ready",
+								"sc":    "v_flightready",
 								"label": "Flight Ready",
 								"hint":  "R-Alt + R",
 								"keys":  []string{"ralt", "r"},
 								"mode":  "tap",
 								"color": "green",
+								"wide":  true,
 							},
 							{
 								"id":    "gear",
+								"sc":    "v_toggle_landing_system",
 								"label": "Fahrwerk",
 								"hint":  "N",
 								"keys":  []string{"n"},
@@ -439,11 +444,32 @@ func createNewDashboard() (string, error) {
 							},
 							{
 								"id":    "lights",
+								"sc":    "v_lights",
 								"label": "Licht",
 								"hint":  "L",
 								"keys":  []string{"l"},
 								"mode":  "toggle",
 								"color": "amber",
+							},
+							{
+								"id":    "live-pwr",
+								"kind":  "power",
+								"label": "Energie-Dreieck",
+								"hint":  "F5 / F6 / F7 / F8",
+								"keys":  []string{"f8"},
+								"mode":  "tap",
+								"color": "amber",
+								"wide":  true,
+							},
+							{
+								"id":    "live-shd",
+								"kind":  "shield",
+								"label": "Schild-Kompass",
+								"hint":  "Sektoren",
+								"keys":  []string{"num5"},
+								"mode":  "tap",
+								"color": "cyan",
+								"wide":  true,
 							},
 						},
 					},
@@ -458,6 +484,22 @@ func createNewDashboard() (string, error) {
 	setActiveDashboard(newID)
 	reloadDashboards()
 	return newID, nil
+}
+
+func syncStarCitizenActionmaps() string {
+	candidates := []string{
+		`C:\Program Files\Roberts Space Industries\StarCitizen\LIVE\user\client\0\Profiles\default\actionmaps.xml`,
+		`C:\Program Files\Roberts Space Industries\StarCitizen\LIVE\USER\Client\0\Profiles\default\actionmaps.xml`,
+		`D:\Program Files\Roberts Space Industries\StarCitizen\LIVE\user\client\0\Profiles\default\actionmaps.xml`,
+		`D:\Roberts Space Industries\StarCitizen\LIVE\user\client\0\Profiles\default\actionmaps.xml`,
+		`E:\Roberts Space Industries\StarCitizen\LIVE\user\client\0\Profiles\default\actionmaps.xml`,
+	}
+	for _, p := range candidates {
+		if _, err := os.Stat(p); err == nil {
+			return "Star Citizen actionmaps.xml gefunden: " + p + " (Im Browser-Baukasten synchronisierbar)"
+		}
+	}
+	return "Hinweis: Keine lokale actionmaps.xml im Standardpfad gefunden — Standard-Presets (SC 4.x) sind aktiv."
 }
 
 // ============================================================================

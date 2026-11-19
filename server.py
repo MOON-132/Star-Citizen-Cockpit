@@ -453,11 +453,20 @@ def iter_buttons(layout: dict):
                 yield page, group, button
 
 
+WIDGET_KINDS = {"button", "shield", "power", "telemetry", "pair", "guard"}
+
+
 def validate_layout(layout: dict) -> list[str]:
     errors = []
     count = 0
     for page, _group, button in iter_buttons(layout):
         count += 1
+        kind = str(button.get("kind") or "button")
+        if kind not in WIDGET_KINDS:
+            errors.append(f"{page.get('id')}: unbekannter Baustein {kind!r}")
+            continue
+        if kind in {"shield", "power", "telemetry"}:
+            continue
         label = button.get("label", button.get("id", "?"))
         keys = button.get("keys")
         if not isinstance(keys, list) or not keys:
@@ -585,13 +594,19 @@ def clean_dashboard(data: dict, dash_id: str) -> dict:
             for button in group.get("buttons") or []:
                 if not isinstance(button, dict):
                     continue
-                keys = button.get("keys")
-                if not isinstance(keys, list) or not 1 <= len(keys) <= 4:
-                    raise ValueError(f"Tasten fehlen bei {button.get('label') or 'Button'}")
-                norm = [normalize_key(str(key)) for key in keys]
-                for key in norm:
-                    if not known_key(key):
-                        raise ValueError(f"unbekannte Taste: {key}")
+                kind = str(button.get("kind") or "button")
+                if kind not in WIDGET_KINDS:
+                    kind = "button"
+                keys_raw = button.get("keys")
+                if kind in {"shield", "power", "telemetry"} and not keys_raw:
+                    norm = ["f8"]
+                else:
+                    if not isinstance(keys_raw, list) or not 1 <= len(keys_raw) <= 4:
+                        raise ValueError(f"Tasten fehlen bei {button.get('label') or 'Button'}")
+                    norm = [normalize_key(str(key)) for key in keys_raw]
+                    for key in norm:
+                        if not known_key(key):
+                            raise ValueError(f"unbekannte Taste: {key}")
                 mode = button.get("mode") or "tap"
                 if mode not in {"tap", "toggle", "hold"}:
                     raise ValueError("mode ungültig")
@@ -605,7 +620,7 @@ def clean_dashboard(data: dict, dash_id: str) -> dict:
                     bid = f"{base_id}-{n}"[:40]
                     n += 1
                 seen_buttons.add(bid)
-                buttons.append({
+                entry = {
                     "id": bid,
                     "label": str(button.get("label") or bid)[:40],
                     "hint": str(button.get("hint") or "")[:60],
@@ -614,7 +629,18 @@ def clean_dashboard(data: dict, dash_id: str) -> dict:
                     "color": color,
                     "wide": bool(button.get("wide")),
                     "danger": bool(button.get("danger")),
-                })
+                }
+                if kind != "button":
+                    entry["kind"] = kind
+                if button.get("sc"):
+                    entry["sc"] = str(button["sc"])[:60]
+                if button.get("keys2") and isinstance(button["keys2"], list):
+                    norm2 = [normalize_key(str(k)) for k in button["keys2"][:4] if known_key(normalize_key(str(k)))]
+                    if norm2:
+                        entry["keys2"] = norm2
+                if button.get("span") in {1, 2, 3, 4}:
+                    entry["span"] = int(button["span"])
+                buttons.append(entry)
             if buttons:
                 groups.append({
                     "title": str(group.get("title") or "Steuerung")[:40],
@@ -627,7 +653,17 @@ def clean_dashboard(data: dict, dash_id: str) -> dict:
             "label": str(page.get("label") or pid)[:24],
             "groups": groups,
         })
-    return {"id": dash_id, "title": str(data.get("title") or dash_id)[:40], "pages": pages}
+    result = {"id": dash_id, "title": str(data.get("title") or dash_id)[:40], "pages": pages}
+    bg = str(data.get("background") or "").strip()
+    if bg and len(bg) <= 250000:
+        result["background"] = bg
+    if "bg_opacity" in data:
+        try:
+            op = max(0.05, min(1.0, float(data["bg_opacity"])))
+            result["bg_opacity"] = round(op, 2)
+        except (ValueError, TypeError):
+            pass
+    return result
 
 
 def save_dashboard(dash_id: str, data: dict) -> dict:
@@ -687,8 +723,230 @@ def is_admin() -> bool | None:
         return None
 
 
+class TelemetryState:
+    """Tracks live ship state (power triangle, shield sectors, systems) & Star Citizen Game.log / process status."""
+
+    def __init__(self) -> None:
+        self.lock = threading.Lock()
+        self.power = {"weapons": 33, "engines": 34, "shields": 33}
+        self.shields = {"front": 25, "back": 25, "left": 25, "right": 25}
+        self.systems = {
+            "flight_ready": False,
+            "gear": True,
+            "vtol": False,
+            "lights": False,
+            "decoupled": False,
+            "cruise": False,
+            "master_mode": "SCM",
+            "power_all": True,
+            "power_thrusters": True,
+            "power_weapons": True,
+            "power_shields": True,
+        }
+        self.sc_running = False
+        self.sc_ship = "AEGIS / UEE COCKPIT"
+        self.sc_zone = "Stanton System"
+        self.last_action = "-"
+        self.last_check = 0.0
+
+    def on_keys_pressed(self, keys: list[str], label: str = "") -> None:
+        combo = "+".join(keys)
+        with self.lock:
+            self.last_action = f"{label} ({combo})" if label else combo
+            # Power triangle distribution
+            if combo == "f5":
+                self._shift_power("weapons", 12)
+            elif combo == "f6":
+                self._shift_power("engines", 12)
+            elif combo == "f7":
+                self._shift_power("shields", 12)
+            elif combo == "f8":
+                self.power = {"weapons": 33, "engines": 34, "shields": 33}
+            # Shield sector distribution (numpad or RCTRL+numpad)
+            elif combo in {"num8", "rctrl+num8"}:
+                self._shift_shield("front", 15)
+            elif combo in {"num2", "rctrl+num2"}:
+                self._shift_shield("back", 15)
+            elif combo in {"num4", "rctrl+num4"}:
+                self._shift_shield("left", 15)
+            elif combo in {"num6", "rctrl+num6"}:
+                self._shift_shield("right", 15)
+            elif combo in {"num5", "rctrl+num5"}:
+                self.shields = {"front": 25, "back": 25, "left": 25, "right": 25}
+            # Ship systems toggles
+            elif combo == "ralt+r":
+                self.systems["flight_ready"] = True
+                self.systems["power_all"] = True
+                self.systems["power_thrusters"] = True
+                self.systems["power_weapons"] = True
+                self.systems["power_shields"] = True
+            elif combo == "u":
+                self.systems["power_all"] = not self.systems["power_all"]
+            elif combo == "i":
+                self.systems["power_thrusters"] = not self.systems["power_thrusters"]
+            elif combo == "p":
+                self.systems["power_weapons"] = not self.systems["power_weapons"]
+            elif combo == "o":
+                self.systems["power_shields"] = not self.systems["power_shields"]
+            elif combo == "n":
+                self.systems["gear"] = not self.systems["gear"]
+            elif combo == "k":
+                self.systems["vtol"] = not self.systems["vtol"]
+            elif combo == "l":
+                self.systems["lights"] = not self.systems["lights"]
+            elif combo == "c":
+                self.systems["decoupled"] = not self.systems["decoupled"]
+            elif combo == "lalt+c":
+                self.systems["cruise"] = not self.systems["cruise"]
+            elif combo == "b":
+                self.systems["master_mode"] = "NAV / QUANTUM" if self.systems["master_mode"] == "SCM" else "SCM"
+
+    def _shift_power(self, target: str, delta: int) -> None:
+        others = [k for k in self.power if k != target]
+        gain = min(delta, 100 - self.power[target])
+        if gain <= 0:
+            return
+        self.power[target] += gain
+        half1 = gain // 2
+        half2 = gain - half1
+        self.power[others[0]] = max(0, self.power[others[0]] - half1)
+        self.power[others[1]] = max(0, self.power[others[1]] - half2)
+        total = sum(self.power.values())
+        if total != 100:
+            self.power[target] += 100 - total
+
+    def _shift_shield(self, target: str, delta: int) -> None:
+        others = [k for k in self.shields if k != target]
+        gain = min(delta, 100 - self.shields[target])
+        if gain <= 0:
+            return
+        self.shields[target] += gain
+        per = gain // 3
+        rem = gain - per * 3
+        for idx, k in enumerate(others):
+            sub = per + (1 if idx < rem else 0)
+            self.shields[k] = max(0, self.shields[k] - sub)
+        total = sum(self.shields.values())
+        if total != 100:
+            self.shields[target] += 100 - total
+
+    def update(self, payload: dict) -> dict:
+        with self.lock:
+            if isinstance(payload.get("power"), dict):
+                for k in ("weapons", "engines", "shields"):
+                    if k in payload["power"]:
+                        self.power[k] = max(0, min(100, int(payload["power"][k])))
+            if isinstance(payload.get("shields"), dict):
+                for k in ("front", "back", "left", "right"):
+                    if k in payload["shields"]:
+                        self.shields[k] = max(0, min(100, int(payload["shields"][k])))
+            if isinstance(payload.get("systems"), dict):
+                for k, v in payload["systems"].items():
+                    if k in self.systems:
+                        self.systems[k] = v
+        return self.snapshot()
+
+    def _poll_sc_environment(self) -> None:
+        now = time.monotonic()
+        if now - self.last_check < 4.0:
+            return
+        self.last_check = now
+        if sys.platform == "win32":
+            try:
+                class MEMORYSTATUSEX(ctypes.Structure):
+                    _fields_ = [
+                        ("dwLength", wintypes.DWORD),
+                        ("dwMemoryLoad", wintypes.DWORD),
+                        ("ullTotalPhys", ctypes.c_uint64),
+                        ("ullAvailPhys", ctypes.c_uint64),
+                        ("ullTotalPageFile", ctypes.c_uint64),
+                        ("ullAvailPageFile", ctypes.c_uint64),
+                        ("ullTotalVirtual", ctypes.c_uint64),
+                        ("ullAvailVirtual", ctypes.c_uint64),
+                        ("ullAvailExtendedVirtual", ctypes.c_uint64),
+                    ]
+                mem = MEMORYSTATUSEX()
+                mem.dwLength = ctypes.sizeof(MEMORYSTATUSEX)
+                ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(mem))
+                self.ram_pct = int(mem.dwMemoryLoad)
+            except Exception:
+                self.ram_pct = 0
+
+        # Scan common Star Citizen Game.log locations for active ship or location
+        for base in _sc_candidate_dirs():
+            gamelog = base / "Game.log"
+            if gamelog.is_file():
+                self.sc_running = (time.time() - gamelog.stat().st_mtime) < 300
+                try:
+                    with gamelog.open("rb") as fh:
+                        fh.seek(0, os.SEEK_END)
+                        size = fh.tell()
+                        fh.seek(max(0, size - 24576), os.SEEK_SET)
+                        tail = fh.read().decode("utf-8", errors="ignore")
+                    ship_matches = re.findall(r"([A-Z]{3,5}_[A-Za-z0-9_]+)", tail)
+                    for sm in reversed(ship_matches):
+                        if any(p in sm for p in ("AEGS_", "ANVL_", "orig_", "ORIG_", "DRAK_", "MISC_", "RSI_", "CRUS_", "ARGO_", "CNOU_", "GAMA_", "MIRAI_")):
+                            clean_ship = sm.split("_")[0] + " " + " ".join(sm.split("_")[1:3])
+                            self.sc_ship = clean_ship.upper()
+                            break
+                except Exception:
+                    pass
+                break
+
+    def snapshot(self) -> dict:
+        self._poll_sc_environment()
+        with self.lock:
+            return {
+                "power": dict(self.power),
+                "shields": dict(self.shields),
+                "systems": dict(self.systems),
+                "sc_running": self.sc_running,
+                "sc_ship": self.sc_ship,
+                "sc_zone": self.sc_zone,
+                "last_action": self.last_action,
+                "ram_pct": getattr(self, "ram_pct", 0),
+            }
+
+
+def _sc_candidate_dirs() -> list[Path]:
+    candidates = []
+    for drive in ("C:", "D:", "E:", "F:"):
+        candidates.append(Path(drive + "/Program Files/Roberts Space Industries/StarCitizen/LIVE"))
+        candidates.append(Path(drive + "/Roberts Space Industries/StarCitizen/LIVE"))
+        candidates.append(Path(drive + "/Games/Roberts Space Industries/StarCitizen/LIVE"))
+        candidates.append(Path(drive + "/StarCitizen/LIVE"))
+    return [c for c in candidates if c.is_dir()]
+
+
+def read_sc_actionmaps() -> dict:
+    """Reads user keybindings from Star Citizen's actionmaps.xml if installed (inspired by tablet-deck)."""
+    import xml.etree.ElementTree as ET
+    for live_dir in _sc_candidate_dirs():
+        xml_path = live_dir / "user/client/0/Profiles/default/actionmaps.xml"
+        if not xml_path.is_file():
+            xml_path = live_dir / "USER/Client/0/Profiles/default/actionmaps.xml"
+        if xml_path.is_file():
+            bindings = {}
+            try:
+                root = ET.parse(xml_path).getroot()
+                for action in root.iter("action"):
+                    act_name = action.get("name") or ""
+                    for rb in action.iter("rebind"):
+                        inp = (rb.get("input") or "").strip()
+                        if inp.startswith("kb1_") and inp[4:].strip():
+                            raw_k = inp[4:].strip().lower()
+                            parts = [normalize_key(p) for p in raw_k.split("+") if p.strip()]
+                            if parts and all(known_key(p) for p in parts):
+                                bindings[act_name] = parts
+            except Exception as exc:
+                return {"found": True, "path": str(xml_path), "error": str(exc), "bindings": {}}
+            return {"found": True, "path": str(xml_path), "bindings": bindings}
+    return {"found": False, "path": "", "bindings": {}}
+
+
 CONFIG = load_config()
 BOARD = Board(CONFIG["hold_timeout_s"])
+TELEMETRY = TelemetryState()
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -711,20 +969,30 @@ class Handler(BaseHTTPRequestHandler):
 
     def _json(self, code: int, payload: dict) -> None:
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
-        self.send_response(code)
-        self.send_header("Content-Type", "application/json; charset=utf-8")
-        self.send_header("Content-Length", str(len(body)))
-        self.send_header("Cache-Control", "no-store")
-        self.end_headers()
-        self.wfile.write(body)
+        try:
+            self.send_response(code)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Cache-Control", "no-store, no-cache, must-revalidate")
+            self.send_header("Connection", "close")
+            self.end_headers()
+            self.wfile.write(body)
+        except (BrokenPipeError, ConnectionResetError, OSError):
+            pass
+        self.close_connection = True
 
     def _bytes(self, code: int, body: bytes, content_type: str) -> None:
-        self.send_response(code)
-        self.send_header("Content-Type", content_type)
-        self.send_header("Content-Length", str(len(body)))
-        self.send_header("Cache-Control", "no-store")
-        self.end_headers()
-        self.wfile.write(body)
+        try:
+            self.send_response(code)
+            self.send_header("Content-Type", content_type)
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Cache-Control", "no-store, no-cache, must-revalidate")
+            self.send_header("Connection", "close")
+            self.end_headers()
+            self.wfile.write(body)
+        except (BrokenPipeError, ConnectionResetError, OSError):
+            pass
+        self.close_connection = True
 
     def _read_json(self, limit: int = 8192) -> dict:
         length = int(self.headers.get("Content-Length", "0") or 0)
@@ -752,10 +1020,15 @@ class Handler(BaseHTTPRequestHandler):
             if not file.is_file():
                 self._json(500, {"error": "index.html fehlt"})
                 return
-            self._bytes(200, file.read_bytes(), "text/html; charset=utf-8")
+            html_bytes = file.read_bytes().replace(b"\r\n", b"\n")
+            self._bytes(200, html_bytes, "text/html; charset=utf-8")
             return
         if path == "/favicon.ico":
-            self._bytes(204, b"", "image/x-icon")
+            ico = APP_ROOT / "sc-cockpit.ico"
+            if ico.is_file():
+                self._bytes(200, ico.read_bytes(), "image/x-icon")
+            else:
+                self._bytes(204, b"", "image/x-icon")
             return
         if not self._authorized():
             self._json(401, {"error": "token"})
@@ -769,7 +1042,14 @@ class Handler(BaseHTTPRequestHandler):
                 "active": active_id(items),
                 "dashboards": len(items),
                 "held": sorted(BOARD.down),
+                "telemetry": TELEMETRY.snapshot(),
             })
+            return
+        if path == "/api/telemetry":
+            self._json(200, TELEMETRY.snapshot())
+            return
+        if path == "/api/sc-bindings":
+            self._json(200, read_sc_actionmaps())
             return
         if path == "/api/dashboards":
             items = catalog()
@@ -828,7 +1108,7 @@ class Handler(BaseHTTPRequestHandler):
             self._json(404, {"error": "nicht gefunden"})
             return
         try:
-            data = self._read_json(300000)
+            data = self._read_json(600000)
             saved = save_dashboard(dash_id, data)
             if data.get("activate", True):
                 set_active(dash_id)
@@ -846,6 +1126,15 @@ class Handler(BaseHTTPRequestHandler):
             return
         if self._dash_id(path):
             self._save_dashboard()
+            return
+        if path == "/api/telemetry":
+            try:
+                data = self._read_json(32768)
+                snap = TELEMETRY.update(data)
+            except (ValueError, TypeError, json.JSONDecodeError) as exc:
+                self._json(400, {"error": str(exc)})
+                return
+            self._json(200, snap)
             return
         if path == "/api/active":
             try:
@@ -881,7 +1170,7 @@ class Handler(BaseHTTPRequestHandler):
             for key in keys:
                 if not known_key(key):
                     raise ValueError(f"unbekannte Taste: {key}")
-            hold_ms = int(data.get("hold_ms") or (400 if mode == "hold" else 45))
+            hold_ms = int(data.get("hold_ms") or (400 if mode == "hold" else 80))
             hold_ms = max(1, min(hold_ms, 10000))
         except (ValueError, TypeError, json.JSONDecodeError) as exc:
             self._json(400, {"error": str(exc)})
@@ -896,13 +1185,15 @@ class Handler(BaseHTTPRequestHandler):
                 BOARD.hold_for(keys, hold_ms)
             else:
                 BOARD.tap(keys, hold_ms)
+            if mode in {"tap", "hold", "down"}:
+                TELEMETRY.on_keys_pressed(keys, label)
         except (ValueError, OSError) as exc:
             log(f"FEHLER {mode} {label}: {exc}")
             self._json(500, {"error": str(exc)})
             return
         if mode != "down":
             log(f"{mode:<6} {label}  {'+'.join(keys)}")
-        self._json(200, {"ok": True})
+        self._json(200, {"ok": True, "telemetry": TELEMETRY.snapshot()})
 
 
 def serve(host: str = "0.0.0.0") -> None:
@@ -1030,10 +1321,13 @@ def self_test() -> int:
         if find_dashboard("selftest") is not None:
             raise SystemExit("Dashboard nicht gelöscht")
         call("POST", "/api/press", {"keys": ["n"], "mode": "tap", "id": "test"})
+        tele = call("GET", "/api/telemetry")
+        if "power" not in tele or "shields" not in tele:
+            raise SystemExit("telemetry unvollständig")
         with urllib.request.urlopen(base + "/") as res:
             html = res.read().decode()
-        if "Anpassen" not in html:
-            raise SystemExit("index.html ohne Editor")
+        if "Baukasten" not in html:
+            raise SystemExit("index.html ohne Baukasten-Editor")
     finally:
         server.shutdown()
         server.server_close()
