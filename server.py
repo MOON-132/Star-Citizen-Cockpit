@@ -5,8 +5,10 @@ Nur die Python-Standardbibliothek. Auf dem Gaming-PC starten, im Browser
 jedes Endgeräts die angezeigte Adresse öffnen. Tasten gehen per SendInput
 (Scancode) an das fokussierte Fenster, also an Star Citizen.
 
-Dashboards sind JSON-Dateien. Mitgelieferte liegen in dashboards/,
-eigene in dashboards/local/ oder im Benutzerordner des Installers.
+Dashboards sind JSON-Dateien. Format und Regeln: docs/DASHBOARD.md.
+Mitgelieferte liegen in dashboards/, eigene in dashboards/local/
+oder im Benutzerordner des Installers.
+
 
 """
 
@@ -915,6 +917,7 @@ def serve(host: str = "0.0.0.0") -> None:
     log("Dashboards: " + ", ".join(item["title"] for item in items))
     log(f"Aktiv: {active_id(items) or '-'}")
     log(f"Eigene Dashboards: {local_dir()}")
+    log("Format für neue Dashboards: docs/DASHBOARD.md")
     if DRY_RUN:
         log("Trockenlauf: kein Windows, Tasten werden nur angezeigt.")
     admin = is_admin()
@@ -946,6 +949,16 @@ def self_test() -> int:
     import tempfile
     import urllib.error
     import urllib.request
+
+    example = json.loads((APP_ROOT / "docs" / "beispiel.json").read_text(encoding="utf-8"))
+    cleaned = clean_dashboard(example, example["id"])
+    if cleaned["id"] != "beispiel" or not cleaned["pages"]:
+        log("docs/beispiel.json ist kein gültiges Dashboard")
+        return 1
+    schema = json.loads((APP_ROOT / "docs" / "dashboard.schema.json").read_text(encoding="utf-8"))
+    if schema.get("properties", {}).get("pages", {}).get("maxItems") != 12:
+        log("docs/dashboard.schema.json passt nicht zum Server")
+        return 1
 
     tmp = Path(tempfile.mkdtemp(prefix="sc-cockpit-"))
     os.environ["SC_COCKPIT_HOME"] = str(tmp)
@@ -1038,6 +1051,7 @@ def main() -> None:
     if "--help" in sys.argv:
         log("python server.py            Server starten")
         log("python server.py --self-test  Layout und HTTP prüfen")
+        log("Dashboard-Format: docs/DASHBOARD.md")
         return
     sweeper = threading.Thread(target=_sweep_loop, daemon=True)
     sweeper.start()

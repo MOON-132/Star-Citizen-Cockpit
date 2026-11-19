@@ -22,6 +22,7 @@ foreach ($name in $names) {
   Copy-Item -LiteralPath (Join-Path $Source $name) -Destination (Join-Path $App $name) -Force
 }
 Copy-Item -LiteralPath (Join-Path $Source "dashboards") -Destination (Join-Path $App "dashboards") -Recurse -Force
+Copy-Item -LiteralPath (Join-Path $Source "docs") -Destination (Join-Path $App "docs") -Recurse -Force
 $copiedLocal = Join-Path $App "dashboards\local"
 if (Test-Path $copiedLocal) { Remove-Item -LiteralPath $copiedLocal -Recurse -Force }
 

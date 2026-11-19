@@ -1,0 +1,42 @@
+{
+  "id": "beispiel",
+  "title": "Beispiel",
+  "pages": [
+    {
+      "id": "schiff",
+      "label": "Schiff",
+      "groups": [
+        {
+          "title": "Systeme",
+          "buttons": [
+            {
+              "id": "flight-ready",
+              "label": "Flight Ready",
+              "hint": "R-Alt + R",
+              "keys": ["ralt", "r"],
+              "mode": "tap",
+              "color": "amber",
+              "wide": true
+            },
+            {
+              "id": "gear",
+              "label": "Fahrwerk",
+              "hint": "N",
+              "keys": ["n"],
+              "mode": "toggle",
+              "color": "cyan"
+            },
+            {
+              "id": "lights",
+              "label": "Lichter",
+              "hint": "L",
+              "keys": ["l"],
+              "mode": "toggle",
+              "color": "slate"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
