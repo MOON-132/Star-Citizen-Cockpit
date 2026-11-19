@@ -1,0 +1,5 @@
+{
+  "_comment": "Kopiere diese Datei nach layout.local.json. Der Server bevorzugt sie vor layout.json. layout.local.json steht in .gitignore und bleibt auf dem Gaming-PC.",
+  "title": "SC Cockpit",
+  "pages": []
+}

@@ -1,0 +1,11 @@
+# Persönliche Dateien, nicht committen
+layout.local.json
+config.local.json
+
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.idea/
+.vscode/
+*.log

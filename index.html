@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="color-scheme" content="dark">
+<title>SC Cockpit</title>
+<style>
+  :root {
+    --bg: #0b0e13;
+    --bg-2: #121820;
+    --line: #243041;
+    --text: #e7edf5;
+    --muted: #8b9bb0;
+    --amber: #e2a23a;
+    --cyan: #3ec8c4;
+    --red: #e15b4c;
+    --blue: #6aa4ff;
+    --green: #6fbf73;
+    --slate: #9aa8ba;
+    --danger: #ff5d4a;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Segoe UI", Bahnschrift, system-ui, sans-serif;
+    overscroll-behavior: none;
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  body {
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding:
+      calc(10px + env(safe-area-inset-top))
+      calc(12px + env(safe-area-inset-right))
+      calc(10px + env(safe-area-inset-bottom))
+      calc(12px + env(safe-area-inset-left));
+    background:
+      radial-gradient(1200px 400px at 10% -10%, rgba(226, 162, 58, 0.08), transparent 50%),
+      var(--bg);
+  }
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding-bottom: 10px;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .mark {
+    width: 14px;
+    height: 28px;
+    border-radius: 2px;
+    background: linear-gradient(var(--amber), #8a5a12);
+    box-shadow: 0 0 16px rgba(226, 162, 58, 0.45);
+  }
+  header strong { display: block; font-size: 18px; letter-spacing: 0.04em; }
+  #status { color: var(--muted); font-size: 13px; }
+  #status.on { color: var(--green); }
+  #status.off { color: var(--danger); }
+  .tools { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+  .tools button, .tab {
+    border: 1px solid var(--line);
+    background: var(--bg-2);
+    color: var(--text);
+    border-radius: 12px;
+    min-height: 44px;
+    padding: 0 14px;
+    font: inherit;
+    font-size: 14px;
+  }
+  #arm[aria-pressed="true"] {
+    background: #3a1612;
+    border-color: var(--danger);
+    color: #ffd0c8;
+  }
+  nav {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 10px;
+  }
+  .tab[aria-selected="true"] {
+    border-color: var(--amber);
+    color: var(--amber);
+  }
+  main { flex: 1; overflow: auto; }
+  .page { display: none; }
+  .page.active { display: block; }
+  .group { margin-bottom: 16px; }
+  .group h2 {
+    margin: 0 0 8px;
+    font-size: 12px;
+    font-weight: 650;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+    gap: 10px;
+  }
+  .key {
+    appearance: none;
+    border: 1px solid var(--line);
+    background: #161d27;
+    color: var(--text);
+    border-radius: 16px;
+    min-height: 84px;
+    padding: 12px 14px;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 6px;
+    font: inherit;
+    position: relative;
+  }
+  .key b { font-size: 18px; font-weight: 680; letter-spacing: 0.01em; }
+  .key small { color: var(--muted); font-size: 12px; }
+  .key.wide { grid-column: span 2; }
+  .key.amber { box-shadow: inset 3px 0 0 var(--amber); }
+  .key.cyan { box-shadow: inset 3px 0 0 var(--cyan); }
+  .key.red { box-shadow: inset 3px 0 0 var(--red); }
+  .key.blue { box-shadow: inset 3px 0 0 var(--blue); }
+  .key.green { box-shadow: inset 3px 0 0 var(--green); }
+  .key.slate { box-shadow: inset 3px 0 0 var(--slate); }
+  .key.on, .key.holding {
+    background: #1c2836;
+    border-color: #3d5270;
+  }
+  .key.on b { color: var(--cyan); }
+  .key.holding { border-color: var(--amber); }
+  .key:active { transform: scale(0.985); }
+  .key.locked { opacity: 0.38; }
+  .banner {
+    margin-bottom: 10px;
+    padding: 8px 12px;
+    border: 1px solid #6a5420;
+    border-radius: 10px;
+    color: #f0d7a2;
+    background: #241c10;
+    font-size: 13px;
+  }
+  footer {
+    color: var(--muted);
+    font-size: 12px;
+    padding-top: 6px;
+  }
+  #toast {
+    position: fixed;
+    left: 50%;
+    bottom: 24px;
+    transform: translateX(-50%);
+    background: #3a1612;
+    color: #ffd7d1;
+    border: 1px solid var(--danger);
+    border-radius: 12px;
+    padding: 10px 14px;
+    max-width: min(520px, calc(100% - 24px));
+  }
+  @media (max-width: 720px) {
+    .key.wide { grid-column: span 2; }
+    .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <span class="mark"></span>
+    <div>
+      <strong id="title">SC Cockpit</strong>
+      <small id="status">verbinde…</small>
+    </div>
+  </div>
+  <div class="tools">
+    <button id="arm" type="button" aria-pressed="false">Gefahr AUS</button>
+    <button id="release" type="button">Loslassen</button>
+    <button id="full" type="button">Vollbild</button>
+  </div>
+</header>
+<nav id="tabs"></nav>
+<main id="pages"></main>
+<footer id="foot"></footer>
+<div id="toast" hidden></div>
+<script>
+const statusEl = document.getElementById("status");
+const tabsEl = document.getElementById("tabs");
+const pagesEl = document.getElementById("pages");
+const toastEl = document.getElementById("toast");
+const armEl = document.getElementById("arm");
+const held = new Set();
+const toggled = new Set();
+let token = localStorage.getItem("sc-token") || "";
+let armed = false;
+let toastTimer = 0;
+let layout = null;
+
+function toast(text) {
+  toastEl.hidden = false;
+  toastEl.textContent = text;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { toastEl.hidden = true; }, 3200);
+}
+
+function headers() {
+  const h = { "Content-Type": "application/json" };
+  if (token) h["X-Token"] = token;
+  return h;
+}
+
+async function api(path, options) {
+  const res = await fetch(path, options);
+  if (res.status === 401) {
+    token = prompt("Token vom Gaming-PC (config.local.json)") || "";
+    if (token) localStorage.setItem("sc-token", token);
+    throw new Error("Token nötig");
+  }
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || ("HTTP " + res.status));
+  return data;
+}
+
+async function send(button, mode) {
+  if (button.danger && !armed && mode !== "up") {
+    toast("Zuerst Gefahr AN schalten");
+    return;
+  }
+  try {
+    await api("/api/press", {
+      method: "POST",
+      headers: headers(),
+      keepalive: true,
+      body: JSON.stringify({
+        id: button.id,
+        keys: button.keys,
+        mode: mode,
+        hold_ms: button.hold_ms || (button.mode === "hold" ? 400 : 45)
+      })
+    });
+  } catch (err) {
+    statusEl.className = "off";
+    statusEl.textContent = "Fehler: " + err.message;
+    if (mode !== "down") toast(err.message);
+  }
+}
+
+function render(data) {
+  layout = data;
+  document.getElementById("title").textContent = data.title || "SC Cockpit";
+  tabsEl.innerHTML = "";
+  pagesEl.innerHTML = "";
+  (data.pages || []).forEach((page, index) => {
+    const tab = document.createElement("button");
+    tab.type = "button";
+    tab.className = "tab";
+    tab.textContent = page.label || page.id;
+    tab.setAttribute("aria-selected", index === 0 ? "true" : "false");
+    tab.addEventListener("click", () => select(page.id));
+    tabsEl.appendChild(tab);
+
+    const section = document.createElement("section");
+    section.className = "page" + (index === 0 ? " active" : "");
+    section.dataset.page = page.id;
+    (page.groups || []).forEach((group) => {
+      const wrap = document.createElement("div");
+      wrap.className = "group";
+      const title = document.createElement("h2");
+      title.textContent = group.title || "";
+      const grid = document.createElement("div");
+      grid.className = "grid";
+      (group.buttons || []).forEach((button) => grid.appendChild(makeButton(button)));
+      wrap.append(title, grid);
+      section.appendChild(wrap);
+    });
+    pagesEl.appendChild(section);
+  });
+  const source = data._source === "local" ? "layout.local.json" : "layout.json";
+  document.getElementById("foot").textContent =
+    source + " · Seite neu laden nach einer Änderung · Toggle merkt sich nur die Anzeige, nicht das Spiel";
+}
+
+function select(id) {
+  document.querySelectorAll(".tab").forEach((tab, i) => {
+    const page = layout.pages[i];
+    tab.setAttribute("aria-selected", page && page.id === id ? "true" : "false");
+  });
+  document.querySelectorAll(".page").forEach((page) => {
+    page.classList.toggle("active", page.dataset.page === id);
+  });
+}
+
+function makeButton(button) {
+  const el = document.createElement("button");
+  el.type = "button";
+  el.className = "key " + (button.color || "slate") + (button.wide ? " wide" : "");
+  if (button.danger) el.classList.add("locked");
+  el.innerHTML = "<b></b><small></small>";
+  el.querySelector("b").textContent = button.label || button.id;
+  el.querySelector("small").textContent = button.hint || (button.keys || []).join(" + ");
+  el.dataset.id = button.id;
+
+  const refreshLock = () => {
+    if (!button.danger) return;
+    el.classList.toggle("locked", !armed);
+  };
+  el._refreshLock = refreshLock;
+
+  if (button.mode === "hold") {
+    const down = (event) => {
+      if (button.danger && !armed) {
+        toast("Zuerst Gefahr AN schalten");
+        return;
+      }
+      event.preventDefault();
+      el.setPointerCapture?.(event.pointerId);
+      held.add(button.id);
+      el.classList.add("holding");
+      send(button, "down");
+    };
+    const up = () => {
+      if (!held.has(button.id)) return;
+      held.delete(button.id);
+      el.classList.remove("holding");
+      send(button, "up");
+    };
+    el.addEventListener("pointerdown", down);
+    el.addEventListener("pointerup", up);
+    el.addEventListener("pointercancel", up);
+    el.addEventListener("lostpointercapture", up);
+  } else {
+    el.addEventListener("pointerup", (event) => {
+      if (event.pointerType === "mouse" && event.button !== 0) return;
+      if (button.danger && !armed) {
+        toast("Zuerst Gefahr AN schalten");
+        return;
+      }
+      if (button.mode === "toggle") {
+        if (toggled.has(button.id)) toggled.delete(button.id);
+        else toggled.add(button.id);
+        el.classList.toggle("on", toggled.has(button.id));
+      }
+      send(button, "tap");
+    });
+  }
+  return el;
+}
+
+armEl.addEventListener("click", () => {
+  armed = !armed;
+  armEl.setAttribute("aria-pressed", armed ? "true" : "false");
+  armEl.textContent = armed ? "Gefahr AN" : "Gefahr AUS";
+  document.querySelectorAll(".key").forEach((el) => el._refreshLock && el._refreshLock());
+});
+
+document.getElementById("release").addEventListener("click", async () => {
+  held.clear();
+  document.querySelectorAll(".holding").forEach((el) => el.classList.remove("holding"));
+  try {
+    await api("/api/release", { method: "POST", headers: headers(), body: "{}" });
+  } catch (err) {
+    toast(err.message);
+  }
+});
+
+document.getElementById("full").addEventListener("click", () => {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+  else document.exitFullscreen?.();
+});
+
+setInterval(() => {
+  held.forEach((id) => {
+    const button = findButton(id);
+    if (button) send(button, "down");
+  });
+}, 1000);
+
+function findButton(id) {
+  for (const page of layout?.pages || []) {
+    for (const group of page.groups || []) {
+      for (const button of group.buttons || []) {
+        if (button.id === id) return button;
+      }
+    }
+  }
+  return null;
+}
+
+async function health() {
+  try {
+    const data = await api("/api/health");
+    statusEl.className = "on";
+    statusEl.textContent = data.dry_run ? "Trockenlauf, keine echten Tasten" : "PC verbunden";
+    let banner = document.getElementById("dry");
+    if (data.dry_run) {
+      if (!banner) {
+        banner = document.createElement("div");
+        banner.id = "dry";
+        banner.className = "banner";
+        banner.textContent = "Trockenlauf: Dieser Rechner ist nicht Windows. Tasten werden nur im Server-Fenster gezeigt.";
+        pagesEl.before(banner);
+      }
+    } else if (banner) {
+      banner.remove();
+    }
+  } catch (err) {
+    statusEl.className = "off";
+    statusEl.textContent = "keine Verbindung";
+  }
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") {
+    held.clear();
+    fetch("/api/release", { method: "POST", headers: headers(), body: "{}", keepalive: true }).catch(() => {});
+  }
+});
+
+api("/api/layout").then(render).catch((err) => {
+  statusEl.className = "off";
+  statusEl.textContent = err.message;
+  toast(err.message);
+});
+health();
+setInterval(health, 3000);
+</script>
+</body>
+</html>

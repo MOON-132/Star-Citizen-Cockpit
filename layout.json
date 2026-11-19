@@ -1,0 +1,370 @@
+{
+  "title": "SC Cockpit",
+  "pages": [
+    {
+      "id": "flug",
+      "label": "Flug",
+      "groups": [
+        {
+          "title": "Schiff",
+          "buttons": [
+            {
+              "id": "flight-ready",
+              "label": "Flight Ready",
+              "hint": "R-Alt + R",
+              "keys": ["ralt", "r"],
+              "mode": "tap",
+              "color": "amber",
+              "wide": true
+            },
+            {
+              "id": "gear",
+              "label": "Fahrwerk",
+              "hint": "N",
+              "keys": ["n"],
+              "mode": "toggle",
+              "color": "cyan"
+            },
+            {
+              "id": "vtol",
+              "label": "VTOL",
+              "hint": "K",
+              "keys": ["k"],
+              "mode": "toggle",
+              "color": "cyan"
+            },
+            {
+              "id": "lights",
+              "label": "Lichter",
+              "hint": "L",
+              "keys": ["l"],
+              "mode": "toggle",
+              "color": "slate"
+            },
+            {
+              "id": "night",
+              "label": "Nachtsicht",
+              "hint": "R-Alt + L",
+              "keys": ["ralt", "l"],
+              "mode": "toggle",
+              "color": "slate"
+            }
+          ]
+        },
+        {
+          "title": "Fluglage",
+          "buttons": [
+            {
+              "id": "boost",
+              "label": "Boost",
+              "hint": "L-Shift halten",
+              "keys": ["lshift"],
+              "mode": "hold",
+              "color": "red",
+              "wide": true
+            },
+            {
+              "id": "decoupled",
+              "label": "Decoupled",
+              "hint": "C",
+              "keys": ["c"],
+              "mode": "toggle",
+              "color": "blue"
+            },
+            {
+              "id": "cruise",
+              "label": "Cruise",
+              "hint": "L-Alt + C",
+              "keys": ["lalt", "c"],
+              "mode": "toggle",
+              "color": "blue"
+            },
+            {
+              "id": "landing-request",
+              "label": "Landeanfrage",
+              "hint": "L-Alt + N",
+              "keys": ["lalt", "n"],
+              "mode": "tap",
+              "color": "slate"
+            },
+            {
+              "id": "doors",
+              "label": "Türen",
+              "hint": "R-Alt + K",
+              "keys": ["ralt", "k"],
+              "mode": "tap",
+              "color": "slate"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "energie",
+      "label": "Energie",
+      "groups": [
+        {
+          "title": "Power-Dreieck",
+          "buttons": [
+            {
+              "id": "pwr-weapons",
+              "label": "Waffen",
+              "hint": "F5",
+              "keys": ["f5"],
+              "mode": "tap",
+              "color": "red",
+              "wide": true
+            },
+            {
+              "id": "pwr-engines",
+              "label": "Antrieb",
+              "hint": "F6",
+              "keys": ["f6"],
+              "mode": "tap",
+              "color": "amber",
+              "wide": true
+            },
+            {
+              "id": "pwr-shields",
+              "label": "Schilde",
+              "hint": "F7",
+              "keys": ["f7"],
+              "mode": "tap",
+              "color": "cyan",
+              "wide": true
+            },
+            {
+              "id": "pwr-reset",
+              "label": "Reset",
+              "hint": "F8",
+              "keys": ["f8"],
+              "mode": "tap",
+              "color": "slate",
+              "wide": true
+            }
+          ]
+        },
+        {
+          "title": "Systeme ein",
+          "buttons": [
+            {
+              "id": "power-all",
+              "label": "Power",
+              "hint": "U",
+              "keys": ["u"],
+              "mode": "toggle",
+              "color": "green"
+            },
+            {
+              "id": "power-thrusters",
+              "label": "Triebwerke",
+              "hint": "I",
+              "keys": ["i"],
+              "mode": "toggle",
+              "color": "amber"
+            },
+            {
+              "id": "power-wep",
+              "label": "Waffen-Power",
+              "hint": "P",
+              "keys": ["p"],
+              "mode": "toggle",
+              "color": "red"
+            },
+            {
+              "id": "power-shd",
+              "label": "Schild-Power",
+              "hint": "O",
+              "keys": ["o"],
+              "mode": "toggle",
+              "color": "cyan"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "quantum",
+      "label": "Quantum",
+      "groups": [
+        {
+          "title": "Master Mode",
+          "buttons": [
+            {
+              "id": "master-mode",
+              "label": "Master Mode",
+              "hint": "B halten, bis NAV kommt",
+              "keys": ["b"],
+              "mode": "hold",
+              "color": "amber",
+              "wide": true
+            },
+            {
+              "id": "mobiglas",
+              "label": "mobiGlas",
+              "hint": "F1",
+              "keys": ["f1"],
+              "mode": "tap",
+              "color": "blue"
+            },
+            {
+              "id": "ping",
+              "label": "Radar Ping",
+              "hint": "Tab halten",
+              "keys": ["tab"],
+              "mode": "hold",
+              "color": "cyan"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "kampf",
+      "label": "Kampf",
+      "groups": [
+        {
+          "title": "Ziel und Abwehr",
+          "buttons": [
+            {
+              "id": "target",
+              "label": "Ziel wechseln",
+              "hint": "T",
+              "keys": ["t"],
+              "mode": "tap",
+              "color": "amber"
+            },
+            {
+              "id": "gimbal",
+              "label": "Gimbal",
+              "hint": "G",
+              "keys": ["g"],
+              "mode": "tap",
+              "color": "blue"
+            },
+            {
+              "id": "flares",
+              "label": "Flares",
+              "hint": "H",
+              "keys": ["h"],
+              "mode": "tap",
+              "color": "cyan"
+            },
+            {
+              "id": "noise",
+              "label": "Noise",
+              "hint": "J",
+              "keys": ["j"],
+              "mode": "tap",
+              "color": "slate"
+            },
+            {
+              "id": "missiles",
+              "label": "Raketenmodus",
+              "hint": "Mittelklick",
+              "keys": ["mouse3"],
+              "mode": "tap",
+              "color": "amber"
+            },
+            {
+              "id": "repool",
+              "label": "Repool",
+              "hint": "L-Alt + 1",
+              "keys": ["lalt", "1"],
+              "mode": "tap",
+              "color": "slate"
+            }
+          ]
+        },
+        {
+          "title": "Feuer",
+          "buttons": [
+            {
+              "id": "fire1",
+              "label": "Waffengruppe 1",
+              "hint": "Linksklick halten",
+              "keys": ["mouse1"],
+              "mode": "hold",
+              "color": "red",
+              "danger": true,
+              "wide": true
+            },
+            {
+              "id": "fire2",
+              "label": "Waffengruppe 2",
+              "hint": "Rechtsklick halten",
+              "keys": ["mouse2"],
+              "mode": "hold",
+              "color": "red",
+              "danger": true,
+              "wide": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mining",
+      "label": "Mining",
+      "groups": [
+        {
+          "title": "Prospector-Beispiel",
+          "buttons": [
+            {
+              "id": "mining-mode",
+              "label": "Mining-Modus",
+              "hint": "M",
+              "keys": ["m"],
+              "mode": "toggle",
+              "color": "amber",
+              "wide": true
+            },
+            {
+              "id": "mining-laser",
+              "label": "Laser",
+              "hint": "Linksklick halten",
+              "keys": ["mouse1"],
+              "mode": "hold",
+              "color": "red",
+              "danger": true,
+              "wide": true
+            },
+            {
+              "id": "mine-1",
+              "label": "Modul 1",
+              "hint": "L-Alt + 1",
+              "keys": ["lalt", "1"],
+              "mode": "tap",
+              "color": "cyan"
+            },
+            {
+              "id": "mine-2",
+              "label": "Modul 2",
+              "hint": "L-Alt + 2",
+              "keys": ["lalt", "2"],
+              "mode": "tap",
+              "color": "cyan"
+            },
+            {
+              "id": "mine-3",
+              "label": "Modul 3",
+              "hint": "L-Alt + 3",
+              "keys": ["lalt", "3"],
+              "mode": "tap",
+              "color": "cyan"
+            },
+            {
+              "id": "jettison",
+              "label": "Abwerfen",
+              "hint": "L-Alt + J",
+              "keys": ["lalt", "j"],
+              "mode": "tap",
+              "color": "red",
+              "danger": true
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

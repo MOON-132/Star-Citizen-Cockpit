@@ -1,0 +1,5 @@
+{
+  "port": 8765,
+  "token": "",
+  "hold_timeout_s": 4
+}
