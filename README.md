@@ -4,7 +4,7 @@ SC Cockpit ist ein Touch-Dashboard für Star Citizen. Das Programm läuft auf de
 
 Es gibt keinen Account, keine Cloud und keine zusätzlichen Python-Pakete. Das Panel liest keine Schiffswerte. Schildbalken, Quantumsprung und Ähnliches bleiben im Spiel.
 
-Ein neues Dashboard ist eine JSON-Datei. Das Format steht verbindlich in [docs/DASHBOARD.md](docs/DASHBOARD.md), das Schema in [docs/dashboard.schema.json](docs/dashboard.schema.json), ein Minimalbeispiel in [docs/beispiel.json](docs/beispiel.json). Eine KI, die ein Dashboard bauen soll, bekommt genau diese drei Dateien.
+Ein neues Dashboard ist eine JSON-Datei. Das Format steht verbindlich in [docs/DASHBOARD.md](docs/DASHBOARD.md), das Schema in [docs/dashboard.schema.json](docs/dashboard.schema.json), ein Minimalbeispiel in [docs/beispiel.json](docs/beispiel.json).
 
 ## Inhalt
 
@@ -21,7 +21,7 @@ Ein neues Dashboard ist eine JSON-Datei. Das Format steht verbindlich in [docs/D
 
 ## Voraussetzungen
 
-- Gaming-PC mit Windows 10 oder 11
+- PC mit Windows 10 oder 11
 - Python 3, beim Installer **Add python.exe to PATH** ankreuzen, oder den SC-Cockpit-Installer den `winget`-Weg machen lassen
 - Spiel und Bedien-Gerät im selben privaten WLAN
 - Star Citizen im Vordergrund, sonst gehen die Tasten an das falsche Fenster
