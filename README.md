@@ -44,19 +44,25 @@ Ein späterer Start von `SC-Cockpit-Setup.exe` erkennt die bestehende Installati
 
 Ohne Installation, zum Ausprobieren oder zum Weiterentwickeln: `start.bat` im geklonten Ordner. Eigene Dashboards liegen dann in `dashboards/local/` und kommen nicht ins Git.
 
-## Starten
+## Starten & GameGlass Shard Hub (In-App Live Cockpit)
 
-**SC Cockpit** auf dem Desktop oder im Startmenü starten. Das schwarze Fenster zeigt eine oder mehrere Zeilen:
+**SC Cockpit** auf dem Desktop oder im Startmenü starten. Es öffnet sich der **SC Cockpit // GameGlass Shard Hub** im holografischen GameGlass-MFD-Design (abgeschrägte Holo-Shards, Electric Cyan & Quantum Amber) mit vier Bereichen in der linken Seitenleiste:
 
-```text
-Gerät:  http://192.168.x.x:8765/
-```
+1. **LIVE COCKPIT (Dashboards direkt in der App nutzen!)**:
+   - **Sofort bedienbares In-App Cockpit-Deck**: Du kannst alle deine Dashboards und Shards (**Standard**, **Mining**, eigene Schiffe) direkt innerhalb des Windows-Programms bedienen — ideal für einen Zweitmonitor, Touchscreen-Monitor oder Windows-Tablet!
+   - **Seiten & Shards umschalten**: Oben zwischen den Dashboards (`◄` / `►`) und darunter zwischen den Seiten-Reitern (*Flug*, *Energie & Schilde*, *Quantum*, *Kampf*) wechseln.
+   - **Direktes Senden an Star Citizen**: Ein Klick auf eine Holo-Kachel im Programm fokussiert automatisch das laufende Star-Citizen-Fenster und sendet den Keybind direkt ins Spiel.
+   - **Waffen SAFE / ARMED**: Gesicherte Tasten (Waffen, Laser, Abwerfen) werden über den Schalter **WAFFEN SAFE / ARMED** oben rechts scharfgeschaltet.
+2. **SHARDS & DECKS**:
+   - Übersicht aller mitgelieferten und eigenen Shards mit Seiten- und Tastenanzahl.
+   - Per Klick: **IM COCKPIT NUTZEN** (lädt das Dashboard sofort in das In-App Live-Cockpit), **BAUKASTEN** (öffnet den visuellen Shard-Editor), **KOPIE**, **LÖSCHEN**, **+ NEUER SHARD** sowie **SC-TASTEN LESEN** (liest deine `actionmaps.xml` aus Star Citizen).
+3. **TABLET / SERVER**:
+   - **Server an- und ausschalten**: Großer Button **SERVER STARTEN** / **SERVER STOPPEN** für externe Tablets & Smartphones im WLAN.
+   - Zeigt die echte WLAN-Adresse (z. B. `http://192.168.1.180:8765/`), den **ALS ADMIN STARTEN**-Button und das Live-Tastenprotokoll.
+4. **EINSTELLUNGEN**:
+   - Server-Port (`8765`) per `—` / `+` anpassen, Ordner öffnen, Verknüpfungen reparieren und **SC Cockpit direkt in der GUI deinstallieren**.
 
-Diese Adresse auf dem anderen Gerät öffnen. `localhost` oder `127.0.0.1` funktioniert nur auf dem Gaming-PC selbst. Das Fenster offen lassen und zu Star Citizen wechseln. Strg+C beendet den Server.
-
-Wenn Windows nach der Firewall fragt: Zugriff nur im privaten Netzwerk erlauben. In einem öffentlichen oder Gastnetz erreichen sich die Geräte oft nicht, auch wenn beide „WLAN“ haben.
-
-Läuft Star Citizen als Administrator, die Verknüpfung **SC Cockpit (Administrator)** verwenden. Ein normales Fenster darf an ein Administrator-Fenster keine Tasten senden.
+Wenn Windows beim ersten Serverstart nach der Firewall fragt: Zugriff im privaten Netzwerk erlauben.
 
 ## Bedienen & Live-Telemetrie
 

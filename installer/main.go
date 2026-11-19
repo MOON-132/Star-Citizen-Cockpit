@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"strings"
 	"sync"
 	"syscall"
 	"unsafe"
@@ -18,26 +19,30 @@ func rgb(r, g, b uint8) uint32 {
 	return uint32(r) | (uint32(g) << 8) | (uint32(b) << 16)
 }
 
+// GameGlass Holographic Sci-Fi Palette
 var (
-	colBg       = rgb(0x0b, 0x0e, 0x13) // #0b0e13 Deep Space Background
-	colSidebar  = rgb(0x0e, 0x13, 0x1a) // #0e131a RSI Sidebar Dark
-	colPanel    = rgb(0x13, 0x1a, 0x24) // #131a24 Card / Panel Surface
-	colPanelHov = rgb(0x1a, 0x23, 0x30) // #1a2330 Hover Surface
-	colPanelAct = rgb(0x1d, 0x28, 0x38) // #1d2838 Active Surface
-	colLine     = rgb(0x22, 0x2d, 0x3d) // #222d3d Subtle Border
-	colLineHi   = rgb(0x33, 0x45, 0x5c) // #33455c Highlight Border
-	colText     = rgb(0xe9, 0xef, 0xf7) // #e9eff7 Primary Text
-	colMuted    = rgb(0x88, 0x99, 0xae) // #8899ae Secondary Text
-	colDim      = rgb(0x52, 0x62, 0x75) // #526275 Muted Label
-	colAmber    = rgb(0xe2, 0xa2, 0x3a) // #e2a23a Star Citizen Amber
-	colAmberHov = rgb(0xf0, 0xb2, 0x4c) // #f0b24c Amber Hover
-	colAmberBg  = rgb(0x27, 0x1e, 0x11) // #271e11 Amber Card Fill
-	colCyan     = rgb(0x3e, 0xc8, 0xc4) // #3ec8c4 Star Citizen Cyan
-	colCyanBg   = rgb(0x11, 0x25, 0x29) // #112529 Cyan Card Fill
-	colGreen    = rgb(0x4e, 0xc9, 0x78) // #4ec978 Online Green
-	colGreenBg  = rgb(0x11, 0x26, 0x1a) // #11261a Online Fill
-	colRed      = rgb(0xe1, 0x5b, 0x4c) // #e15b4c Danger Red
-	colRedBg    = rgb(0x2a, 0x14, 0x14) // #2a1414 Danger Fill
+	colBg       = rgb(0x05, 0x08, 0x0d) // #05080d Deep Space Obsidian
+	colSidebar  = rgb(0x08, 0x0d, 0x15) // #080d15 GameGlass Rail
+	colPanel    = rgb(0x0d, 0x15, 0x22) // #0d1522 Shard Panel
+	colPanelHov = rgb(0x15, 0x22, 0x34) // #152234 Shard Hover
+	colPanelAct = rgb(0x18, 0x29, 0x3e) // #18293e Shard Active
+	colLine     = rgb(0x20, 0x31, 0x46) // #203146 Frame Border
+	colLineHi   = rgb(0x30, 0x4a, 0x69) // #304a69 Highlight Border
+	colText     = rgb(0xee, 0xf5, 0xfc) // #eef5fc Crisp White
+	colMuted    = rgb(0x7c, 0x93, 0xad) // #7c93ad Muted Label
+	colDim      = rgb(0x4a, 0x5d, 0x73) // #4a5d73 Dim Subtext
+	colCyan     = rgb(0x00, 0xe5, 0xff) // #00e5ff GameGlass Electric Cyan
+	colCyanBg   = rgb(0x08, 0x26, 0x32) // #082632 Cyan Glass Fill
+	colAmber    = rgb(0xff, 0xab, 0x00) // #ffab00 Quantum Amber
+	colAmberHov = rgb(0xff, 0xc0, 0x33) // #ffc033 Amber Hover
+	colAmberBg  = rgb(0x28, 0x1d, 0x08) // #281d08 Amber Glass Fill
+	colGreen    = rgb(0x00, 0xe6, 0x76) // #00e676 Online Green
+	colGreenBg  = rgb(0x09, 0x26, 0x18) // #092618 Green Glass Fill
+	colRed      = rgb(0xff, 0x3d, 0x57) // #ff3d57 Combat Crimson
+	colRedBg    = rgb(0x2b, 0x0e, 0x14) // #2b0e14 Red Glass Fill
+	colBlue     = rgb(0x3d, 0x8b, 0xff) // #3d8bff Navigation Blue
+	colBlueBg   = rgb(0x0c, 0x1e, 0x38) // #0c1e38 Blue Glass Fill
+	colSlate    = rgb(0x8d, 0xa2, 0xb8) // #8da2b8 Slate
 )
 
 // Win32 Constants
@@ -49,19 +54,18 @@ const (
 	WS_CLIPCHILDREN = 0x02000000
 	WS_EX_APPWINDOW = 0x00040000
 
-	WM_DESTROY      = 0x0002
-	WM_PAINT        = 0x000F
-	WM_CLOSE        = 0x0010
-	WM_ERASEBKGND   = 0x0014
-	WM_SETCURSOR    = 0x0020
-	WM_NCHITTEST    = 0x0084
-	WM_KEYDOWN      = 0x0100
-	WM_TIMER        = 0x0113
-	WM_MOUSEMOVE    = 0x0200
-	WM_LBUTTONDOWN  = 0x0201
-	WM_LBUTTONUP    = 0x0202
-	WM_APP_REFRESH  = 0x8001
-	WM_APP_DONE     = 0x8002
+	WM_DESTROY     = 0x0002
+	WM_PAINT       = 0x000F
+	WM_CLOSE       = 0x0010
+	WM_ERASEBKGND  = 0x0014
+	WM_SETCURSOR   = 0x0020
+	WM_NCHITTEST   = 0x0084
+	WM_KEYDOWN     = 0x0100
+	WM_MOUSEMOVE   = 0x0200
+	WM_LBUTTONDOWN = 0x0201
+	WM_LBUTTONUP   = 0x0202
+	WM_APP_REFRESH = 0x8001
+	WM_APP_DONE    = 0x8002
 
 	HTCLIENT  = 1
 	HTCAPTION = 2
@@ -88,7 +92,6 @@ const (
 	CS_DROPSHADOW = 0x00020000
 
 	VK_ESCAPE = 0x1B
-	VK_RETURN = 0x0D
 
 	SRCCOPY           = 0x00CC0020
 	CLEARTYPE_QUALITY = 5
@@ -168,8 +171,6 @@ var (
 	pSetCapture         = user32.NewProc("SetCapture")
 	pReleaseCapture     = user32.NewProc("ReleaseCapture")
 	pScreenToClient     = user32.NewProc("ScreenToClient")
-	pSetTimer           = user32.NewProc("SetTimer")
-	pKillTimer          = user32.NewProc("KillTimer")
 	pOpenClipboard      = user32.NewProc("OpenClipboard")
 	pEmptyClipboard     = user32.NewProc("EmptyClipboard")
 	pSetClipboardData   = user32.NewProc("SetClipboardData")
@@ -188,7 +189,7 @@ var (
 	pSetBkMode              = gdi32.NewProc("SetBkMode")
 	pMoveToEx               = gdi32.NewProc("MoveToEx")
 	pLineTo                 = gdi32.NewProc("LineTo")
-	pRoundRect              = gdi32.NewProc("RoundRect")
+	pPolygon                = gdi32.NewProc("Polygon")
 	pGetDeviceCaps          = gdi32.NewProc("GetDeviceCaps")
 
 	pGetModuleHandleW = kernel32.NewProc("GetModuleHandleW")
@@ -198,16 +199,17 @@ var (
 	pShellExecuteW    = shell32.NewProc("ShellExecuteW")
 )
 
-// Modes and Navigation Tabs
 const (
 	ModeInstaller = iota
 	ModeLauncher
 )
 
+// 4 Top-Level Tabs in the Graphical App
 const (
-	TabServer = iota
-	TabDashboards
-	TabSettings
+	TabLiveCockpit = iota // 1. Use Dashboards LIVE inside the App!
+	TabShards             // 2. Manage Shards / Dashboards
+	TabHostLink           // 3. Server Toggle & Tablet Wi-Fi Link
+	TabSettings           // 4. Settings & Uninstall
 )
 
 const (
@@ -223,25 +225,32 @@ const (
 	CtrlWinClose
 	CtrlWinMin
 
-	// Sidebar Tabs (Launcher Mode)
-	CtrlNavServer
-	CtrlNavDashboards
+	// Sidebar Navigation
+	CtrlNavLiveCockpit
+	CtrlNavShards
+	CtrlNavHostLink
 	CtrlNavSettings
 
-	// Server Tab Controls
+	// Live Cockpit Tab Controls
+	CtrlLivePrevBoard
+	CtrlLiveNextBoard
+	CtrlLiveArmToggle
+	CtrlLiveOpenEditor
+
+	// Shards Manager Controls
+	CtrlBtnNewDash
+	CtrlBtnSyncSCBindings
+	CtrlBtnOpenDashFolder
+	CtrlBtnReloadDash
+
+	// Host Link / Server Controls
 	CtrlBtnToggleServer
 	CtrlBtnCopyURL
 	CtrlBtnOpenBrowser
 	CtrlBtnOpenEditor
 	CtrlBtnRestartAdmin
 
-	// Dashboards Tab Controls
-	CtrlBtnNewDash
-	CtrlBtnSyncSCBindings
-	CtrlBtnOpenDashFolder
-	CtrlBtnReloadDash
-
-	// Settings Tab Controls
+	// Settings Controls
 	CtrlBtnPortMinus
 	CtrlBtnPortPlus
 	CtrlBtnOpenUserFolder
@@ -260,10 +269,13 @@ const (
 	CtrlInstSecondary
 	CtrlInstSwitchUninstall
 
-	CtrlDashActivateBase = 1000 // + index
+	// Dynamic Ranges
+	CtrlDashUseLiveBase  = 1000 // + index (Opens dashboard directly in Live Cockpit tab)
 	CtrlDashEditBase     = 2000 // + index
 	CtrlDashDupBase      = 3000 // + index
 	CtrlDashDelBase      = 4000 // + index
+	CtrlLivePageTabBase  = 5000 // + page index
+	CtrlLiveTileBtnBase  = 6000 // + flat button index in current page
 )
 
 type HotRegion struct {
@@ -271,13 +283,38 @@ type HotRegion struct {
 	Rect RECT
 }
 
+type DashButton struct {
+	ID     string   `json:"id"`
+	Kind   string   `json:"kind"`
+	Label  string   `json:"label"`
+	Hint   string   `json:"hint"`
+	Keys   []string `json:"keys"`
+	Mode   string   `json:"mode"`
+	Color  string   `json:"color"`
+	Wide   bool     `json:"wide"`
+	Span   int      `json:"span"`
+	Danger bool     `json:"danger"`
+}
+
+type DashGroup struct {
+	Title   string       `json:"title"`
+	Buttons []DashButton `json:"buttons"`
+}
+
+type DashPage struct {
+	ID     string      `json:"id"`
+	Label  string      `json:"label"`
+	Groups []DashGroup `json:"groups"`
+}
+
 type DashboardInfo struct {
 	ID          string
 	Title       string
-	Source      string // "builtin" or "local"
+	Source      string
 	Path        string
 	PageCount   int
 	ButtonCount int
+	Pages       []DashPage
 }
 
 type AppState struct {
@@ -311,19 +348,24 @@ type AppState struct {
 	ServerLogs    []string
 	ToastMsg      string
 
-	// Dashboards Catalog
-	Dashboards []DashboardInfo
-	ActiveDash string
+	// Dashboards & In-App Live Cockpit Deck State
+	Dashboards    []DashboardInfo
+	ActiveDash    string
+	LivePageIdx   int
+	LiveArmed     bool
+	LiveToggled   map[string]bool
+	LivePageBtns  []DashButton // Flattened buttons on current Live Cockpit page
+	LastActionTxt string
 
-	// Installer Options & Progress
-	OptDesktop   bool
-	OptStartMenu bool
-	OptWingetPy  bool
-	OptPurgeData bool
+	// Installer Options
+	OptDesktop    bool
+	OptStartMenu  bool
+	OptWingetPy   bool
+	OptPurgeData  bool
 	ConfirmUninst bool
-	ProgressPct  int
-	StatusLine   string
-	InstallErr   string
+	ProgressPct   int
+	StatusLine    string
+	InstallErr    string
 
 	// Mouse & UI
 	HoverID int
@@ -347,6 +389,7 @@ var app = &AppState{
 	OptStartMenu: true,
 	Port:         8765,
 	LanIP:        "127.0.0.1",
+	LiveToggled:  make(map[string]bool),
 }
 
 func u16(s string) *uint16 {
@@ -379,7 +422,7 @@ func copyToClipboard(text string) {
 	defer pCloseClipboard.Call()
 	pEmptyClipboard.Call()
 	size := uintptr(len(u) * 2)
-	hMem, _, _ := pGlobalAlloc.Call(0x0002, size) // GMEM_MOVEABLE
+	hMem, _, _ := pGlobalAlloc.Call(0x0002, size)
 	if hMem == 0 {
 		return
 	}
@@ -390,23 +433,34 @@ func copyToClipboard(text string) {
 	dst := unsafe.Slice((*uint16)(unsafe.Pointer(ptr)), len(u))
 	copy(dst, u)
 	pGlobalUnlock.Call(hMem)
-	pSetClipboardData.Call(13, hMem) // CF_UNICODETEXT = 13
+	pSetClipboardData.Call(13, hMem)
 }
 
-// Drawing Primitives
+// ============================================================================
+// GAMEGLASS CHAMFERED SHARD DRAWING PRIMITIVES
+// ============================================================================
 func fillRect(hdc uintptr, r RECT, col uint32) {
 	brush, _, _ := pCreateSolidBrush.Call(uintptr(col))
 	pFillRect.Call(hdc, uintptr(unsafe.Pointer(&r)), brush)
 	pDeleteObject.Call(brush)
 }
 
-func drawCard(hdc uintptr, r RECT, fillCol, borderCol uint32, radius int32) {
+// GameGlass Beveled Shard Box (diagonal top-right and bottom-left cut corners)
+func drawShardBox(hdc uintptr, r RECT, cut int32, fillCol, borderCol uint32) {
+	c := sc(cut)
+	pts := []POINT{
+		{r.Left, r.Top},
+		{r.Right - c, r.Top},
+		{r.Right, r.Top + c},
+		{r.Right, r.Bottom},
+		{r.Left + c, r.Bottom},
+		{r.Left, r.Bottom - c},
+	}
 	brush, _, _ := pCreateSolidBrush.Call(uintptr(fillCol))
 	pen, _, _ := pCreatePen.Call(PS_SOLID, uintptr(sc(1)), uintptr(borderCol))
 	oldB, _, _ := pSelectObject.Call(hdc, brush)
 	oldP, _, _ := pSelectObject.Call(hdc, pen)
-	rad := sc(radius)
-	pRoundRect.Call(hdc, uintptr(r.Left), uintptr(r.Top), uintptr(r.Right), uintptr(r.Bottom), uintptr(rad), uintptr(rad))
+	pPolygon.Call(hdc, uintptr(unsafe.Pointer(&pts[0])), uintptr(len(pts)))
 	pSelectObject.Call(hdc, oldB)
 	pSelectObject.Call(hdc, oldP)
 	pDeleteObject.Call(brush)
@@ -434,18 +488,19 @@ func drawText(hdc uintptr, text string, r RECT, font uintptr, col uint32, flags 
 	pDrawTextW.Call(hdc, uintptr(unsafe.Pointer(&u[0])), uintptr(len(u)-1), uintptr(unsafe.Pointer(&rc)), uintptr(flags|DT_NOPREFIX))
 }
 
-// RSI Launcher Style Button
+// GameGlass Holographic Button
 func drawButton(hdc uintptr, id int, r RECT, label string, style string) {
 	app.Regions = append(app.Regions, HotRegion{ID: id, Rect: r})
 	hov := app.HoverID == id
 	press := app.PressID == id
 
-	var fill, border, textCol uint32
+	var fill, border, textCol, barCol uint32
 	switch style {
-	case "amber": // Primary RSI Launch Button
+	case "amber":
 		fill = colAmber
 		border = colAmber
-		textCol = rgb(0x0b, 0x0e, 0x13)
+		textCol = colBg
+		barCol = colText
 		if hov {
 			fill = colAmberHov
 			border = colAmberHov
@@ -454,14 +509,16 @@ func drawButton(hdc uintptr, id int, r RECT, label string, style string) {
 		fill = colCyanBg
 		border = colCyan
 		textCol = colCyan
+		barCol = colCyan
 		if hov {
-			fill = rgb(0x18, 0x35, 0x3b)
+			fill = rgb(0x10, 0x3b, 0x4d)
 			textCol = colText
 		}
 	case "danger":
 		fill = colRedBg
 		border = colRed
 		textCol = colRed
+		barCol = colRed
 		if hov {
 			fill = colRed
 			textCol = colText
@@ -470,16 +527,18 @@ func drawButton(hdc uintptr, id int, r RECT, label string, style string) {
 		fill = colGreenBg
 		border = colGreen
 		textCol = colGreen
+		barCol = colGreen
 		if hov {
-			fill = rgb(0x19, 0x38, 0x26)
+			fill = rgb(0x12, 0x3d, 0x26)
 		}
-	default: // "secondary"
+	default:
 		fill = colPanel
 		border = colLineHi
 		textCol = colText
+		barCol = colCyan
 		if hov {
 			fill = colPanelHov
-			border = colMuted
+			border = colCyan
 		}
 	}
 
@@ -488,7 +547,10 @@ func drawButton(hdc uintptr, id int, r RECT, label string, style string) {
 		r.Bottom += sc(1)
 	}
 
-	drawCard(hdc, r, fill, border, 8)
+	drawShardBox(hdc, r, 8, fill, border)
+	if style != "amber" {
+		fillRect(hdc, RECT{r.Left, r.Top + sc(5), r.Left + sc(3), r.Bottom - sc(8)}, barCol)
+	}
 	drawText(hdc, label, r, app.FontBold, textCol, DT_CENTER|DT_VCENTER|DT_SINGLELINE)
 }
 
@@ -503,9 +565,12 @@ func drawCheckboxRow(hdc uintptr, id int, r RECT, title, subtitle string, checke
 		border = colLineHi
 	}
 	if checked {
-		border = colAmber
+		border = colCyan
 	}
-	drawCard(hdc, r, fill, border, 10)
+	drawShardBox(hdc, r, 10, fill, border)
+	if checked {
+		fillRect(hdc, RECT{r.Left, r.Top + sc(6), r.Left + sc(3), r.Bottom - sc(10)}, colCyan)
+	}
 
 	boxSize := sc(20)
 	bx := r.Left + sc(18)
@@ -513,11 +578,11 @@ func drawCheckboxRow(hdc uintptr, id int, r RECT, title, subtitle string, checke
 	boxRect := RECT{bx, by, bx + boxSize, by + boxSize}
 
 	if checked {
-		drawCard(hdc, boxRect, colAmber, colAmber, 5)
+		drawShardBox(hdc, boxRect, 4, colCyan, colCyan)
 		drawLine(hdc, bx+sc(5), by+sc(10), bx+sc(9), by+sc(14), colBg, sc(2))
 		drawLine(hdc, bx+sc(9), by+sc(14), bx+sc(15), by+sc(6), colBg, sc(2))
 	} else {
-		drawCard(hdc, boxRect, colBg, colMuted, 5)
+		drawShardBox(hdc, boxRect, 4, colBg, colMuted)
 	}
 
 	tx := bx + boxSize + sc(16)
@@ -535,7 +600,7 @@ func paintWindow(hdc uintptr, w, h int32) {
 		paintLauncherMode(hdc, w, h)
 	}
 
-	// Window Top-Right Controls (Minimize & Close)
+	// Top-Right Window Controls
 	btnW := sc(36)
 	btnH := sc(28)
 	closeRect := RECT{w - sc(14) - btnW, sc(12), w - sc(14), sc(12) + btnH}
@@ -545,138 +610,136 @@ func paintWindow(hdc uintptr, w, h int32) {
 	app.Regions = append(app.Regions, HotRegion{ID: CtrlWinClose, Rect: closeRect})
 
 	if app.HoverID == CtrlWinMin {
-		drawCard(hdc, minRect, colPanelHov, colLine, 6)
+		drawShardBox(hdc, minRect, 5, colPanelHov, colLine)
 	}
 	drawText(hdc, "—", minRect, app.FontBold, colMuted, DT_CENTER|DT_VCENTER|DT_SINGLELINE)
 
 	closeCol := colMuted
 	if app.HoverID == CtrlWinClose {
-		drawCard(hdc, closeRect, colRed, colRed, 6)
+		drawShardBox(hdc, closeRect, 5, colRed, colRed)
 		closeCol = colText
 	}
 	drawText(hdc, "✕", closeRect, app.FontBold, closeCol, DT_CENTER|DT_VCENTER|DT_SINGLELINE)
 
-	// Subtle outer window border
-	drawLine(hdc, 0, 0, w, 0, colLine, 1)
+	// Top glowing GameGlass Cyan accent line
+	drawLine(hdc, 0, 0, sc(260), 0, colCyan, sc(2))
+	drawLine(hdc, sc(260), 0, w, 0, colLine, 1)
 	drawLine(hdc, 0, h-1, w, h-1, colLine, 1)
 	drawLine(hdc, 0, 0, 0, h, colLine, 1)
 	drawLine(hdc, w-1, 0, w-1, h, colLine, 1)
 }
 
 // ============================================================================
-// 1. RSI-STYLE CLEAN INSTALLER UI
+// 1. GAMEGLASS INSTALLER UI
 // ============================================================================
 func paintInstallerMode(hdc uintptr, w, h int32) {
-	// Left RSI Brand Sidebar
 	sideW := sc(240)
 	fillRect(hdc, RECT{0, 0, sideW, h}, colSidebar)
 	drawLine(hdc, sideW, 0, sideW, h, colLine, 1)
 
-	// Amber Brand Pill + Title
-	fillRect(hdc, RECT{sc(28), sc(28), sc(36), sc(58)}, colAmber)
-	drawText(hdc, "SC COCKPIT", RECT{sc(48), sc(25), sideW - sc(16), sc(46)}, app.FontTitle, colText, DT_LEFT|DT_SINGLELINE)
-	drawText(hdc, "SETUP & DEPLOYMENT", RECT{sc(48), sc(45), sideW - sc(16), sc(62)}, app.FontSmall, colAmber, DT_LEFT|DT_SINGLELINE)
+	// GameGlass Hex Badge + Brand
+	hexRect := RECT{sc(24), sc(24), sc(56), sc(56)}
+	drawShardBox(hdc, hexRect, 8, colCyanBg, colCyan)
+	drawText(hdc, "SC", hexRect, app.FontBold, colCyan, DT_CENTER|DT_VCENTER|DT_SINGLELINE)
+	drawText(hdc, "SC COCKPIT", RECT{sc(68), sc(23), sideW - sc(12), sc(42)}, app.FontTitle, colText, DT_LEFT|DT_SINGLELINE)
+	drawText(hdc, "GAMEGLASS SHARD SETUP", RECT{sc(68), sc(43), sideW - sc(12), sc(58)}, app.FontSmall, colCyan, DT_LEFT|DT_SINGLELINE)
 
-	// Step Indicator in Sidebar
-	steps := []string{"1.  Konfiguration", "2.  Installation", "3.  Bereit zum Start"}
-	sy := sc(110)
+	steps := []string{"01 // KONFIGURATION", "02 // DEPLOYMENT", "03 // COCKPIT BEREIT"}
+	sy := sc(105)
 	for i, st := range steps {
 		active := (app.InstPage == InstPageWelcome && i == 0) ||
 			(app.InstPage == InstPageProgress && i == 1) ||
 			(app.InstPage == InstPageDone && i == 2)
+		r := RECT{sc(14), sy, sideW - sc(14), sy + sc(38)}
 		col := colMuted
 		if active {
-			col = colText
-			fillRect(hdc, RECT{0, sy, sc(4), sy + sc(32)}, colAmber)
-			fillRect(hdc, RECT{sc(4), sy, sideW, sy + sc(32)}, colPanel)
+			col = colCyan
+			drawShardBox(hdc, r, 8, colCyanBg, colCyan)
+			fillRect(hdc, RECT{r.Left, r.Top + sc(6), r.Left + sc(3), r.Bottom - sc(8)}, colCyan)
 		}
-		drawText(hdc, st, RECT{sc(28), sy, sideW - sc(16), sy + sc(32)}, app.FontBold, col, DT_LEFT|DT_VCENTER|DT_SINGLELINE)
-		sy += sc(40)
+		drawText(hdc, st, RECT{r.Left + sc(16), r.Top, r.Right - sc(8), r.Bottom}, app.FontBold, col, DT_LEFT|DT_VCENTER|DT_SINGLELINE)
+		sy += sc(46)
 	}
 
-	// Sidebar Footer Info
-	drawText(hdc, fmt.Sprintf("Version %s\nKein Admin erforderlich\nLokales WLAN-Dashboard", AppVersion),
-		RECT{sc(28), h - sc(82), sideW - sc(16), h - sc(20)}, app.FontSmall, colDim, DT_LEFT|DT_WORDBREAK)
+	drawText(hdc, fmt.Sprintf("BUILD %s\nIN-APP LIVE DECK & WI-FI\nKEIN ADMIN ERFORDERLICH", AppVersion),
+		RECT{sc(24), h - sc(80), sideW - sc(16), h - sc(18)}, app.FontSmall, colDim, DT_LEFT|DT_WORDBREAK)
 
-	// Right Content Area
 	cx := sideW + sc(36)
 	cw := w - cx - sc(36)
 
 	switch app.InstPage {
 	case InstPageWelcome:
-		title := "SC Cockpit installieren"
-		sub := "Richtet das Star Citizen Touch-Dashboard und das Control Center auf deinem PC ein."
+		title := "SC COCKPIT // GAMEGLASS EDITION"
+		sub := "Installiert das interaktive Desktop- & Tablet-Shard-Deck für Star Citizen."
 		if app.ExistingInst {
-			title = "SC Cockpit aktualisieren oder verwalten"
-			sub = "Eine bestehende Installation wurde gefunden. Deine eigenen Dashboards bleiben beim Update erhalten."
+			title = "SC COCKPIT // UPDATE & VERWALTUNG"
+			sub = "Bestehende Installation erkannt. Deine eigenen Shards & Dashboards bleiben erhalten."
 		}
-		drawText(hdc, title, RECT{cx, sc(32), cx + cw - sc(80), sc(62)}, app.FontHero, colText, DT_LEFT|DT_SINGLELINE)
-		drawText(hdc, sub, RECT{cx, sc(64), cx + cw, sc(90)}, app.FontBody, colMuted, DT_LEFT|DT_SINGLELINE)
+		drawText(hdc, title, RECT{cx, sc(30), cx + cw - sc(80), sc(58)}, app.FontHero, colText, DT_LEFT|DT_SINGLELINE)
+		drawText(hdc, sub, RECT{cx, sc(60), cx + cw, sc(84)}, app.FontBody, colMuted, DT_LEFT|DT_SINGLELINE)
 
-		// System Check Card
-		sysCard := RECT{cx, sc(102), cx + cw, sc(174)}
-		drawCard(hdc, sysCard, colPanel, colLine, 10)
-		drawText(hdc, "ZIELORDNER", RECT{sysCard.Left + sc(18), sysCard.Top + sc(12), sysCard.Left + sc(310), sysCard.Top + sc(28)}, app.FontSmall, colDim, DT_LEFT|DT_SINGLELINE)
-		drawText(hdc, app.AppDir, RECT{sysCard.Left + sc(18), sysCard.Top + sc(30), sysCard.Left + sc(330), sysCard.Bottom - sc(12)}, app.FontMono, colText, DT_LEFT|DT_SINGLELINE)
+		sysCard := RECT{cx, sc(98), cx + cw, sc(168)}
+		drawShardBox(hdc, sysCard, 10, colPanel, colLine)
+		fillRect(hdc, RECT{sysCard.Left, sysCard.Top, sysCard.Left + sc(70), sysCard.Top + sc(2)}, colAmber)
+		drawText(hdc, "ZIELVERZEICHNIS", RECT{sysCard.Left + sc(18), sysCard.Top + sc(12), sysCard.Left + sc(340), sysCard.Top + sc(28)}, app.FontSmall, colDim, DT_LEFT|DT_SINGLELINE)
+		drawText(hdc, app.AppDir, RECT{sysCard.Left + sc(18), sysCard.Top + sc(30), sysCard.Left + sc(380), sysCard.Bottom - sc(12)}, app.FontMono, colText, DT_LEFT|DT_SINGLELINE)
 
-		drawLine(hdc, sysCard.Left+sc(345), sysCard.Top+sc(12), sysCard.Left+sc(345), sysCard.Bottom-sc(12), colLine, 1)
-		drawText(hdc, "PYTHON 3 RUNTIME", RECT{sysCard.Left + sc(365), sysCard.Top + sc(12), sysCard.Right - sc(16), sysCard.Top + sc(28)}, app.FontSmall, colDim, DT_LEFT|DT_SINGLELINE)
+		drawLine(hdc, sysCard.Left+sc(395), sysCard.Top+sc(12), sysCard.Left+sc(395), sysCard.Bottom-sc(12), colLine, 1)
+		drawText(hdc, "TELEMETRIE & SERVER ENGINE", RECT{sysCard.Left + sc(415), sysCard.Top + sc(12), sysCard.Right - sc(16), sysCard.Top + sc(28)}, app.FontSmall, colDim, DT_LEFT|DT_SINGLELINE)
 		if app.PythonFound {
-			drawText(hdc, "●  "+app.PythonVer+" bereit", RECT{sysCard.Left + sc(365), sysCard.Top + sc(30), sysCard.Right - sc(16), sysCard.Bottom - sc(12)}, app.FontBold, colGreen, DT_LEFT|DT_SINGLELINE)
+			drawText(hdc, "●  "+app.PythonVer+" [ONLINE]", RECT{sysCard.Left + sc(415), sysCard.Top + sc(30), sysCard.Right - sc(16), sysCard.Bottom - sc(12)}, app.FontBold, colGreen, DT_LEFT|DT_SINGLELINE)
 		} else {
-			drawText(hdc, "●  Wird automatisch eingerichtet", RECT{sysCard.Left + sc(365), sysCard.Top + sc(30), sysCard.Right - sc(16), sysCard.Bottom - sc(12)}, app.FontBold, colAmber, DT_LEFT|DT_SINGLELINE)
+			drawText(hdc, "●  In-App Deck bereit (Python optional via winget)", RECT{sysCard.Left + sc(415), sysCard.Top + sc(30), sysCard.Right - sc(16), sysCard.Bottom - sc(12)}, app.FontBold, colCyan, DT_LEFT|DT_SINGLELINE)
 		}
 
-		// Clean Option Checkboxes
-		oy := sc(192)
+		oy := sc(186)
 		oh := sc(58)
 		drawCheckboxRow(hdc, CtrlInstChkDesktop, RECT{cx, oy, cx + cw, oy + oh},
-			"Desktop-Verknüpfung erstellen",
-			"Legt 'SC Cockpit' mit Star-Citizen-Icon auf deinem Desktop an",
+			"Desktop-Shard-Starter anlegen",
+			"Erstellt 'SC Cockpit' auf deinem Desktop für direkten Zugriff auf das Live-Cockpit",
 			app.OptDesktop)
 
 		oy += oh + sc(12)
 		drawCheckboxRow(hdc, CtrlInstChkStartMenu, RECT{cx, oy, cx + cw, oy + oh},
-			"Startmenü-Einträge erstellen",
-			"Erstellt SC Cockpit & SC Cockpit (Administrator) im Windows-Startmenü",
+			"Startmenü-Ordner & Administrator-Modus erstellen",
+			"Inklusive 'SC Cockpit (Administrator)' falls Star Citizen mit Admin-Rechten läuft",
 			app.OptStartMenu)
 
 		if !app.PythonFound && app.WingetFound {
 			oy += oh + sc(12)
 			drawCheckboxRow(hdc, CtrlInstChkWingetPy, RECT{cx, oy, cx + cw, oy + oh},
-				"Python 3.12 automatisch installieren (empfohlen)",
-				"Installiert Python 3 für den lokalen Tastatur-Server über Windows winget",
+				"Python 3.12 automatisch via winget einrichten",
+				"Wird benötigt, falls du die Shards zusätzlich auf einem Tablet/Handy im WLAN öffnen möchtest",
 				app.OptWingetPy)
 		}
 
-		// Bottom Action Bar
-		btnPrimary := RECT{w - sc(36) - sc(210), h - sc(68), w - sc(36), h - sc(22)}
-		btnLabel := "JETZT INSTALLIEREN"
+		btnPrimary := RECT{w - sc(36) - sc(220), h - sc(68), w - sc(36), h - sc(22)}
+		btnLabel := "JETZT INSTALLIEREN  ►"
 		if app.ExistingInst {
-			btnLabel = "AKTUALISIEREN"
-			btnUninst := RECT{cx, h - sc(68), cx + sc(160), h - sc(22)}
-			drawButton(hdc, CtrlInstSwitchUninstall, btnUninst, "Deinstallieren...", "danger")
+			btnLabel = "AKTUALISIEREN  ►"
+			btnUninst := RECT{cx, h - sc(68), cx + sc(165), h - sc(22)}
+			drawButton(hdc, CtrlInstSwitchUninstall, btnUninst, "DEINSTALLIEREN", "danger")
 		}
 		drawButton(hdc, CtrlInstPrimary, btnPrimary, btnLabel, "amber")
 
 	case InstPageUninstall:
-		drawText(hdc, "SC Cockpit deinstallieren", RECT{cx, sc(32), cx + cw - sc(80), sc(62)}, app.FontHero, colText, DT_LEFT|DT_SINGLELINE)
-		drawText(hdc, "Möchtest du SC Cockpit von deinem Computer entfernen?", RECT{cx, sc(64), cx + cw, sc(90)}, app.FontBody, colMuted, DT_LEFT|DT_SINGLELINE)
+		drawText(hdc, "SC COCKPIT ENTFERNEN", RECT{cx, sc(30), cx + cw - sc(80), sc(58)}, app.FontHero, colRed, DT_LEFT|DT_SINGLELINE)
+		drawText(hdc, "Möchtest du SC Cockpit und alle Verknüpfungen von diesem PC entfernen?", RECT{cx, sc(60), cx + cw, sc(84)}, app.FontBody, colMuted, DT_LEFT|DT_SINGLELINE)
 
-		warnCard := RECT{cx, sc(110), cx + cw, sc(185)}
-		drawCard(hdc, warnCard, colRedBg, colRed, 10)
-		drawText(hdc, "Das Programm sowie alle Desktop- und Startmenü-Verknüpfungen werden entfernt.\nDeine eigenen Dashboards bleiben standardmäßig im Benutzerordner gespeichert.",
+		warnCard := RECT{cx, sc(104), cx + cw, sc(180)}
+		drawShardBox(hdc, warnCard, 10, colRedBg, colRed)
+		drawText(hdc, "Der Programmordner sowie alle Desktop- und Startmenü-Einträge werden gelöscht.\nDeine eigenen Dashboards im Benutzerordner bleiben standardmäßig erhalten.",
 			RECT{warnCard.Left + sc(18), warnCard.Top + sc(16), warnCard.Right - sc(18), warnCard.Bottom - sc(14)}, app.FontBody, colText, DT_LEFT|DT_WORDBREAK)
 
-		drawCheckboxRow(hdc, CtrlChkPurgeData, RECT{cx, sc(205), cx + cw, sc(265)},
-			"Auch alle eigenen Dashboards und Einstellungen unwiderruflich löschen",
-			fmt.Sprintf("Löscht zusätzlich den Ordner %s", app.UserDir),
+		drawCheckboxRow(hdc, CtrlChkPurgeData, RECT{cx, sc(200), cx + cw, sc(260)},
+			"Auch alle eigenen Shards / Dashboards unwiderruflich löschen",
+			fmt.Sprintf("Löscht zusätzlich %s", app.UserDir),
 			app.OptPurgeData)
 
 		btnBack := RECT{cx, h - sc(68), cx + sc(140), h - sc(22)}
-		btnRemove := RECT{w - sc(36) - sc(210), h - sc(68), w - sc(36), h - sc(22)}
-		drawButton(hdc, CtrlInstSwitchUninstall, btnBack, "Zurück", "secondary")
-		drawButton(hdc, CtrlInstPrimary, btnRemove, "JETZT DEINSTALLIEREN", "danger")
+		btnRemove := RECT{w - sc(36) - sc(215), h - sc(68), w - sc(36), h - sc(22)}
+		drawButton(hdc, CtrlInstSwitchUninstall, btnBack, "◄ ZURÜCK", "secondary")
+		drawButton(hdc, CtrlInstPrimary, btnRemove, "ENDGÜLTIG ENTFERNEN", "danger")
 
 	case InstPageProgress:
 		app.mu.Lock()
@@ -684,37 +747,36 @@ func paintInstallerMode(hdc uintptr, w, h int32) {
 		status := app.StatusLine
 		app.mu.Unlock()
 
-		title := "Installation läuft..."
+		title := "QUANTUM DEPLOYMENT LÄUFT..."
 		if app.IsUninstall {
-			title = "Deinstallation läuft..."
+			title = "DEINSTALLATION LÄUFT..."
 		}
-		drawText(hdc, title, RECT{cx, sc(32), cx + cw, sc(62)}, app.FontHero, colText, DT_LEFT|DT_SINGLELINE)
-		drawText(hdc, status, RECT{cx, sc(68), cx + cw, sc(94)}, app.FontBody, colMuted, DT_LEFT|DT_SINGLELINE)
+		drawText(hdc, title, RECT{cx, sc(30), cx + cw, sc(58)}, app.FontHero, colCyan, DT_LEFT|DT_SINGLELINE)
+		drawText(hdc, status, RECT{cx, sc(64), cx + cw, sc(90)}, app.FontBody, colText, DT_LEFT|DT_SINGLELINE)
 
-		// Clean Smooth Progress Bar
-		barBg := RECT{cx, sc(130), cx + cw, sc(152)}
-		drawCard(hdc, barBg, colPanel, colLine, 10)
-		fillW := ( (barBg.Right - barBg.Left) * int32(pct) ) / 100
+		barBg := RECT{cx, sc(126), cx + cw, sc(148)}
+		drawShardBox(hdc, barBg, 6, colPanel, colLineHi)
+		fillW := ((barBg.Right - barBg.Left) * int32(pct)) / 100
 		if fillW > sc(8) {
-			drawCard(hdc, RECT{barBg.Left, barBg.Top, barBg.Left + fillW, barBg.Bottom}, colAmber, colAmber, 10)
+			drawShardBox(hdc, RECT{barBg.Left, barBg.Top, barBg.Left + fillW, barBg.Bottom}, 6, colCyan, colCyan)
 		}
-		drawText(hdc, fmt.Sprintf("%d %%", pct), RECT{cx, sc(162), cx + cw, sc(188)}, app.FontBold, colAmber, DT_RIGHT|DT_SINGLELINE)
+		drawText(hdc, fmt.Sprintf("%d %%", pct), RECT{cx, sc(158), cx + cw, sc(184)}, app.FontBold, colCyan, DT_RIGHT|DT_SINGLELINE)
 
 	case InstPageDone:
 		if app.InstallErr != "" {
-			drawText(hdc, "Fehler bei der Ausführung", RECT{cx, sc(32), cx + cw, sc(62)}, app.FontHero, colRed, DT_LEFT|DT_SINGLELINE)
-			errCard := RECT{cx, sc(80), cx + cw, sc(180)}
-			drawCard(hdc, errCard, colRedBg, colRed, 10)
+			drawText(hdc, "FEHLER BEI DER AUSFÜHRUNG", RECT{cx, sc(30), cx + cw, sc(58)}, app.FontHero, colRed, DT_LEFT|DT_SINGLELINE)
+			errCard := RECT{cx, sc(78), cx + cw, sc(178)}
+			drawShardBox(hdc, errCard, 10, colRedBg, colRed)
 			drawText(hdc, app.InstallErr, RECT{errCard.Left + sc(18), errCard.Top + sc(16), errCard.Right - sc(18), errCard.Bottom - sc(16)}, app.FontBody, colText, DT_LEFT|DT_WORDBREAK)
 		} else if app.IsUninstall {
-			drawText(hdc, "Deinstallation abgeschlossen", RECT{cx, sc(32), cx + cw, sc(62)}, app.FontHero, colText, DT_LEFT|DT_SINGLELINE)
-			doneCard := RECT{cx, sc(80), cx + cw, sc(165)}
-			drawCard(hdc, doneCard, colPanel, colLine, 10)
-			msg := "SC Cockpit wurde erfolgreich von deinem PC entfernt."
+			drawText(hdc, "SYSTEM BEREINIGT", RECT{cx, sc(30), cx + cw, sc(58)}, app.FontHero, colCyan, DT_LEFT|DT_SINGLELINE)
+			doneCard := RECT{cx, sc(78), cx + cw, sc(165)}
+			drawShardBox(hdc, doneCard, 10, colPanel, colCyan)
+			msg := "SC Cockpit wurde erfolgreich entfernt."
 			if !app.OptPurgeData {
-				msg += "\nDeine eigenen Dashboards im Ordner 'user' wurden behalten."
+				msg += "\nDeine eigenen Dashboards unter %LOCALAPPDATA%\\SC Cockpit\\user wurden behalten."
 			}
-			drawText(hdc, msg, RECT{doneCard.Left + sc(18), doneCard.Top + sc(18), doneCard.Right - sc(18), doneCard.Bottom - sc(18)}, app.FontBody, colMuted, DT_LEFT|DT_WORDBREAK)
+			drawText(hdc, msg, RECT{doneCard.Left + sc(18), doneCard.Top + sc(18), doneCard.Right - sc(18), doneCard.Bottom - sc(18)}, app.FontBody, colText, DT_LEFT|DT_WORDBREAK)
 		}
 		btnClose := RECT{w - sc(36) - sc(180), h - sc(68), w - sc(36), h - sc(22)}
 		drawButton(hdc, CtrlInstPrimary, btnClose, "SCHLIESSEN", "amber")
@@ -722,31 +784,34 @@ func paintInstallerMode(hdc uintptr, w, h int32) {
 }
 
 // ============================================================================
-// 2. RSI-STYLE GRAPHICAL CONTROL CENTER & LAUNCHER (POST-INSTALL)
+// 2. GAMEGLASS IN-APP COCKPIT & CONTROL CENTER
 // ============================================================================
 func paintLauncherMode(hdc uintptr, w, h int32) {
-	// Left RSI Navigation Sidebar
-	sideW := sc(230)
+	// Left GameGlass Vertical Shard Rail
+	sideW := sc(225)
 	fillRect(hdc, RECT{0, 0, sideW, h}, colSidebar)
 	drawLine(hdc, sideW, 0, sideW, h, colLine, 1)
 
 	// Brand Header
-	fillRect(hdc, RECT{sc(24), sc(24), sc(32), sc(54)}, colAmber)
-	drawText(hdc, "SC COCKPIT", RECT{sc(44), sc(21), sideW - sc(12), sc(42)}, app.FontTitle, colText, DT_LEFT|DT_SINGLELINE)
-	drawText(hdc, "CONTROL CENTER", RECT{sc(44), sc(41), sideW - sc(12), sc(58)}, app.FontSmall, colCyan, DT_LEFT|DT_SINGLELINE)
+	hexRect := RECT{sc(18), sc(18), sc(48), sc(48)}
+	drawShardBox(hdc, hexRect, 7, colCyanBg, colCyan)
+	drawText(hdc, "SC", hexRect, app.FontBold, colCyan, DT_CENTER|DT_VCENTER|DT_SINGLELINE)
+	drawText(hdc, "SC COCKPIT", RECT{sc(58), sc(17), sideW - sc(10), sc(36)}, app.FontTitle, colText, DT_LEFT|DT_SINGLELINE)
+	drawText(hdc, "GAMEGLASS SHARD HUB", RECT{sc(58), sc(36), sideW - sc(10), sc(51)}, app.FontSmall, colCyan, DT_LEFT|DT_SINGLELINE)
 
-	// Navigation Items
 	navItems := []struct {
 		id    int
 		tab   int
 		label string
+		tag   string
 	}{
-		{CtrlNavServer, TabServer, "Cockpit & Server"},
-		{CtrlNavDashboards, TabDashboards, fmt.Sprintf("Dashboards (%d)", len(app.Dashboards))},
-		{CtrlNavSettings, TabSettings, "Einstellungen"},
+		{CtrlNavLiveCockpit, TabLiveCockpit, "LIVE COCKPIT", "IN-APP"},
+		{CtrlNavShards, TabShards, "SHARDS & DECKS", fmt.Sprintf("%d", len(app.Dashboards))},
+		{CtrlNavHostLink, TabHostLink, "TABLET / SERVER", "WLAN"},
+		{CtrlNavSettings, TabSettings, "EINSTELLUNGEN", "SYS"},
 	}
 
-	ny := sc(92)
+	ny := sc(74)
 	for _, item := range navItems {
 		r := RECT{sc(12), ny, sideW - sc(12), ny + sc(44)}
 		app.Regions = append(app.Regions, HotRegion{ID: item.id, Rect: r})
@@ -754,120 +819,434 @@ func paintLauncherMode(hdc uintptr, w, h int32) {
 		hov := app.HoverID == item.id
 
 		if active {
-			drawCard(hdc, r, colPanelAct, colLineHi, 8)
-			fillRect(hdc, RECT{r.Left, r.Top + sc(10), r.Left + sc(4), r.Bottom - sc(10)}, colAmber)
+			drawShardBox(hdc, r, 8, colCyanBg, colCyan)
+			fillRect(hdc, RECT{r.Left, r.Top + sc(6), r.Left + sc(3), r.Bottom - sc(8)}, colCyan)
 		} else if hov {
-			drawCard(hdc, r, colPanel, colLine, 8)
+			drawShardBox(hdc, r, 8, colPanelHov, colLineHi)
+		} else {
+			drawShardBox(hdc, r, 8, colPanel, colLine)
 		}
 
 		col := colMuted
-		if active || hov {
+		tagCol := colDim
+		if active {
+			col = colCyan
+			tagCol = colAmber
+		} else if hov {
 			col = colText
 		}
-		drawText(hdc, item.label, RECT{r.Left + sc(18), r.Top, r.Right - sc(10), r.Bottom}, app.FontBold, col, DT_LEFT|DT_VCENTER|DT_SINGLELINE)
+		drawText(hdc, item.label, RECT{r.Left + sc(14), r.Top, r.Right - sc(48), r.Bottom}, app.FontBold, col, DT_LEFT|DT_VCENTER|DT_SINGLELINE)
+		drawText(hdc, item.tag, RECT{r.Right - sc(46), r.Top, r.Right - sc(10), r.Bottom}, app.FontMono, tagCol, DT_RIGHT|DT_VCENTER|DT_SINGLELINE)
 		ny += sc(52)
 	}
 
-	// Live Server Status Pill in Bottom-Left Sidebar
-	statusCard := RECT{sc(16), h - sc(78), sideW - sc(16), h - sc(18)}
+	// Bottom Sidebar Status Pod
+	statusCard := RECT{sc(12), h - sc(108), sideW - sc(12), h - sc(14)}
 	if app.ServerRunning {
-		drawCard(hdc, statusCard, colGreenBg, colGreen, 8)
-		drawText(hdc, "●  SERVER ONLINE", RECT{statusCard.Left + sc(14), statusCard.Top + sc(10), statusCard.Right - sc(10), statusCard.Top + sc(28)}, app.FontBold, colGreen, DT_LEFT|DT_SINGLELINE)
-		drawText(hdc, fmt.Sprintf("Port %d aktiv", app.Port), RECT{statusCard.Left + sc(14), statusCard.Top + sc(30), statusCard.Right - sc(10), statusCard.Bottom - sc(8)}, app.FontSmall, colText, DT_LEFT|DT_SINGLELINE)
+		drawShardBox(hdc, statusCard, 8, colGreenBg, colGreen)
+		fillRect(hdc, RECT{statusCard.Left, statusCard.Top + sc(6), statusCard.Left + sc(3), statusCard.Bottom - sc(8)}, colGreen)
+		drawText(hdc, "●  HOST LINK ONLINE", RECT{statusCard.Left + sc(12), statusCard.Top + sc(8), statusCard.Right - sc(8), statusCard.Top + sc(26)}, app.FontBold, colGreen, DT_LEFT|DT_SINGLELINE)
 	} else {
-		drawCard(hdc, statusCard, colPanel, colLine, 8)
-		drawText(hdc, "○  SERVER GESTOPPT", RECT{statusCard.Left + sc(14), statusCard.Top + sc(10), statusCard.Right - sc(10), statusCard.Top + sc(28)}, app.FontBold, colMuted, DT_LEFT|DT_SINGLELINE)
-		drawText(hdc, "Klicke auf Starten", RECT{statusCard.Left + sc(14), statusCard.Top + sc(30), statusCard.Right - sc(10), statusCard.Bottom - sc(8)}, app.FontSmall, colDim, DT_LEFT|DT_SINGLELINE)
+		drawShardBox(hdc, statusCard, 8, colPanel, colLine)
+		drawText(hdc, "○  WLAN SERVER AUS", RECT{statusCard.Left + sc(12), statusCard.Top + sc(8), statusCard.Right - sc(8), statusCard.Top + sc(26)}, app.FontBold, colMuted, DT_LEFT|DT_SINGLELINE)
 	}
-
-	// Main Content Area
-	cx := sideW + sc(32)
-	cw := w - cx - sc(32)
-
-	if app.ToastMsg != "" {
-		toastRect := RECT{cx, h - sc(46), cx + cw, h - sc(14)}
-		drawCard(hdc, toastRect, colAmberBg, colAmber, 6)
-		drawText(hdc, app.ToastMsg, toastRect, app.FontBold, colAmber, DT_CENTER|DT_VCENTER|DT_SINGLELINE)
+	drawText(hdc, fmt.Sprintf("http://%s:%d/", app.LanIP, app.Port), RECT{statusCard.Left + sc(12), statusCard.Top + sc(28), statusCard.Right - sc(8), statusCard.Top + sc(46)}, app.FontMono, colCyan, DT_LEFT|DT_SINGLELINE)
+	lastAct := app.LastActionTxt
+	if lastAct == "" {
+		lastAct = "Bereit für Eingaben"
 	}
+	drawText(hdc, "LETZTE: "+lastAct, RECT{statusCard.Left + sc(12), statusCard.Top + sc(50), statusCard.Right - sc(8), statusCard.Bottom - sc(8)}, app.FontSmall, colAmber, DT_LEFT|DT_SINGLELINE)
+
+	// Main Stage Area
+	cx := sideW + sc(24)
+	cw := w - cx - sc(24)
 
 	switch app.Tab {
-	case TabServer:
-		paintTabServer(hdc, cx, cw, h)
-	case TabDashboards:
-		paintTabDashboards(hdc, cx, cw, h)
+	case TabLiveCockpit:
+		paintTabLiveCockpit(hdc, cx, cw, h)
+	case TabShards:
+		paintTabShards(hdc, cx, cw, h)
+	case TabHostLink:
+		paintTabHostLink(hdc, cx, cw, h)
 	case TabSettings:
 		paintTabSettings(hdc, cx, cw, h)
 	}
+
+	if app.ToastMsg != "" {
+		toastRect := RECT{cx, h - sc(42), cx + cw, h - sc(12)}
+		drawShardBox(hdc, toastRect, 6, colCyanBg, colCyan)
+		drawText(hdc, app.ToastMsg, toastRect, app.FontBold, colCyan, DT_CENTER|DT_VCENTER|DT_SINGLELINE)
+	}
 }
 
-func paintTabServer(hdc uintptr, cx, cw, h int32) {
-	drawText(hdc, "Cockpit Serversteuerung", RECT{cx, sc(26), cx + cw - sc(90), sc(56)}, app.FontHero, colText, DT_LEFT|DT_SINGLELINE)
-	drawText(hdc, "Starte den Server auf deinem PC und öffne die WLAN-Adresse auf deinem Tablet oder Smartphone.",
-		RECT{cx, sc(56), cx + cw, sc(80)}, app.FontBody, colMuted, DT_LEFT|DT_SINGLELINE)
+// ============================================================================
+// TAB 1: IN-APP INTERACTIVE LIVE COCKPIT (USE DASHBOARDS DIRECTLY IN THE APP!)
+// ============================================================================
+func paintTabLiveCockpit(hdc uintptr, cx, cw, h int32) {
+	app.LivePageBtns = app.LivePageBtns[:0]
 
-	// Hero Server Control Card (RSI Launcher Style)
-	heroCard := RECT{cx, sc(92), cx + cw, sc(230)}
-	drawCard(hdc, heroCard, colPanel, colLineHi, 12)
+	// Find active dashboard
+	var curDash *DashboardInfo
+	for i := range app.Dashboards {
+		if app.Dashboards[i].ID == app.ActiveDash {
+			curDash = &app.Dashboards[i]
+			break
+		}
+	}
+	if curDash == nil && len(app.Dashboards) > 0 {
+		curDash = &app.Dashboards[0]
+		app.ActiveDash = curDash.ID
+	}
+
+	// Top MFD Deck Control Bar
+	topBar := RECT{cx, sc(14), cx + cw - sc(84), sc(58)}
+	drawShardBox(hdc, topBar, 8, colPanel, colLineHi)
+	fillRect(hdc, RECT{topBar.Left, topBar.Top, topBar.Left + sc(65), topBar.Top + sc(2)}, colCyan)
+
+	// Shard Selector Prev / Title / Next
+	btnPrev := RECT{topBar.Left + sc(10), topBar.Top + sc(8), topBar.Left + sc(42), topBar.Bottom - sc(8)}
+	drawButton(hdc, CtrlLivePrevBoard, btnPrev, "◄", "secondary")
+
+	dashTitle := "KEIN SHARD"
+	if curDash != nil {
+		dashTitle = strings.ToUpper(curDash.Title) + " // LIVE SHARD"
+	}
+	drawText(hdc, dashTitle, RECT{btnPrev.Right + sc(8), topBar.Top, btnPrev.Right + sc(235), topBar.Bottom}, app.FontTitle, colAmber, DT_CENTER|DT_VCENTER|DT_SINGLELINE)
+
+	btnNext := RECT{btnPrev.Right + sc(240), topBar.Top + sc(8), btnPrev.Right + sc(272), topBar.Bottom - sc(8)}
+	drawButton(hdc, CtrlLiveNextBoard, btnNext, "►", "secondary")
+
+	// Weapons Arm Toggle & Baukasten Editor Button
+	btnEdit := RECT{topBar.Right - sc(145), topBar.Top + sc(8), topBar.Right - sc(10), topBar.Bottom - sc(8)}
+	drawButton(hdc, CtrlLiveOpenEditor, btnEdit, "BAUKASTEN", "cyan")
+
+	btnArm := RECT{btnEdit.Left - sc(148), topBar.Top + sc(8), btnEdit.Left - sc(8), topBar.Bottom - sc(8)}
+	if app.LiveArmed {
+		drawButton(hdc, CtrlLiveArmToggle, btnArm, "WAFFEN ARMED", "danger")
+	} else {
+		drawButton(hdc, CtrlLiveArmToggle, btnArm, "WAFFEN SAFE", "secondary")
+	}
+
+	if curDash == nil || len(curDash.Pages) == 0 {
+		drawText(hdc, "Keine Seiten in diesem Dashboard gefunden.", RECT{cx, sc(120), cx + cw, sc(160)}, app.FontBody, colMuted, DT_CENTER|DT_SINGLELINE)
+		return
+	}
+
+	if app.LivePageIdx >= len(curDash.Pages) || app.LivePageIdx < 0 {
+		app.LivePageIdx = 0
+	}
+
+	// Page Tabs Row (GameGlass MFD Tabs)
+	tabY := sc(68)
+	tabH := sc(36)
+	numPages := len(curDash.Pages)
+	tabW := sc(155)
+	if int32(numPages)*(tabW+sc(8)) > cw {
+		tabW = (cw - int32(numPages)*sc(8)) / int32(maxInt(numPages, 1))
+	}
+
+	tx := cx
+	for pi, page := range curDash.Pages {
+		tr := RECT{tx, tabY, tx + tabW, tabY + tabH}
+		id := CtrlLivePageTabBase + pi
+		app.Regions = append(app.Regions, HotRegion{ID: id, Rect: tr})
+		isAct := pi == app.LivePageIdx
+		hov := app.HoverID == id
+
+		if isAct {
+			drawShardBox(hdc, tr, 7, colAmberBg, colAmber)
+			fillRect(hdc, RECT{tr.Left, tr.Top, tr.Right - sc(10), tr.Top + sc(2)}, colAmber)
+			drawText(hdc, strings.ToUpper(page.Label), tr, app.FontBold, colAmber, DT_CENTER|DT_VCENTER|DT_SINGLELINE)
+		} else if hov {
+			drawShardBox(hdc, tr, 7, colPanelHov, colCyan)
+			drawText(hdc, strings.ToUpper(page.Label), tr, app.FontBold, colText, DT_CENTER|DT_VCENTER|DT_SINGLELINE)
+		} else {
+			drawShardBox(hdc, tr, 7, colPanel, colLine)
+			drawText(hdc, strings.ToUpper(page.Label), tr, app.FontBold, colMuted, DT_CENTER|DT_VCENTER|DT_SINGLELINE)
+		}
+		tx += tabW + sc(8)
+	}
+
+	// Render Active Page Groups & Interactive GameGlass Holo-Shards!
+	activePage := curDash.Pages[app.LivePageIdx]
+	gy := tabY + tabH + sc(12)
+	maxBottom := h - sc(46)
+
+	cols := int32(4)
+	gap := sc(10)
+
+	for _, grp := range activePage.Groups {
+		if gy+sc(70) > maxBottom {
+			break
+		}
+		// Group Header Line
+		drawText(hdc, "◆  "+strings.ToUpper(grp.Title), RECT{cx, gy, cx + cw, gy + sc(20)}, app.FontBold, colCyan, DT_LEFT|DT_SINGLELINE)
+		drawLine(hdc, cx+sc(170), gy+sc(10), cx+cw, gy+sc(10), colLine, 1)
+		gy += sc(24)
+
+		cellW := (cw - (cols-1)*gap) / cols
+		cellH := sc(68)
+		colIdx := int32(0)
+
+		for _, btn := range grp.Buttons {
+			// Skip pure display widgets or map them to quick action tiles
+			span := int32(1)
+			if btn.Wide || btn.Span >= 2 {
+				span = 2
+			}
+			if colIdx+span > cols {
+				colIdx = 0
+				gy += cellH + gap
+			}
+			if gy+cellH > maxBottom {
+				break
+			}
+
+			bx := cx + colIdx*(cellW+gap)
+			bw := span*cellW + (span-1)*gap
+			tileRect := RECT{bx, gy, bx + bw, gy + cellH}
+
+			flatIdx := len(app.LivePageBtns)
+			app.LivePageBtns = append(app.LivePageBtns, btn)
+			ctrlID := CtrlLiveTileBtnBase + flatIdx
+
+			paintGameGlassShardTile(hdc, ctrlID, tileRect, btn)
+
+			colIdx += span
+			if colIdx >= cols {
+				colIdx = 0
+				gy += cellH + gap
+			}
+		}
+		if colIdx > 0 {
+			gy += cellH + gap
+		}
+		gy += sc(6)
+	}
+}
+
+func paintGameGlassShardTile(hdc uintptr, id int, r RECT, btn DashButton) {
+	app.Regions = append(app.Regions, HotRegion{ID: id, Rect: r})
+	hov := app.HoverID == id
+	press := app.PressID == id
+	isToggled := app.LiveToggled[btn.ID]
+
+	// Determine Shard Accent Color
+	var accent, fill, border uint32
+	switch btn.Color {
+	case "amber":
+		accent = colAmber
+		fill = rgb(0x19, 0x16, 0x0e)
+		border = rgb(0x6e, 0x4d, 0x12)
+	case "red":
+		accent = colRed
+		fill = rgb(0x1f, 0x0f, 0x14)
+		border = rgb(0x75, 0x20, 0x2c)
+	case "green":
+		accent = colGreen
+		fill = rgb(0x0d, 0x1f, 0x18)
+		border = rgb(0x18, 0x6b, 0x3f)
+	case "blue":
+		accent = colBlue
+		fill = colBlueBg
+		border = rgb(0x23, 0x52, 0x96)
+	case "cyan":
+		accent = colCyan
+		fill = rgb(0x0b, 0x1d, 0x29)
+		border = rgb(0x14, 0x67, 0x78)
+	default:
+		accent = colSlate
+		fill = colPanel
+		border = colLineHi
+	}
+
+	if isToggled {
+		fill = colCyanBg
+		border = colCyan
+		accent = colCyan
+	} else if hov {
+		fill = colPanelHov
+		border = accent
+	}
+
+	if press {
+		r.Top += sc(1)
+		r.Bottom += sc(1)
+	}
+
+	drawShardBox(hdc, r, 10, fill, border)
+
+	// Left laser glow bar
+	fillRect(hdc, RECT{r.Left, r.Top + sc(7), r.Left + sc(3), r.Bottom - sc(10)}, accent)
+
+	// Danger top warning stripe
+	if btn.Danger {
+		stripeCol := colRed
+		if !app.LiveArmed {
+			stripeCol = colDim
+		}
+		fillRect(hdc, RECT{r.Left + sc(6), r.Top, r.Right - sc(12), r.Top + sc(3)}, stripeCol)
+	}
+
+	// Top Row: Keybind Badge + Mode Tag
+	keyHint := btn.Hint
+	if keyHint == "" && len(btn.Keys) > 0 {
+		keyHint = strings.ToUpper(strings.Join(btn.Keys, " + "))
+	}
+	modeTag := "TAP"
+	if btn.Mode == "hold" {
+		modeTag = "HOLD"
+	} else if btn.Mode == "toggle" {
+		if isToggled {
+			modeTag = "ON ●"
+		} else {
+			modeTag = "TOGGLE"
+		}
+	}
+	if btn.Danger && !app.LiveArmed {
+		modeTag = "LOCKED"
+	}
+
+	drawText(hdc, keyHint, RECT{r.Left + sc(12), r.Top + sc(8), r.Right - sc(55), r.Top + sc(23)}, app.FontMono, accent, DT_LEFT|DT_SINGLELINE)
+	drawText(hdc, modeTag, RECT{r.Right - sc(65), r.Top + sc(8), r.Right - sc(10), r.Top + sc(23)}, app.FontSmall, colMuted, DT_RIGHT|DT_SINGLELINE)
+
+	// Bottom Main Action Label
+	labelCol := colText
+	if btn.Danger && !app.LiveArmed {
+		labelCol = colMuted
+	} else if isToggled {
+		labelCol = colCyan
+	}
+	drawText(hdc, strings.ToUpper(btn.Label), RECT{r.Left + sc(12), r.Top + sc(28), r.Right - sc(10), r.Bottom - sc(8)}, app.FontTitle, labelCol, DT_LEFT|DT_VCENTER|DT_SINGLELINE)
+}
+
+// ============================================================================
+// TAB 2: SHARDS & DASHBOARDS MANAGER
+// ============================================================================
+func paintTabShards(hdc uintptr, cx, cw, h int32) {
+	drawText(hdc, "SHARDS & DASHBOARDS", RECT{cx, sc(22), cx + cw - sc(100), sc(50)}, app.FontHero, colText, DT_LEFT|DT_SINGLELINE)
+	drawText(hdc, "Öffne Shards direkt im In-App Live-Cockpit, passe sie im Baukasten an oder synchronisiere deine Star Citizen Tasten.",
+		RECT{cx, sc(52), cx + cw, sc(74)}, app.FontBody, colMuted, DT_LEFT|DT_SINGLELINE)
+
+	btnNew := RECT{cx, sc(86), cx + sc(165), sc(122)}
+	btnSync := RECT{btnNew.Right + sc(10), sc(86), btnNew.Right + sc(205), sc(122)}
+	btnFolder := RECT{btnSync.Right + sc(10), sc(86), btnSync.Right + sc(175), sc(122)}
+	btnReload := RECT{btnFolder.Right + sc(10), sc(86), btnFolder.Right + sc(125), sc(122)}
+
+	drawButton(hdc, CtrlBtnNewDash, btnNew, "+ NEUER SHARD", "amber")
+	drawButton(hdc, CtrlBtnSyncSCBindings, btnSync, "SC-TASTEN LESEN", "cyan")
+	drawButton(hdc, CtrlBtnOpenDashFolder, btnFolder, "ORDNER ÖFFNEN", "secondary")
+	drawButton(hdc, CtrlBtnReloadDash, btnReload, "RELOAD", "secondary")
+
+	y := sc(138)
+	rowH := sc(72)
+	for i, d := range app.Dashboards {
+		if y+rowH > h-sc(48) {
+			break
+		}
+		card := RECT{cx, y, cx + cw, y + rowH}
+		isActive := d.ID == app.ActiveDash
+		border := colLine
+		fill := colPanel
+		if isActive {
+			border = colCyan
+			fill = colPanelAct
+		}
+		drawShardBox(hdc, card, 10, fill, border)
+		if isActive {
+			fillRect(hdc, RECT{card.Left, card.Top + sc(8), card.Left + sc(4), card.Bottom - sc(10)}, colCyan)
+		}
+
+		badge := "OFFICIAL SHARD"
+		badgeCol := colCyan
+		if d.Source == "local" {
+			badge = "CUSTOM SHARD"
+			badgeCol = colAmber
+		}
+		drawText(hdc, strings.ToUpper(d.Title), RECT{card.Left + sc(18), card.Top + sc(12), card.Left + sc(260), card.Top + sc(36)}, app.FontTitle, colText, DT_LEFT|DT_SINGLELINE)
+		meta := fmt.Sprintf("%s   •   %s.json   •   %d Seiten   •   %d Shards", badge, d.ID, d.PageCount, d.ButtonCount)
+		drawText(hdc, meta, RECT{card.Left + sc(18), card.Top + sc(38), card.Right - sc(360), card.Bottom - sc(10)}, app.FontSmall, badgeCol, DT_LEFT|DT_SINGLELINE)
+
+		bx := card.Right - sc(14)
+		if d.Source == "local" {
+			btnDel := RECT{bx - sc(86), card.Top + sc(18), bx, card.Bottom - sc(18)}
+			drawButton(hdc, CtrlDashDelBase+i, btnDel, "LÖSCHEN", "danger")
+			bx = btnDel.Left - sc(8)
+		}
+
+		btnDup := RECT{bx - sc(88), card.Top + sc(18), bx, card.Bottom - sc(18)}
+		drawButton(hdc, CtrlDashDupBase+i, btnDup, "KOPIE", "secondary")
+		bx = btnDup.Left - sc(8)
+
+		btnEdit := RECT{bx - sc(108), card.Top + sc(18), bx, card.Bottom - sc(18)}
+		drawButton(hdc, CtrlDashEditBase+i, btnEdit, "BAUKASTEN", "cyan")
+		bx = btnEdit.Left - sc(8)
+
+		btnUse := RECT{bx - sc(135), card.Top + sc(18), bx, card.Bottom - sc(18)}
+		if isActive {
+			drawButton(hdc, CtrlDashUseLiveBase+i, btnUse, "► IM COCKPIT", "amber")
+		} else {
+			drawButton(hdc, CtrlDashUseLiveBase+i, btnUse, "IM COCKPIT NUTZEN", "green")
+		}
+
+		y += rowH + sc(10)
+	}
+}
+
+// ============================================================================
+// TAB 3: TABLET / WLAN SERVER HOST LINK
+// ============================================================================
+func paintTabHostLink(hdc uintptr, cx, cw, h int32) {
+	drawText(hdc, "TABLET & WLAN SHARD SERVER", RECT{cx, sc(22), cx + cw - sc(90), sc(50)}, app.FontHero, colText, DT_LEFT|DT_SINGLELINE)
+	drawText(hdc, "Verbinde dein Tablet, Smartphone oder einen Zweitbildschirm im WLAN mit deinem Star Citizen PC.",
+		RECT{cx, sc(52), cx + cw, sc(74)}, app.FontBody, colMuted, DT_LEFT|DT_SINGLELINE)
+
+	heroCard := RECT{cx, sc(88), cx + cw, sc(226)}
+	drawShardBox(hdc, heroCard, 12, colPanel, colLineHi)
+	fillRect(hdc, RECT{heroCard.Left, heroCard.Top, heroCard.Left + sc(90), heroCard.Top + sc(2)}, colCyan)
 
 	url := fmt.Sprintf("http://%s:%d/", app.LanIP, app.Port)
 
 	if app.ServerRunning {
-		drawText(hdc, "STATUS: SERVER LÄUFT & EMPFÄNGT TASTEN", RECT{heroCard.Left + sc(24), heroCard.Top + sc(18), heroCard.Right - sc(220), heroCard.Top + sc(38)}, app.FontBold, colGreen, DT_LEFT|DT_SINGLELINE)
+		drawText(hdc, "●  GAMEGLASS HOST SERVER IST ONLINE", RECT{heroCard.Left + sc(22), heroCard.Top + sc(16), heroCard.Right - sc(220), heroCard.Top + sc(36)}, app.FontBold, colGreen, DT_LEFT|DT_SINGLELINE)
 	} else {
-		drawText(hdc, "STATUS: SERVER IST AUSGESCHALTET", RECT{heroCard.Left + sc(24), heroCard.Top + sc(18), heroCard.Right - sc(220), heroCard.Top + sc(38)}, app.FontBold, colAmber, DT_LEFT|DT_SINGLELINE)
+		drawText(hdc, "○  HOST SERVER IST GESTOPPT", RECT{heroCard.Left + sc(22), heroCard.Top + sc(16), heroCard.Right - sc(220), heroCard.Top + sc(36)}, app.FontBold, colAmber, DT_LEFT|DT_SINGLELINE)
 	}
 
-	drawText(hdc, "ADRESSE FÜR TABLET / HANDY IM WLAN:", RECT{heroCard.Left + sc(24), heroCard.Top + sc(46), heroCard.Right - sc(220), heroCard.Top + sc(64)}, app.FontSmall, colMuted, DT_LEFT|DT_SINGLELINE)
-	drawText(hdc, url, RECT{heroCard.Left + sc(24), heroCard.Top + sc(64), heroCard.Right - sc(220), heroCard.Top + sc(96)}, app.FontHero, colCyan, DT_LEFT|DT_SINGLELINE)
+	drawText(hdc, "SHARD-ADRESSE FÜR TABLET / SMARTPHONE IM WLAN:", RECT{heroCard.Left + sc(22), heroCard.Top + sc(42), heroCard.Right - sc(220), heroCard.Top + sc(60)}, app.FontSmall, colMuted, DT_LEFT|DT_SINGLELINE)
+	drawText(hdc, url, RECT{heroCard.Left + sc(22), heroCard.Top + sc(60), heroCard.Right - sc(220), heroCard.Top + sc(92)}, app.FontHero, colCyan, DT_LEFT|DT_SINGLELINE)
 
-	// Quick Action Buttons inside Hero Card
-	btnCopy := RECT{heroCard.Left + sc(24), heroCard.Bottom - sc(46), heroCard.Left + sc(174), heroCard.Bottom - sc(14)}
-	btnOpen := RECT{btnCopy.Right + sc(10), heroCard.Bottom - sc(46), btnCopy.Right + sc(195), heroCard.Bottom - sc(14)}
-	btnEdit := RECT{btnOpen.Right + sc(10), heroCard.Bottom - sc(46), btnOpen.Right + sc(195), heroCard.Bottom - sc(14)}
+	btnCopy := RECT{heroCard.Left + sc(22), heroCard.Bottom - sc(46), heroCard.Left + sc(172), heroCard.Bottom - sc(12)}
+	btnOpen := RECT{btnCopy.Right + sc(10), heroCard.Bottom - sc(46), btnCopy.Right + sc(185), heroCard.Bottom - sc(12)}
+	btnEdit := RECT{btnOpen.Right + sc(10), heroCard.Bottom - sc(46), btnOpen.Right + sc(185), heroCard.Bottom - sc(12)}
 
-	drawButton(hdc, CtrlBtnCopyURL, btnCopy, "Adresse kopieren", "secondary")
-	drawButton(hdc, CtrlBtnOpenBrowser, btnOpen, "Dashboard öffnen", "cyan")
-	drawButton(hdc, CtrlBtnOpenEditor, btnEdit, "Im Browser anpassen", "secondary")
+	drawButton(hdc, CtrlBtnCopyURL, btnCopy, "URL KOPIEREN", "secondary")
+	drawButton(hdc, CtrlBtnOpenBrowser, btnOpen, "WEB-SHARD ÖFFNEN", "cyan")
+	drawButton(hdc, CtrlBtnOpenEditor, btnEdit, "BAUKASTEN ÖFFNEN", "secondary")
 
-	// Big Power Toggle Button on Right Side of Hero Card
-	powerBtn := RECT{heroCard.Right - sc(200), heroCard.Top + sc(22), heroCard.Right - sc(24), heroCard.Bottom - sc(58)}
+	powerBtn := RECT{heroCard.Right - sc(195), heroCard.Top + sc(20), heroCard.Right - sc(22), heroCard.Bottom - sc(56)}
 	if app.ServerRunning {
 		drawButton(hdc, CtrlBtnToggleServer, powerBtn, "SERVER STOPPEN", "danger")
 	} else {
 		drawButton(hdc, CtrlBtnToggleServer, powerBtn, "SERVER STARTEN", "amber")
 	}
 
-	// Active Dashboard & Admin Status Row
-	midY := sc(246)
-	cardW := (cw - sc(16)) / 2
-	leftCard := RECT{cx, midY, cx + cardW, midY + sc(84)}
-	rightCard := RECT{cx + cardW + sc(16), midY, cx + cw, midY + sc(84)}
-
-	drawCard(hdc, leftCard, colPanel, colLine, 10)
-	drawText(hdc, "AKTIVES DASHBOARD", RECT{leftCard.Left + sc(18), leftCard.Top + sc(12), leftCard.Right - sc(16), leftCard.Top + sc(28)}, app.FontSmall, colDim, DT_LEFT|DT_SINGLELINE)
-	activeTitle := app.ActiveDash
-	for _, d := range app.Dashboards {
-		if d.ID == app.ActiveDash {
-			activeTitle = fmt.Sprintf("%s  (%d Seiten, %d Tasten)", d.Title, d.PageCount, d.ButtonCount)
-			break
-		}
-	}
-	drawText(hdc, activeTitle, RECT{leftCard.Left + sc(18), leftCard.Top + sc(32), leftCard.Right - sc(16), leftCard.Bottom - sc(12)}, app.FontBold, colText, DT_LEFT|DT_SINGLELINE)
-
-	drawCard(hdc, rightCard, colPanel, colLine, 10)
-	drawText(hdc, "BERECHTIGUNGS-MODUS", RECT{rightCard.Left + sc(18), rightCard.Top + sc(12), rightCard.Right - sc(16), rightCard.Top + sc(28)}, app.FontSmall, colDim, DT_LEFT|DT_SINGLELINE)
+	// Admin & Telemetry Log
+	adminCard := RECT{cx, sc(240), cx + cw, sc(304)}
+	drawShardBox(hdc, adminCard, 8, colPanel, colLine)
 	if app.IsAdmin {
-		drawText(hdc, "●  Administrator-Modus aktiv", RECT{rightCard.Left + sc(18), rightCard.Top + sc(32), rightCard.Right - sc(16), rightCard.Bottom - sc(12)}, app.FontBold, colGreen, DT_LEFT|DT_SINGLELINE)
+		drawText(hdc, "●  ADMINISTRATOR-BERECHTIGUNG AKTIV (Sendet Tasten auch an Star Citizen im Admin-Modus)",
+			RECT{adminCard.Left + sc(18), adminCard.Top, adminCard.Right - sc(18), adminCard.Bottom}, app.FontBold, colGreen, DT_LEFT|DT_VCENTER|DT_SINGLELINE)
 	} else {
-		drawText(hdc, "Standard-Benutzer", RECT{rightCard.Left + sc(18), rightCard.Top + sc(32), rightCard.Right - sc(165), rightCard.Bottom - sc(12)}, app.FontBold, colText, DT_LEFT|DT_SINGLELINE)
-		adminBtn := RECT{rightCard.Right - sc(155), rightCard.Top + sc(24), rightCard.Right - sc(14), rightCard.Bottom - sc(16)}
-		drawButton(hdc, CtrlBtnRestartAdmin, adminBtn, "Als Admin starten", "secondary")
+		drawText(hdc, "Berechtigung: Standard-Benutzer (Falls Star Citizen als Admin läuft, bitte rechts klicken)",
+			RECT{adminCard.Left + sc(18), adminCard.Top, adminCard.Right - sc(185), adminCard.Bottom}, app.FontBody, colMuted, DT_LEFT|DT_VCENTER|DT_SINGLELINE)
+		adminBtn := RECT{adminCard.Right - sc(175), adminCard.Top + sc(14), adminCard.Right - sc(14), adminCard.Bottom - sc(14)}
+		drawButton(hdc, CtrlBtnRestartAdmin, adminBtn, "ALS ADMIN STARTEN", "secondary")
 	}
 
-	// Clean Live Activity Log
-	logCard := RECT{cx, sc(346), cx + cw, h - sc(54)}
-	drawCard(hdc, logCard, rgb(0x09, 0x0c, 0x10), colLine, 10)
-	drawText(hdc, "LIVE TASTEN- & SERVER-PROTOKOLL", RECT{logCard.Left + sc(18), logCard.Top + sc(10), logCard.Right - sc(18), logCard.Top + sc(28)}, app.FontSmall, colDim, DT_LEFT|DT_SINGLELINE)
+	logCard := RECT{cx, sc(318), cx + cw, h - sc(50)}
+	drawShardBox(hdc, logCard, 10, rgb(0x04, 0x06, 0x0a), colLine)
+	drawText(hdc, "LIVE TELEMETRIE- & TASTEN-PROTOKOLL", RECT{logCard.Left + sc(18), logCard.Top + sc(10), logCard.Right - sc(18), logCard.Top + sc(28)}, app.FontSmall, colDim, DT_LEFT|DT_SINGLELINE)
 
 	app.mu.Lock()
 	logs := append([]string(nil), app.ServerLogs...)
@@ -875,8 +1254,8 @@ func paintTabServer(hdc uintptr, cx, cw, h int32) {
 
 	ly := logCard.Top + sc(32)
 	if len(logs) == 0 {
-		drawText(hdc, "Noch keine Ereignisse. Sobald du auf dem Tablet eine Taste drückst, erscheint sie hier.",
-			RECT{logCard.Left + sc(18), ly, logCard.Right - sc(18), ly + sc(24)}, app.FontMono, colDim, DT_LEFT|DT_SINGLELINE)
+		drawText(hdc, "Bereit. Klicke auf eine Kachel im 'LIVE COCKPIT'-Tab oder auf deinem Tablet.",
+			RECT{logCard.Left + sc(18), ly, logCard.Right - sc(18), ly + sc(22)}, app.FontMono, colDim, DT_LEFT|DT_SINGLELINE)
 	} else {
 		maxLines := int((logCard.Bottom - ly - sc(8)) / sc(19))
 		if len(logs) > maxLines && maxLines > 0 {
@@ -893,150 +1272,102 @@ func paintTabServer(hdc uintptr, cx, cw, h int32) {
 	}
 }
 
-func paintTabDashboards(hdc uintptr, cx, cw, h int32) {
-	drawText(hdc, "Dashboards verwalten", RECT{cx, sc(26), cx + cw - sc(260), sc(56)}, app.FontHero, colText, DT_LEFT|DT_SINGLELINE)
-	drawText(hdc, "Wähle dein aktives Dashboard, erstelle Kopien für eigene Schiffe oder bearbeite Tasten direkt im Browser.",
-		RECT{cx, sc(56), cx + cw, sc(80)}, app.FontBody, colMuted, DT_LEFT|DT_SINGLELINE)
-
-	// Top Action Buttons
-	btnNew := RECT{cx, sc(92), cx + sc(170), sc(128)}
-	btnSync := RECT{btnNew.Right + sc(10), sc(92), btnNew.Right + sc(200), sc(128)}
-	btnFolder := RECT{btnSync.Right + sc(10), sc(92), btnSync.Right + sc(185), sc(128)}
-	btnReload := RECT{btnFolder.Right + sc(10), sc(92), btnFolder.Right + sc(125), sc(128)}
-
-	drawButton(hdc, CtrlBtnNewDash, btnNew, "+ Neues Dashboard", "amber")
-	drawButton(hdc, CtrlBtnSyncSCBindings, btnSync, "SC-Tasten aus Spiel lesen", "cyan")
-	drawButton(hdc, CtrlBtnOpenDashFolder, btnFolder, "Dashboard-Ordner", "secondary")
-	drawButton(hdc, CtrlBtnReloadDash, btnReload, "Aktualisieren", "secondary")
-
-	// Dashboard List Cards
-	y := sc(144)
-	rowH := sc(68)
-	for i, d := range app.Dashboards {
-		if y+rowH > h-sc(50) {
-			break
-		}
-		card := RECT{cx, y, cx + cw, y + rowH}
-		isActive := d.ID == app.ActiveDash
-		border := colLine
-		fill := colPanel
-		if isActive {
-			border = colAmber
-			fill = colPanelAct
-		}
-		drawCard(hdc, card, fill, border, 10)
-
-		if isActive {
-			fillRect(hdc, RECT{card.Left, card.Top + sc(12), card.Left + sc(4), card.Bottom - sc(12)}, colAmber)
-		}
-
-		// Title & Source Badge
-		badge := "MITGELIEFERT"
-		badgeCol := colCyan
-		if d.Source == "local" {
-			badge = "EIGENES DASHBOARD"
-			badgeCol = colAmber
-		}
-		drawText(hdc, d.Title, RECT{card.Left + sc(20), card.Top + sc(12), card.Left + sc(260), card.Top + sc(36)}, app.FontTitle, colText, DT_LEFT|DT_SINGLELINE)
-		meta := fmt.Sprintf("%s   •   ID: %s.json   •   %d Seiten   •   %d Buttons", badge, d.ID, d.PageCount, d.ButtonCount)
-		drawText(hdc, meta, RECT{card.Left + sc(20), card.Top + sc(38), card.Right - sc(310), card.Bottom - sc(10)}, app.FontSmall, badgeCol, DT_LEFT|DT_SINGLELINE)
-
-		// Action Buttons on the right of each dashboard card
-		bx := card.Right - sc(16)
-
-		if d.Source == "local" {
-			btnDel := RECT{bx - sc(90), card.Top + sc(16), bx, card.Bottom - sc(16)}
-			drawButton(hdc, CtrlDashDelBase+i, btnDel, "Löschen", "danger")
-			bx = btnDel.Left - sc(8)
-		}
-
-		btnDup := RECT{bx - sc(100), card.Top + sc(16), bx, card.Bottom - sc(16)}
-		drawButton(hdc, CtrlDashDupBase+i, btnDup, "Duplizieren", "secondary")
-		bx = btnDup.Left - sc(8)
-
-		btnEdit := RECT{bx - sc(100), card.Top + sc(16), bx, card.Bottom - sc(16)}
-		drawButton(hdc, CtrlDashEditBase+i, btnEdit, "Bearbeiten", "cyan")
-		bx = btnEdit.Left - sc(8)
-
-		btnAct := RECT{bx - sc(105), card.Top + sc(16), bx, card.Bottom - sc(16)}
-		if isActive {
-			drawButton(hdc, CtrlDashActivateBase+i, btnAct, "● AKTIV", "green")
-		} else {
-			drawButton(hdc, CtrlDashActivateBase+i, btnAct, "Aktivieren", "secondary")
-		}
-
-		y += rowH + sc(10)
-	}
-}
-
+// ============================================================================
+// TAB 4: SETTINGS & UNINSTALL
+// ============================================================================
 func paintTabSettings(hdc uintptr, cx, cw, h int32) {
-	drawText(hdc, "Einstellungen & Systemverwaltung", RECT{cx, sc(26), cx + cw - sc(90), sc(56)}, app.FontHero, colText, DT_LEFT|DT_SINGLELINE)
-	drawText(hdc, "Konfiguriere den Netzwerk-Port, öffne Systemordner oder deinstalliere SC Cockpit.",
-		RECT{cx, sc(56), cx + cw, sc(80)}, app.FontBody, colMuted, DT_LEFT|DT_SINGLELINE)
+	drawText(hdc, "SYSTEM & EINSTELLUNGEN", RECT{cx, sc(22), cx + cw - sc(90), sc(50)}, app.FontHero, colText, DT_LEFT|DT_SINGLELINE)
+	drawText(hdc, "Netzwerk-Port anpassen, Verzeichnisse öffnen oder SC Cockpit deinstallieren.",
+		RECT{cx, sc(52), cx + cw, sc(74)}, app.FontBody, colMuted, DT_LEFT|DT_SINGLELINE)
 
-	// 1. Port & Network Card
-	portCard := RECT{cx, sc(94), cx + cw, sc(168)}
-	drawCard(hdc, portCard, colPanel, colLine, 10)
-	drawText(hdc, "Server-Port (Standard: 8765)", RECT{portCard.Left + sc(20), portCard.Top + sc(14), portCard.Left + sc(350), portCard.Top + sc(36)}, app.FontBold, colText, DT_LEFT|DT_SINGLELINE)
-	drawText(hdc, "Port für die Verbindung zwischen PC und Tablet/Handy im lokalen WLAN", RECT{portCard.Left + sc(20), portCard.Top + sc(38), portCard.Left + sc(450), portCard.Bottom - sc(12)}, app.FontSmall, colMuted, DT_LEFT|DT_SINGLELINE)
+	portCard := RECT{cx, sc(88), cx + cw, sc(162)}
+	drawShardBox(hdc, portCard, 10, colPanel, colLine)
+	drawText(hdc, "WLAN Server-Port (Standard: 8765)", RECT{portCard.Left + sc(20), portCard.Top + sc(14), portCard.Left + sc(350), portCard.Top + sc(36)}, app.FontBold, colText, DT_LEFT|DT_SINGLELINE)
+	drawText(hdc, "Port für den GameGlass Web-Shard auf Tablet und Smartphone", RECT{portCard.Left + sc(20), portCard.Top + sc(38), portCard.Left + sc(450), portCard.Bottom - sc(12)}, app.FontSmall, colMuted, DT_LEFT|DT_SINGLELINE)
 
 	btnMinus := RECT{portCard.Right - sc(180), portCard.Top + sc(18), portCard.Right - sc(140), portCard.Bottom - sc(18)}
 	portBox := RECT{btnMinus.Right + sc(6), portCard.Top + sc(18), btnMinus.Right + sc(82), portCard.Bottom - sc(18)}
 	btnPlus := RECT{portBox.Right + sc(6), portCard.Top + sc(18), portBox.Right + sc(46), portCard.Bottom - sc(18)}
 
 	drawButton(hdc, CtrlBtnPortMinus, btnMinus, "—", "secondary")
-	drawCard(hdc, portBox, colBg, colLineHi, 6)
+	drawShardBox(hdc, portBox, 4, colBg, colCyan)
 	drawText(hdc, fmt.Sprintf("%d", app.Port), portBox, app.FontBold, colCyan, DT_CENTER|DT_VCENTER|DT_SINGLELINE)
 	drawButton(hdc, CtrlBtnPortPlus, btnPlus, "+", "secondary")
 
-	// 2. Directories & Updates Card
-	dirCard := RECT{cx, sc(182), cx + cw, sc(272)}
-	drawCard(hdc, dirCard, colPanel, colLine, 10)
-	drawText(hdc, "Speicherorte & Programmdateien", RECT{dirCard.Left + sc(20), dirCard.Top + sc(14), dirCard.Right - sc(20), dirCard.Top + sc(34)}, app.FontBold, colText, DT_LEFT|DT_SINGLELINE)
-	drawText(hdc, fmt.Sprintf("Programm: %s   |   Eigene Dashboards: %s", app.AppDir, app.UserDashDir),
+	dirCard := RECT{cx, sc(176), cx + cw, sc(266)}
+	drawShardBox(hdc, dirCard, 10, colPanel, colLine)
+	drawText(hdc, "Speicherorte & Verknüpfungen", RECT{dirCard.Left + sc(20), dirCard.Top + sc(14), dirCard.Right - sc(20), dirCard.Top + sc(34)}, app.FontBold, colText, DT_LEFT|DT_SINGLELINE)
+	drawText(hdc, fmt.Sprintf("App: %s   |   Eigene Shards: %s", app.AppDir, app.UserDashDir),
 		RECT{dirCard.Left + sc(20), dirCard.Top + sc(34), dirCard.Right - sc(20), dirCard.Top + sc(52)}, app.FontSmall, colMuted, DT_LEFT|DT_SINGLELINE)
 
-	btnUserDir := RECT{dirCard.Left + sc(20), dirCard.Bottom - sc(36), dirCard.Left + sc(220), dirCard.Bottom - sc(8)}
-	btnAppDir := RECT{btnUserDir.Right + sc(10), dirCard.Bottom - sc(36), btnUserDir.Right + sc(210), dirCard.Bottom - sc(8)}
-	btnRepair := RECT{btnAppDir.Right + sc(10), dirCard.Bottom - sc(36), btnAppDir.Right + sc(210), dirCard.Bottom - sc(8)}
+	btnUserDir := RECT{dirCard.Left + sc(20), dirCard.Bottom - sc(36), dirCard.Left + sc(210), dirCard.Bottom - sc(8)}
+	btnAppDir := RECT{btnUserDir.Right + sc(10), dirCard.Bottom - sc(36), btnUserDir.Right + sc(205), dirCard.Bottom - sc(8)}
+	btnRepair := RECT{btnAppDir.Right + sc(10), dirCard.Bottom - sc(36), btnAppDir.Right + sc(215), dirCard.Bottom - sc(8)}
 
-	drawButton(hdc, CtrlBtnOpenUserFolder, btnUserDir, "Benutzerordner öffnen", "secondary")
-	drawButton(hdc, CtrlBtnOpenAppFolder, btnAppDir, "Programmordner öffnen", "secondary")
-	drawButton(hdc, CtrlBtnUpdateRepair, btnRepair, "Verknüpfungen reparieren", "secondary")
+	drawButton(hdc, CtrlBtnOpenUserFolder, btnUserDir, "SHARD-ORDNER ÖFFNEN", "secondary")
+	drawButton(hdc, CtrlBtnOpenAppFolder, btnAppDir, "APP-ORDNER ÖFFNEN", "secondary")
+	drawButton(hdc, CtrlBtnUpdateRepair, btnRepair, "SHORTCUTS REPARIEREN", "secondary")
 
-	// 3. Uninstall Section inside Settings
-	uninstCard := RECT{cx, sc(286), cx + cw, sc(435)}
-	drawCard(hdc, uninstCard, colRedBg, colRed, 10)
-	drawText(hdc, "SC Cockpit deinstallieren", RECT{uninstCard.Left + sc(20), uninstCard.Top + sc(14), uninstCard.Right - sc(20), uninstCard.Top + sc(36)}, app.FontBold, colRed, DT_LEFT|DT_SINGLELINE)
-	drawText(hdc, "Entfernt den SC Cockpit Server, das Control Center sowie alle Desktop- und Startmenü-Verknüpfungen von deinem PC.",
+	uninstCard := RECT{cx, sc(280), cx + cw, sc(430)}
+	drawShardBox(hdc, uninstCard, 10, colRedBg, colRed)
+	drawText(hdc, "SC COCKPIT DEINSTALLIEREN", RECT{uninstCard.Left + sc(20), uninstCard.Top + sc(14), uninstCard.Right - sc(20), uninstCard.Top + sc(36)}, app.FontBold, colRed, DT_LEFT|DT_SINGLELINE)
+	drawText(hdc, "Entfernt SC Cockpit sowie alle Desktop- und Startmenü-Verknüpfungen von deinem Computer.",
 		RECT{uninstCard.Left + sc(20), uninstCard.Top + sc(36), uninstCard.Right - sc(20), uninstCard.Top + sc(56)}, app.FontSmall, colText, DT_LEFT|DT_SINGLELINE)
 
 	drawCheckboxRow(hdc, CtrlChkPurgeData,
 		RECT{uninstCard.Left + sc(20), uninstCard.Top + sc(60), uninstCard.Right - sc(230), uninstCard.Bottom - sc(14)},
-		"Eigene Dashboards ebenfalls löschen",
+		"Eigene Shards & Dashboards ebenfalls löschen",
 		"Wenn deaktiviert, bleiben deine eigenen Dashboards im Ordner 'user' erhalten",
 		app.OptPurgeData)
 
 	if !app.ConfirmUninst {
 		btnUninst := RECT{uninstCard.Right - sc(210), uninstCard.Top + sc(72), uninstCard.Right - sc(20), uninstCard.Bottom - sc(22)}
-		drawButton(hdc, CtrlBtnShowUninstall, btnUninst, "Deinstallieren...", "danger")
+		drawButton(hdc, CtrlBtnShowUninstall, btnUninst, "DEINSTALLIEREN...", "danger")
 	} else {
 		btnConfirm := RECT{uninstCard.Right - sc(210), uninstCard.Top + sc(60), uninstCard.Right - sc(20), uninstCard.Top + sc(96)}
 		btnCancel := RECT{uninstCard.Right - sc(210), uninstCard.Top + sc(102), uninstCard.Right - sc(20), uninstCard.Bottom - sc(12)}
-		drawButton(hdc, CtrlBtnConfirmUninstall, btnConfirm, "Wirklich entfernen!", "danger")
-		drawButton(hdc, CtrlBtnCancelUninstall, btnCancel, "Abbrechen", "secondary")
+		drawButton(hdc, CtrlBtnConfirmUninstall, btnConfirm, "WIRKLICH ENTFERNEN!", "danger")
+		drawButton(hdc, CtrlBtnCancelUninstall, btnCancel, "ABBRECHEN", "secondary")
 	}
 }
 
 func handleControlClick(id int) {
 	app.ToastMsg = ""
 
-	// Dashboard Row Actions
-	if id >= CtrlDashActivateBase && id < CtrlDashActivateBase+100 {
-		idx := id - CtrlDashActivateBase
+	// 1. In-App Live Cockpit Page Tab Click
+	if id >= CtrlLivePageTabBase && id < CtrlLivePageTabBase+100 {
+		app.LivePageIdx = id - CtrlLivePageTabBase
+		pInvalidateRect.Call(app.Hwnd, 0, 0)
+		return
+	}
+
+	// 2. In-App Live Cockpit Shard Tile Click -> Send Keybind directly to Star Citizen!
+	if id >= CtrlLiveTileBtnBase && id < CtrlLiveTileBtnBase+500 {
+		idx := id - CtrlLiveTileBtnBase
+		if idx >= 0 && idx < len(app.LivePageBtns) {
+			btn := app.LivePageBtns[idx]
+			if btn.Danger && !app.LiveArmed {
+				app.ToastMsg = "Waffe/Gefahr gesichert! Schalte oben rechts zuerst 'WAFFEN SAFE' auf 'WAFFEN ARMED'."
+				pInvalidateRect.Call(app.Hwnd, 0, 0)
+				return
+			}
+			if btn.Mode == "toggle" {
+				app.LiveToggled[btn.ID] = !app.LiveToggled[btn.ID]
+			}
+			triggerInAppButton(btn)
+		}
+		pInvalidateRect.Call(app.Hwnd, 0, 0)
+		return
+	}
+
+	// 3. Shards Manager List Actions
+	if id >= CtrlDashUseLiveBase && id < CtrlDashUseLiveBase+100 {
+		idx := id - CtrlDashUseLiveBase
 		if idx < len(app.Dashboards) {
 			setActiveDashboard(app.Dashboards[idx].ID)
-			app.ToastMsg = fmt.Sprintf("Dashboard '%s' als aktiv gesetzt.", app.Dashboards[idx].Title)
+			app.LivePageIdx = 0
+			app.Tab = TabLiveCockpit
+			app.ToastMsg = fmt.Sprintf("Shard '%s' im Live-Cockpit geladen.", app.Dashboards[idx].Title)
 		}
 		pInvalidateRect.Call(app.Hwnd, 0, 0)
 		return
@@ -1061,7 +1392,7 @@ func handleControlClick(id int) {
 			if err != nil {
 				app.ToastMsg = "Fehler: " + err.Error()
 			} else {
-				app.ToastMsg = fmt.Sprintf("Kopie '%s.json' unter eigene Dashboards angelegt.", newID)
+				app.ToastMsg = fmt.Sprintf("Shard-Kopie '%s.json' erstellt.", newID)
 			}
 		}
 		pInvalidateRect.Call(app.Hwnd, 0, 0)
@@ -1074,7 +1405,7 @@ func handleControlClick(id int) {
 			if d.Source == "local" {
 				_ = os.Remove(d.Path)
 				reloadDashboards()
-				app.ToastMsg = fmt.Sprintf("Eigenes Dashboard '%s' gelöscht.", d.Title)
+				app.ToastMsg = fmt.Sprintf("Custom Shard '%s' gelöscht.", d.Title)
 			}
 		}
 		pInvalidateRect.Call(app.Hwnd, 0, 0)
@@ -1089,16 +1420,39 @@ func handleControlClick(id int) {
 		pShowWindow.Call(app.Hwnd, SW_MINIMIZE)
 
 	// Navigation Tabs
-	case CtrlNavServer:
-		app.Tab = TabServer
-		app.ConfirmUninst = false
-	case CtrlNavDashboards:
+	case CtrlNavLiveCockpit:
 		reloadDashboards()
-		app.Tab = TabDashboards
+		app.Tab = TabLiveCockpit
+		app.ConfirmUninst = false
+	case CtrlNavShards:
+		reloadDashboards()
+		app.Tab = TabShards
+		app.ConfirmUninst = false
+	case CtrlNavHostLink:
+		app.Tab = TabHostLink
 		app.ConfirmUninst = false
 	case CtrlNavSettings:
 		app.Tab = TabSettings
 		app.ConfirmUninst = false
+
+	// Live Cockpit Top Bar Controls
+	case CtrlLivePrevBoard:
+		cycleActiveDashboard(-1)
+	case CtrlLiveNextBoard:
+		cycleActiveDashboard(1)
+	case CtrlLiveArmToggle:
+		app.LiveArmed = !app.LiveArmed
+		if app.LiveArmed {
+			app.ToastMsg = "WAFFEN & GEFAHREN-TASTEN SIND JETZT SCHARF (ARMED)!"
+		} else {
+			app.ToastMsg = "Waffen & Gefahren-Tasten gesichert (SAFE)."
+		}
+	case CtrlLiveOpenEditor:
+		if !app.ServerRunning {
+			startServer()
+		}
+		url := fmt.Sprintf("http://127.0.0.1:%d/", app.Port)
+		pShellExecuteW.Call(0, u16ptr("open"), u16ptr(url), 0, 0, SW_SHOWNORMAL)
 
 	// Server Controls
 	case CtrlBtnToggleServer:
@@ -1110,7 +1464,7 @@ func handleControlClick(id int) {
 	case CtrlBtnCopyURL:
 		url := fmt.Sprintf("http://%s:%d/", app.LanIP, app.Port)
 		copyToClipboard(url)
-		app.ToastMsg = "WLAN-Adresse in die Zwischenablage kopiert: " + url
+		app.ToastMsg = "Shard-URL kopiert: " + url
 	case CtrlBtnOpenBrowser, CtrlBtnOpenEditor:
 		if !app.ServerRunning {
 			startServer()
@@ -1123,25 +1477,24 @@ func handleControlClick(id int) {
 		pShellExecuteW.Call(0, u16ptr("runas"), u16ptr(selfExe), u16ptr("--launcher"), u16ptr(app.AppDir), SW_SHOWNORMAL)
 		pPostQuitMessage.Call(0)
 
-	// Dashboards Tab Controls
+	// Shards Manager Controls
 	case CtrlBtnNewDash:
 		newID, err := createNewDashboard()
 		if err != nil {
 			app.ToastMsg = "Fehler: " + err.Error()
 		} else {
-			app.ToastMsg = fmt.Sprintf("Neues Baukasten-Dashboard '%s.json' angelegt.", newID)
+			app.ToastMsg = fmt.Sprintf("Neuer GameGlass Shard '%s.json' angelegt.", newID)
 		}
 	case CtrlBtnSyncSCBindings:
-		msg := syncStarCitizenActionmaps()
-		app.ToastMsg = msg
+		app.ToastMsg = syncStarCitizenActionmaps()
 	case CtrlBtnOpenDashFolder:
 		_ = os.MkdirAll(app.UserDashDir, 0755)
 		pShellExecuteW.Call(0, u16ptr("open"), u16ptr(app.UserDashDir), 0, 0, SW_SHOWNORMAL)
 	case CtrlBtnReloadDash:
 		reloadDashboards()
-		app.ToastMsg = "Dashboard-Liste aktualisiert."
+		app.ToastMsg = "Shards neu geladen."
 
-	// Settings Tab Controls
+	// Settings Controls
 	case CtrlBtnPortMinus:
 		if app.Port > 1024 {
 			app.Port--
@@ -1167,7 +1520,7 @@ func handleControlClick(id int) {
 		pShellExecuteW.Call(0, u16ptr("open"), u16ptr(app.AppDir), 0, 0, SW_SHOWNORMAL)
 	case CtrlBtnUpdateRepair:
 		createShortcutsAndRegistry()
-		app.ToastMsg = "Desktop- & Startmenü-Verknüpfungen wurden aktualisiert."
+		app.ToastMsg = "Verknüpfungen wurden aktualisiert."
 	case CtrlChkPurgeData:
 		app.OptPurgeData = !app.OptPurgeData
 	case CtrlBtnShowUninstall:
@@ -1181,7 +1534,7 @@ func handleControlClick(id int) {
 		app.InstPage = InstPageProgress
 		go runUninstallWorker()
 
-	// Installer Controls
+	// Installer Mode Controls
 	case CtrlInstChkDesktop:
 		app.OptDesktop = !app.OptDesktop
 	case CtrlInstChkStartMenu:
@@ -1246,7 +1599,7 @@ func wndProc(hwnd uintptr, msg uint32, wParam, lParam uintptr) uintptr {
 				return HTCLIENT
 			}
 		}
-		if pt.Y < sc(64) {
+		if pt.Y < sc(56) {
 			return HTCAPTION
 		}
 		return HTCLIENT
@@ -1320,9 +1673,8 @@ func wndProc(hwnd uintptr, msg uint32, wParam, lParam uintptr) uintptr {
 
 	case WM_APP_DONE:
 		if !app.IsUninstall && app.InstallErr == "" {
-			// Immediately transition into the Graphical Control Center & start server!
 			app.Mode = ModeLauncher
-			app.Tab = TabServer
+			app.Tab = TabLiveCockpit
 			reloadDashboards()
 			startServer()
 		} else {
@@ -1369,22 +1721,22 @@ func main() {
 	}
 	app.Scale = float64(dpi) / 96.0
 
-	app.Width = sc(920)
-	app.Height = sc(580)
+	app.Width = sc(1020)
+	app.Height = sc(640)
 
 	app.CursorArrow, _, _ = pLoadCursorW.Call(0, IDC_ARROW)
 	app.CursorHand, _, _ = pLoadCursorW.Call(0, IDC_HAND)
 
-	app.FontHero = makeFont(22, FW_BOLD, "Segoe UI")
-	app.FontTitle = makeFont(16, FW_BOLD, "Segoe UI")
-	app.FontSub = makeFont(14, FW_SEMIBOLD, "Segoe UI")
+	app.FontHero = makeFont(20, FW_BOLD, "Bahnschrift")
+	app.FontTitle = makeFont(14, FW_BOLD, "Bahnschrift")
+	app.FontSub = makeFont(13, FW_SEMIBOLD, "Segoe UI")
 	app.FontBody = makeFont(13, FW_NORMAL, "Segoe UI")
-	app.FontBold = makeFont(13, FW_SEMIBOLD, "Segoe UI")
-	app.FontMono = makeFont(12, FW_SEMIBOLD, "Consolas")
+	app.FontBold = makeFont(12, FW_BOLD, "Bahnschrift")
+	app.FontMono = makeFont(11, FW_SEMIBOLD, "Consolas")
 	app.FontSmall = makeFont(11, FW_NORMAL, "Segoe UI")
 
 	hInst, _, _ := pGetModuleHandleW.Call(0)
-	className := u16("SCCockpitControlCenter")
+	className := u16("SCCockpitGameGlassHub")
 	hIcon, _, _ := pLoadIconW.Call(hInst, 1)
 
 	wc := WNDCLASSEXW{
@@ -1404,10 +1756,12 @@ func main() {
 	winX := (int32(screenW) - app.Width) / 2
 	winY := (int32(screenH) - app.Height) / 2
 
+	// WS_EX_NOACTIVATE (0x08000000) is NOT set on the main window so user can interact normally,
+	// and when clicking a Live Cockpit tile we automatically restore focus to Star Citizen!
 	hwnd, _, _ := pCreateWindowExW.Call(
 		WS_EX_APPWINDOW,
 		uintptr(unsafe.Pointer(className)),
-		uintptr(unsafe.Pointer(u16("SC Cockpit"))),
+		uintptr(unsafe.Pointer(u16("SC Cockpit // GameGlass Shard Hub"))),
 		WS_POPUP|WS_VISIBLE|WS_SYSMENU|WS_MINIMIZEBOX|WS_CLIPCHILDREN,
 		uintptr(winX), uintptr(winY),
 		uintptr(app.Width), uintptr(app.Height),

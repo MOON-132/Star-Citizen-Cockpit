@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -285,13 +286,9 @@ func reloadDashboards() {
 				continue
 			}
 			var parsed struct {
-				ID    string `json:"id"`
-				Title string `json:"title"`
-				Pages []struct {
-					Groups []struct {
-						Buttons []interface{} `json:"buttons"`
-					} `json:"groups"`
-				} `json:"pages"`
+				ID    string     `json:"id"`
+				Title string     `json:"title"`
+				Pages []DashPage `json:"pages"`
 			}
 			if json.Unmarshal(data, &parsed) != nil || len(parsed.Pages) == 0 {
 				continue
@@ -316,6 +313,7 @@ func reloadDashboards() {
 				Path:        fullPath,
 				PageCount:   len(parsed.Pages),
 				ButtonCount: btnCount,
+				Pages:       parsed.Pages,
 			}
 			if existingIdx, ok := index[id]; ok {
 				list[existingIdx] = info
@@ -326,7 +324,16 @@ func reloadDashboards() {
 		}
 	}
 
-	readDir(filepath.Join(app.AppDir, "dashboards"), "builtin")
+	appDash := filepath.Join(app.AppDir, "dashboards")
+	if _, err := os.Stat(appDash); err != nil {
+		if selfExe, err2 := os.Executable(); err2 == nil {
+			cand := filepath.Join(filepath.Dir(selfExe), "dashboards")
+			if _, err3 := os.Stat(cand); err3 == nil {
+				appDash = cand
+			}
+		}
+	}
+	readDir(appDash, "builtin")
 	readDir(app.UserDashDir, "local")
 
 	app.Dashboards = list
@@ -361,6 +368,64 @@ func setActiveDashboard(id string) {
 	out, _ := json.MarshalIndent(map[string]string{"active": id}, "", "  ")
 	_ = os.WriteFile(stateFile, append(out, '\n'), 0644)
 	app.ActiveDash = id
+}
+
+func cycleActiveDashboard(dir int) {
+	if len(app.Dashboards) == 0 {
+		return
+	}
+	curIdx := 0
+	for i, d := range app.Dashboards {
+		if d.ID == app.ActiveDash {
+			curIdx = i
+			break
+		}
+	}
+	nextIdx := (curIdx + dir + len(app.Dashboards)) % len(app.Dashboards)
+	setActiveDashboard(app.Dashboards[nextIdx].ID)
+	app.LivePageIdx = 0
+}
+
+func triggerInAppButton(btn DashButton) {
+	if len(btn.Keys) == 0 {
+		return
+	}
+	combo := strings.ToUpper(strings.Join(btn.Keys, "+"))
+	app.LastActionTxt = fmt.Sprintf("%s (%s)", btn.Label, combo)
+	app.ToastMsg = fmt.Sprintf("SHARD AUSGELÖST:  %s  ►  [%s]", strings.ToUpper(btn.Label), combo)
+
+	if !app.ServerRunning {
+		startServer()
+	}
+
+	go func(b DashButton) {
+		// Find Star Citizen window if running so keybind goes directly to the game even when clicking the desktop app!
+		pFindWindowW := user32.NewProc("FindWindowW")
+		pSetForegroundWindow := user32.NewProc("SetForegroundWindow")
+		for _, title := range []string{"Star Citizen", "StarCitizen"} {
+			if hwndSC, _, _ := pFindWindowW.Call(0, u16ptr(title)); hwndSC != 0 {
+				pSetForegroundWindow.Call(hwndSC)
+				time.Sleep(35 * time.Millisecond)
+				break
+			}
+		}
+
+		mode := b.Mode
+		if mode == "" || mode == "toggle" {
+			mode = "tap"
+		}
+		payload, _ := json.Marshal(map[string]interface{}{
+			"id":   b.ID,
+			"keys": b.Keys,
+			"mode": mode,
+		})
+		url := fmt.Sprintf("http://127.0.0.1:%d/api/press", app.Port)
+		client := &http.Client{Timeout: 2 * time.Second}
+		resp, err := client.Post(url, "application/json", bytes.NewReader(payload))
+		if err == nil && resp != nil {
+			resp.Body.Close()
+		}
+	}(btn)
 }
 
 func duplicateDashboard(src DashboardInfo) (string, error) {

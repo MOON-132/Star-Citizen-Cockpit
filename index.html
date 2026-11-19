@@ -6,24 +6,29 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="color-scheme" content="dark">
-<title>SC Cockpit</title>
+<title>SC Cockpit // GameGlass Shard Interface</title>
 <style>
   :root {
-    --bg: #0b0e13;
-    --bg-2: #121820;
-    --card: rgba(20, 27, 37, 0.86);
-    --card-solid: #141b25;
-    --line: #243041;
-    --line-hi: #374a64;
-    --text: #e7edf5;
-    --muted: #8b9bb0;
-    --amber: #e2a23a;
-    --cyan: #3ec8c4;
-    --red: #e15b4c;
-    --blue: #6aa4ff;
-    --green: #6fbf73;
-    --slate: #9aa8ba;
-    --danger: #ff5d4a;
+    --bg: #05080d;
+    --bg-panel: rgba(11, 17, 26, 0.84);
+    --bg-glass: rgba(15, 23, 35, 0.78);
+    --bg-glass-hi: rgba(23, 35, 52, 0.90);
+    --line: rgba(54, 79, 108, 0.48);
+    --line-hi: rgba(0, 229, 255, 0.65);
+    --text: #eef5fc;
+    --muted: #7c93ad;
+    --cyan: #00e5ff;
+    --cyan-glow: rgba(0, 229, 255, 0.25);
+    --amber: #ffab00;
+    --amber-glow: rgba(255, 171, 0, 0.25);
+    --red: #ff3d57;
+    --red-glow: rgba(255, 61, 87, 0.28);
+    --blue: #3d8bff;
+    --blue-glow: rgba(61, 139, 255, 0.25);
+    --green: #00e676;
+    --green-glow: rgba(0, 230, 118, 0.24);
+    --slate: #8da2b8;
+    --cut: 14px;
     color-scheme: dark;
   }
   * { box-sizing: border-box; }
@@ -32,27 +37,27 @@
     height: 100%;
     background: var(--bg);
     color: var(--text);
-    font-family: "Segoe UI", Bahnschrift, system-ui, sans-serif;
+    font-family: "Bahnschrift", "Segoe UI", system-ui, -apple-system, sans-serif;
     overscroll-behavior: none;
     touch-action: manipulation;
     user-select: none;
     -webkit-user-select: none;
+    overflow: hidden;
   }
   input, select { user-select: text; -webkit-user-select: text; }
+
   body {
-    min-height: 100%;
     display: flex;
     flex-direction: column;
+    height: 100vh;
+    height: 100dvh;
     position: relative;
-    padding:
-      calc(10px + env(safe-area-inset-top))
-      calc(12px + env(safe-area-inset-right))
-      calc(10px + env(safe-area-inset-bottom))
-      calc(12px + env(safe-area-inset-left));
     background:
-      radial-gradient(1200px 420px at 10% -10%, rgba(226, 162, 58, 0.10), transparent 55%),
+      radial-gradient(900px 420px at 50% -10%, rgba(0, 229, 255, 0.11), transparent 65%),
+      radial-gradient(800px 420px at 10% 105%, rgba(255, 171, 0, 0.08), transparent 60%),
       var(--bg);
   }
+
   #bg-layer {
     position: fixed;
     inset: 0;
@@ -60,285 +65,576 @@
     z-index: 0;
     background-size: cover;
     background-position: center;
-    background-repeat: no-repeat;
     opacity: 0.35;
-    transition: opacity 0.25s ease;
+    transition: opacity 0.3s ease;
   }
-  header, .sub, #telemetry-bar, nav, #editor, main, footer {
+
+  /* GameGlass Top MFD Telemetry & Navigation Header */
+  .gg-topbar {
     position: relative;
-    z-index: 1;
-  }
-  header, .sub {
+    z-index: 10;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 10px;
+    gap: 12px;
+    padding:
+      calc(8px + env(safe-area-inset-top))
+      calc(16px + env(safe-area-inset-right))
+      8px
+      calc(16px + env(safe-area-inset-left));
+    background: rgba(7, 11, 18, 0.92);
+    border-bottom: 1px solid var(--line);
+    backdrop-filter: blur(16px);
   }
-  header { padding-bottom: 6px; }
-  .sub { padding-bottom: 8px; flex-wrap: wrap; }
-  .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
-  .mark {
-    width: 12px; height: 30px; border-radius: 3px;
-    background: linear-gradient(var(--amber), #8a5a12);
-    box-shadow: 0 0 16px rgba(226, 162, 58, 0.45);
-  }
-  header strong { display: block; font-size: 18px; letter-spacing: 0.04em; }
-  #status, #board-meta { color: var(--muted); font-size: 12px; }
-  #status.on { color: var(--green); }
-  #status.off { color: var(--danger); }
-  .tools, .editor-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
-  button, .tab, select, input {
-    border: 1px solid var(--line);
-    background: var(--bg-2);
-    color: var(--text);
-    border-radius: 10px;
-    min-height: 40px;
-    padding: 0 12px;
-    font: inherit;
-    font-size: 13px;
-    cursor: pointer;
-  }
-  button:hover, select:hover { border-color: var(--line-hi); }
-  #board { min-width: 170px; max-width: 48vw; font-weight: 600; }
-  #arm[aria-pressed="true"] {
-    background: #3a1612;
-    border-color: var(--danger);
-    color: #ffd0c8;
-  }
-  #edit[aria-pressed="true"] {
-    background: #2a2416;
-    border-color: var(--amber);
-    color: var(--amber);
+  .gg-topbar::after {
+    content: "";
+    position: absolute;
+    bottom: -1px;
+    left: 24px;
+    width: 180px;
+    height: 2px;
+    background: linear-gradient(90deg, var(--cyan), transparent);
   }
 
-  /* Live Star Citizen Telemetry Strip */
-  #telemetry-bar {
+  .gg-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+  }
+  .gg-hex {
+    width: 34px;
+    height: 34px;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+    place-items: center;
+    background: linear-gradient(135deg, rgba(0, 229, 255, 0.22), rgba(255, 171, 0, 0.16));
+    border: 1px solid var(--cyan);
+    clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+    box-shadow: 0 0 18px var(--cyan-glow);
+    color: var(--cyan);
+    font-weight: 800;
+    font-size: 13px;
+    letter-spacing: 0.05em;
+  }
+  .gg-title-block strong {
+    display: block;
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text);
+  }
+  .gg-status-line {
+    display: flex;
+    align-items: center;
     gap: 8px;
-    margin-bottom: 10px;
-    padding: 8px 12px;
-    background: rgba(14, 19, 27, 0.88);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+  }
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--muted);
+    box-shadow: 0 0 8px currentColor;
+  }
+  .status-dot.on { background: var(--green); color: var(--green); }
+  .status-dot.off { background: var(--red); color: var(--red); }
+
+  /* Center Telemetry Pills in Topbar */
+  .gg-tele-strip {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .gg-tele-pod {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 12px;
+    background: rgba(14, 22, 34, 0.85);
     border: 1px solid var(--line);
-    border-radius: 12px;
-    backdrop-filter: blur(8px);
-  }
-  .tele-cell {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-  .tele-head {
-    display: flex;
-    justify-content: space-between;
+    clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
     font-size: 11px;
     letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--muted);
   }
-  .tele-head b { color: var(--text); font-weight: 600; }
-  .tele-bars {
-    display: flex;
-    gap: 4px;
-    height: 7px;
+  .gg-tele-pod span { color: var(--muted); text-transform: uppercase; }
+  .gg-tele-pod b { font-family: Consolas, monospace; font-size: 12px; color: var(--cyan); }
+  .gg-sys-pill {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    padding: 3px 8px;
     border-radius: 4px;
-    overflow: hidden;
-    background: #090c11;
-  }
-  .tele-seg { height: 100%; transition: width 0.25s ease; }
-  .tele-pills { display: flex; gap: 5px; flex-wrap: wrap; }
-  .tele-pill {
-    font-size: 11px;
-    padding: 2px 7px;
-    border-radius: 6px;
-    background: #141c26;
-    border: 1px solid var(--line);
+    border: 1px solid rgba(124, 147, 173, 0.3);
     color: var(--muted);
+    background: rgba(12, 18, 28, 0.8);
   }
-  .tele-pill.active {
+  .gg-sys-pill.active {
     color: var(--cyan);
     border-color: var(--cyan);
-    background: rgba(62, 200, 196, 0.12);
+    background: rgba(0, 229, 255, 0.14);
+    box-shadow: 0 0 10px rgba(0, 229, 255, 0.18);
   }
-  .tele-pill.amber.active {
+  .gg-sys-pill.amber.active {
     color: var(--amber);
     border-color: var(--amber);
-    background: rgba(226, 162, 58, 0.14);
+    background: rgba(255, 171, 0, 0.16);
   }
 
-  nav { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; }
+  /* Top Right Controls */
+  .gg-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .gg-btn, select, input {
+    border: 1px solid var(--line);
+    background: rgba(14, 22, 34, 0.88);
+    color: var(--text);
+    height: 36px;
+    padding: 0 13px;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+    transition: all 0.15s ease;
+  }
+  .gg-btn:hover, select:hover {
+    border-color: var(--cyan);
+    background: rgba(20, 34, 52, 0.95);
+    color: #fff;
+  }
+  #board {
+    min-width: 155px;
+    color: var(--amber);
+    border-color: rgba(255, 171, 0, 0.45);
+  }
+  #arm[aria-pressed="true"] {
+    background: rgba(255, 61, 87, 0.22);
+    border-color: var(--red);
+    color: #ff9aa7;
+    box-shadow: 0 0 16px var(--red-glow);
+  }
+  #edit[aria-pressed="true"] {
+    background: rgba(255, 171, 0, 0.22);
+    border-color: var(--amber);
+    color: var(--amber);
+    box-shadow: 0 0 16px var(--amber-glow);
+  }
+
+  /* GameGlass Workspace Layout: Left Shard Rail + Center Shard Canvas */
+  .gg-workspace {
+    position: relative;
+    z-index: 2;
+    flex: 1;
+    display: flex;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  /* Left Vertical Shard Rail */
+  .gg-rail {
+    width: 185px;
+    background: rgba(8, 13, 21, 0.88);
+    border-right: 1px solid var(--line);
+    padding: 14px 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 12px;
+    backdrop-filter: blur(12px);
+    flex-shrink: 0;
+  }
+  .gg-tabs {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow-y: auto;
+  }
+  .tab {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-height: 48px;
+    padding: 0 14px;
+    border: 1px solid var(--line);
+    background: rgba(15, 23, 35, 0.72);
+    color: var(--muted);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    text-align: left;
+    cursor: pointer;
+    clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+    transition: all 0.16s ease;
+  }
+  .tab::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 8px;
+    bottom: 8px;
+    width: 3px;
+    background: transparent;
+    transition: background 0.16s ease;
+  }
+  .tab:hover {
+    color: var(--text);
+    border-color: rgba(0, 229, 255, 0.45);
+    background: rgba(22, 34, 50, 0.85);
+  }
   .tab[aria-selected="true"] {
-    border-color: var(--amber);
-    color: var(--amber);
-    background: rgba(226, 162, 58, 0.12);
-    font-weight: 600;
+    color: var(--cyan);
+    border-color: var(--cyan);
+    background: linear-gradient(90deg, rgba(0, 229, 255, 0.18), rgba(15, 25, 38, 0.88));
+    box-shadow: 0 0 18px rgba(0, 229, 255, 0.15);
+  }
+  .tab[aria-selected="true"]::before {
+    background: var(--cyan);
+    box-shadow: 0 0 10px var(--cyan);
   }
 
-  main { flex: 1; overflow: auto; padding-bottom: 12px; }
+  .gg-rail-footer {
+    border-top: 1px solid var(--line);
+    padding-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .gg-rail-footer b {
+    color: var(--amber);
+    font-family: Consolas, monospace;
+    font-size: 11px;
+  }
+
+  /* Center Shard Canvas */
+  .gg-stage {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
   .page { display: none; }
-  .page.active { display: block; }
+  .page.active {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 16px;
+    align-items: start;
+  }
+
+  /* GameGlass Framed Shard Module Group */
   .group {
-    margin-bottom: 14px;
-    padding: 12px;
-    border-radius: 14px;
-    background: rgba(16, 22, 31, 0.68);
-    border: 1px solid rgba(36, 48, 65, 0.75);
-    backdrop-filter: blur(6px);
+    position: relative;
+    padding: 16px;
+    background: var(--bg-panel);
+    border: 1px solid var(--line);
+    clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 18px 100%, 0 calc(100% - 18px));
+    backdrop-filter: blur(14px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+  .group::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 75px;
+    height: 2px;
+    background: var(--amber);
+    box-shadow: 0 0 10px var(--amber);
   }
   .group-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(54, 79, 108, 0.35);
   }
   .group h2 {
     margin: 0;
     font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 0.14em;
+    font-weight: 800;
+    letter-spacing: 0.18em;
     text-transform: uppercase;
     color: var(--amber);
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 10px;
+  .group h2::before {
+    content: "◆";
+    font-size: 9px;
+    color: var(--cyan);
   }
 
-  /* Buttons & Baukasten Cards */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+    gap: 11px;
+  }
+
+  /* GameGlass Beveled Holo-Shards (Action Tiles) */
   .key {
+    --accent: var(--slate);
+    --glow: rgba(141, 162, 184, 0.16);
     appearance: none;
-    background: var(--card);
+    position: relative;
+    border: 1px solid rgba(72, 102, 136, 0.45);
+    background:
+      linear-gradient(155deg, rgba(26, 38, 56, 0.90) 0%, rgba(12, 19, 29, 0.92) 100%);
+    color: var(--text);
     text-align: left;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    gap: 6px;
-    min-height: 84px;
-    border-radius: 14px;
-    padding: 12px 14px;
-    position: relative;
-    overflow: hidden;
-    backdrop-filter: blur(8px);
-    transition: transform 0.08s ease, border-color 0.15s ease, background 0.15s ease;
+    gap: 10px;
+    min-height: 92px;
+    padding: 13px 15px;
+    cursor: pointer;
+    clip-path: polygon(0 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% 100%, var(--cut) 100%, 0 calc(100% - var(--cut)));
+    box-shadow: inset 0 0 22px rgba(0, 0, 0, 0.45);
+    transition: transform 0.08s ease, border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
   }
-  .key b { font-size: 16px; font-weight: 680; line-height: 1.2; }
-  .key small { color: var(--muted); font-size: 11px; font-family: Consolas, monospace; }
+  .key.amber { --accent: var(--amber); --glow: var(--amber-glow); border-color: rgba(255, 171, 0, 0.48); }
+  .key.cyan  { --accent: var(--cyan);  --glow: var(--cyan-glow);  border-color: rgba(0, 229, 255, 0.48); }
+  .key.red   { --accent: var(--red);   --glow: var(--red-glow);   border-color: rgba(255, 61, 87, 0.52); }
+  .key.blue  { --accent: var(--blue);  --glow: var(--blue-glow);  border-color: rgba(61, 139, 255, 0.48); }
+  .key.green { --accent: var(--green); --glow: var(--green-glow); border-color: rgba(0, 230, 118, 0.48); }
+  .key.slate { --accent: var(--slate); --glow: rgba(141, 162, 184, 0.18); }
+
+  /* Left holographic laser bar */
+  .key::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 10px;
+    bottom: 14px;
+    width: 3px;
+    background: var(--accent);
+    box-shadow: 0 0 12px var(--accent);
+  }
+  .key:hover {
+    border-color: var(--accent);
+    box-shadow: 0 0 20px var(--glow), inset 0 0 15px var(--glow);
+    background: linear-gradient(155deg, rgba(33, 49, 72, 0.96) 0%, rgba(16, 25, 38, 0.96) 100%);
+  }
+  .key:active {
+    transform: scale(0.975);
+  }
+
+  .key-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+  }
+  .key-icon {
+    width: 28px;
+    height: 28px;
+    display: grid;
+    place-items: center;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+  .key-icon svg {
+    width: 17px;
+    height: 17px;
+    stroke: currentColor;
+    stroke-width: 1.9;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .key-badge {
+    font-family: Consolas, monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    padding: 2px 7px;
+    border-radius: 4px;
+    background: rgba(5, 9, 15, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+  .key-bottom {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .key b {
+    font-size: 15px;
+    font-weight: 750;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text);
+    line-height: 1.15;
+  }
+  .key small {
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
   .key.wide, .key.span-2 { grid-column: span 2; }
   .key.span-3 { grid-column: span 3; }
-  .key.amber { box-shadow: inset 3px 0 0 var(--amber); }
-  .key.cyan { box-shadow: inset 3px 0 0 var(--cyan); }
-  .key.red { box-shadow: inset 3px 0 0 var(--red); }
-  .key.blue { box-shadow: inset 3px 0 0 var(--blue); }
-  .key.green { box-shadow: inset 3px 0 0 var(--green); }
-  .key.slate { box-shadow: inset 3px 0 0 var(--slate); }
-  .key.on, .key.holding { background: rgba(28, 42, 58, 0.94); border-color: var(--cyan); }
-  .key.on b { color: var(--cyan); }
-  .key.holding { border-color: var(--amber); }
-  .key:active { transform: scale(0.985); }
-  .key.locked { opacity: 0.45; }
 
-  /* Striped Hazard Safety Button (inspired by tablet-deck) */
+  /* Active / Toggled / Holding Hologram State */
+  .key.on, .key.holding {
+    border-color: var(--cyan);
+    background: linear-gradient(155deg, rgba(0, 229, 255, 0.24) 0%, rgba(12, 28, 42, 0.95) 100%);
+    box-shadow: 0 0 24px var(--cyan-glow), inset 0 0 18px var(--cyan-glow);
+  }
+  .key.on b, .key.holding b { color: var(--cyan); }
+  .key.on .key-badge { color: var(--cyan); border-color: var(--cyan); }
+  .key.holding { border-color: var(--amber); box-shadow: 0 0 26px var(--amber-glow); }
+
+  /* Hazard Striped Safety Guard */
   .key.hazard-stripe::before {
     content: "";
     position: absolute;
     top: 0; left: 0; right: 0;
-    height: 6px;
-    background: repeating-linear-gradient(
-      -45deg,
-      var(--red),
-      var(--red) 8px,
-      #1a0d0c 8px,
-      #1a0d0c 16px
-    );
+    height: 5px;
+    background: repeating-linear-gradient(-45deg, var(--red), var(--red) 7px, #14080a 7px, #14080a 14px);
   }
+  .key.locked { opacity: 0.42; }
 
-  /* Interactive Shield & Power Widgets (Home-Assistant / Tablet-Deck style cards) */
+  /* GameGlass Interactive MFD Widgets (Shield Octagon & Power Triangle) */
   .widget-card {
     grid-column: span 2;
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    padding: 12px;
+    position: relative;
+    background: linear-gradient(160deg, rgba(16, 26, 40, 0.92), rgba(9, 14, 22, 0.95));
+    border: 1px solid rgba(0, 229, 255, 0.42);
+    clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
+    padding: 14px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    min-height: 175px;
-    backdrop-filter: blur(8px);
+    gap: 12px;
+    box-shadow: inset 0 0 28px rgba(0, 229, 255, 0.06);
   }
   .widget-title {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.15em;
     text-transform: uppercase;
     color: var(--cyan);
   }
-  .shield-compass {
+
+  /* GameGlass Octagonal Ship Shield Touch Schematic */
+  .gg-shield-matrix {
     display: grid;
-    grid-template-columns: 1fr 1.2fr 1fr;
-    grid-template-rows: repeat(3, 44px);
-    gap: 6px;
+    grid-template-columns: 1fr 1.25fr 1fr;
+    grid-template-rows: repeat(3, 48px);
+    gap: 7px;
     align-items: stretch;
   }
   .sh-zone {
-    border: 1px solid var(--line-hi);
-    background: rgba(16, 24, 34, 0.9);
-    border-radius: 10px;
+    border: 1px solid rgba(0, 229, 255, 0.38);
+    background: rgba(11, 20, 32, 0.9);
+    color: var(--text);
+    font: inherit;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    font-size: 12px;
-    font-weight: 600;
-    padding: 4px;
+    gap: 2px;
+    cursor: pointer;
+    clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+    transition: all 0.14s ease;
   }
-  .sh-zone span { font-size: 11px; color: var(--cyan); font-family: Consolas, monospace; }
-  .sh-zone.reset { border-color: var(--amber); color: var(--amber); }
+  .sh-zone:hover, .sh-zone:active {
+    border-color: var(--cyan);
+    background: rgba(0, 229, 255, 0.2);
+    box-shadow: 0 0 16px var(--cyan-glow);
+  }
+  .sh-zone span {
+    font-size: 12px;
+    color: var(--cyan);
+    font-family: Consolas, monospace;
+  }
+  .sh-zone.reset {
+    border-color: var(--amber);
+    color: var(--amber);
+    background: rgba(255, 171, 0, 0.12);
+  }
+  .sh-zone.reset span { color: var(--text); font-size: 10px; }
 
-  .power-bars-widget {
+  /* GameGlass Power Capacitor Equalizer Bars */
+  .gg-power-matrix {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
+    gap: 10px;
   }
   .pwr-col {
-    background: rgba(14, 20, 29, 0.9);
     border: 1px solid var(--line);
-    border-radius: 10px;
-    padding: 8px;
+    background: rgba(10, 16, 26, 0.92);
+    padding: 10px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
+    gap: 7px;
+    cursor: pointer;
+    clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+    transition: all 0.15s ease;
+  }
+  .pwr-col:hover, .pwr-col:active {
+    border-color: var(--amber);
+    background: rgba(25, 36, 52, 0.95);
   }
   .pwr-meter {
     width: 100%;
     height: 10px;
-    background: #090c10;
-    border-radius: 5px;
+    background: #06090e;
+    border: 1px solid rgba(255, 255, 255, 0.08);
     overflow: hidden;
   }
-  .pwr-fill { height: 100%; transition: width 0.2s ease; }
+  .pwr-fill { height: 100%; transition: width 0.22s ease; }
 
   body.editing .key.selected, body.editing .widget-card.selected {
     outline: 2px solid var(--amber);
-    box-shadow: 0 0 16px rgba(226, 162, 58, 0.35);
+    box-shadow: 0 0 24px var(--amber-glow);
   }
 
-  /* Home-Assistant / Tablet-Deck Modular Baukasten Editor */
+  /* Slide-Over Baukasten Drawer */
   #editor {
-    margin-bottom: 12px;
-    padding: 14px;
+    position: relative;
+    z-index: 20;
+    margin: 0 20px 12px;
+    padding: 14px 16px;
     border: 1px solid var(--amber);
-    border-radius: 14px;
-    background: rgba(18, 23, 31, 0.96);
-    color: var(--text);
-    font-size: 13px;
+    background: rgba(10, 15, 23, 0.97);
+    clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
     display: grid;
     gap: 12px;
-    backdrop-filter: blur(12px);
+    max-height: 48vh;
+    overflow-y: auto;
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.75);
   }
   #editor[hidden] { display: none; }
   .editor-top {
@@ -346,19 +642,18 @@
     justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 10px;
     padding-bottom: 10px;
     border-bottom: 1px solid var(--line);
   }
   .editor-cols {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 14px;
+    gap: 12px;
   }
   .editor-box {
-    background: #0e131a;
+    background: rgba(15, 22, 33, 0.9);
     border: 1px solid var(--line);
-    border-radius: 10px;
     padding: 10px 12px;
     display: flex;
     flex-direction: column;
@@ -366,51 +661,82 @@
   }
   .editor-box h3 {
     margin: 0;
-    font-size: 12px;
+    font-size: 11px;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
     color: var(--amber);
   }
   .form-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(125px, 1fr));
     gap: 8px;
   }
-  #editor label { display: grid; gap: 4px; color: var(--muted); font-size: 11px; }
-  #editor input, #editor select { width: 100%; background: #141c26; min-height: 36px; }
-  .check { display: flex !important; align-items: center; gap: 8px; min-height: 36px; color: var(--text) !important; }
+  #editor label { display: grid; gap: 4px; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; }
+  #editor input, #editor select { width: 100%; height: 34px; text-transform: none; font-weight: 600; }
+  .check { display: flex !important; align-items: center; gap: 8px; color: var(--text) !important; }
   .preset-chips {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
-    max-height: 155px;
+    max-height: 135px;
     overflow-y: auto;
-    padding: 2px;
   }
   .chip {
-    min-height: 32px;
-    padding: 4px 10px;
-    border-radius: 8px;
-    font-size: 12px;
-    background: #161f2b;
+    height: 30px;
+    padding: 0 10px;
+    font-size: 11px;
+    font-weight: 700;
+    background: rgba(20, 31, 46, 0.95);
     border: 1px solid var(--line);
+    color: var(--text);
     display: inline-flex;
     align-items: center;
     gap: 6px;
+    cursor: pointer;
   }
+  .chip:hover { border-color: var(--cyan); color: var(--cyan); }
   .chip small { color: var(--amber); font-family: Consolas, monospace; }
   .chip.widget { border-color: var(--cyan); color: var(--cyan); }
-  .bg-thumbs { display: flex; gap: 6px; flex-wrap: wrap; }
-  .bg-btn { min-height: 32px; padding: 0 10px; font-size: 12px; }
+  .editor-actions { display: flex; gap: 6px; flex-wrap: wrap; }
 
-  footer { color: var(--muted); font-size: 12px; padding-top: 6px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
   #toast {
-    position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%);
-    background: #1c2533; color: var(--text); border: 1px solid var(--amber);
-    border-radius: 12px; padding: 10px 16px; max-width: min(540px, calc(100% - 24px));
-    z-index: 100; box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+    position: fixed;
+    left: 50%;
+    bottom: 20px;
+    transform: translateX(-50%);
+    background: rgba(14, 24, 38, 0.96);
+    color: var(--cyan);
+    border: 1px solid var(--cyan);
+    padding: 10px 18px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+    z-index: 100;
+    box-shadow: 0 0 24px var(--cyan-glow);
   }
-  @media (max-width: 720px) {
+
+  /* Responsive Tablet / Mobile Bottom or Top Rail */
+  @media (max-width: 820px) {
+    .gg-tele-strip { display: none; }
+    .gg-workspace { flex-direction: column; }
+    .gg-rail {
+      width: 100%;
+      padding: 8px 12px;
+      border-right: none;
+      border-bottom: 1px solid var(--line);
+      flex-direction: row;
+      align-items: center;
+    }
+    .gg-tabs {
+      flex-direction: row;
+      overflow-x: auto;
+      width: 100%;
+    }
+    .tab { min-height: 40px; width: auto; white-space: nowrap; padding: 0 16px; }
+    .gg-rail-footer { display: none; }
+    .page.active { grid-template-columns: 1fr; }
     .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .key.wide, .key.span-2, .key.span-3, .widget-card { grid-column: span 2; }
   }
@@ -419,239 +745,249 @@
 <body>
 <div id="bg-layer"></div>
 
-<header>
-  <div class="brand">
-    <span class="mark"></span>
-    <div>
-      <strong>SC Cockpit</strong>
-      <small id="status">verbinde…</small>
+<!-- Top GameGlass MFD Header -->
+<header class="gg-topbar">
+  <div class="gg-brand">
+    <div class="gg-hex">SC</div>
+    <div class="gg-title-block">
+      <strong id="ship-title">SC COCKPIT // SHARD</strong>
+      <div class="gg-status-line">
+        <span id="status-dot" class="status-dot"></span>
+        <span id="status">INITIALISIERE...</span>
+      </div>
     </div>
   </div>
-  <div class="tools">
-    <button id="edit" type="button" aria-pressed="false">Baukasten / Anpassen</button>
-    <button id="arm" type="button" aria-pressed="false">Gefahr AUS</button>
-    <button id="release" type="button">Loslassen</button>
-    <button id="full" type="button">Vollbild</button>
+
+  <!-- Live Telemetry Pods -->
+  <div class="gg-tele-strip">
+    <div class="gg-tele-pod">
+      <span>PWR</span>
+      <b id="tele-pwr-txt">W:33 E:34 S:33</b>
+    </div>
+    <div class="gg-tele-pod">
+      <span>SHD</span>
+      <b id="tele-shd-txt">F:25 B:25 L:25 R:25</b>
+    </div>
+    <div class="gg-tele-pod">
+      <span>MODE</span>
+      <b id="tele-mode" style="color:var(--amber)">SCM</b>
+    </div>
+    <div style="display:flex;gap:4px">
+      <span id="pill-pwr" class="gg-sys-pill active">PWR</span>
+      <span id="pill-gear" class="gg-sys-pill active">GEAR</span>
+      <span id="pill-vtol" class="gg-sys-pill">VTOL</span>
+      <span id="pill-light" class="gg-sys-pill">LIGHT</span>
+      <span id="pill-cpl" class="gg-sys-pill amber">DECOUPLED</span>
+    </div>
+  </div>
+
+  <!-- Quick MFD Controls -->
+  <div class="gg-actions">
+    <select id="board" aria-label="Shard wählen"></select>
+    <button id="edit" class="gg-btn" type="button" aria-pressed="false">Baukasten</button>
+    <button id="arm" class="gg-btn" type="button" aria-pressed="false">Waffen SAFE</button>
+    <button id="release" class="gg-btn" type="button">Reset</button>
+    <button id="full" class="gg-btn" type="button">Vollbild</button>
   </div>
 </header>
 
-<!-- Live Star Citizen & Ship Telemetry Bar -->
-<section id="telemetry-bar">
-  <div class="tele-cell">
-    <div class="tele-head"><span>ENERGIE-DREIECK</span><b id="tele-pwr-txt">W:33% E:34% S:33%</b></div>
-    <div class="tele-bars">
-      <div id="bar-wep" class="tele-seg" style="width:33%;background:var(--red)"></div>
-      <div id="bar-eng" class="tele-seg" style="width:34%;background:var(--amber)"></div>
-      <div id="bar-shd" class="tele-seg" style="width:33%;background:var(--cyan)"></div>
-    </div>
-  </div>
-  <div class="tele-cell">
-    <div class="tele-head"><span>SCHILD-SEKTOREN</span><b id="tele-shd-txt">V:25% H:25% L:25% R:25%</b></div>
-    <div class="tele-bars">
-      <div id="bar-sf" class="tele-seg" style="width:25%;background:var(--cyan)"></div>
-      <div id="bar-sb" class="tele-seg" style="width:25%;background:#2b8f8c"></div>
-      <div id="bar-sl" class="tele-seg" style="width:25%;background:#3ea8ff"></div>
-      <div id="bar-sr" class="tele-seg" style="width:25%;background:#26689e"></div>
-    </div>
-  </div>
-  <div class="tele-cell">
-    <div class="tele-head"><span id="tele-ship">SCHIFFSSYSTEME</span><b id="tele-mode">SCM</b></div>
-    <div class="tele-pills">
-      <span id="pill-pwr" class="tele-pill active">PWR</span>
-      <span id="pill-gear" class="tele-pill active">GEAR</span>
-      <span id="pill-vtol" class="tele-pill">VTOL</span>
-      <span id="pill-light" class="tele-pill">LICHT</span>
-      <span id="pill- cpl" class="tele-pill amber">DECOUPLED</span>
-    </div>
-  </div>
-</section>
-
-<div class="sub">
-  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-    <select id="board" aria-label="Dashboard"></select>
-    <span id="board-meta"></span>
-  </div>
-  <small id="last-act" style="color:var(--muted);font-family:Consolas,monospace"></small>
-</div>
-
-<nav id="tabs"></nav>
-
-<!-- Modular Baukasten Editor (Home Assistant & Tablet Deck Inspired) -->
+<!-- Modular Baukasten Drawer -->
 <section id="editor" hidden>
   <div class="editor-top">
     <div>
-      <strong style="color:var(--amber)">MODULARER COCKPIT-BAUKASTEN</strong>
-      <div style="color:var(--muted);font-size:12px">Presets per Klick einfügen, Kacheln antippen zum Anpassen oder Hintergrundbild für das Dashboard wählen.</div>
+      <strong style="color:var(--amber);letter-spacing:0.12em">GAMEGLASS SHARD BAUKASTEN</strong>
+      <div style="color:var(--muted);font-size:11px">1-Klick Star Citizen Presets & Live-Widgets einfügen, Kacheln antippen oder eigenes Hintergrundbild wählen.</div>
     </div>
     <div class="editor-actions">
-      <button id="sync-sc" type="button" style="border-color:var(--cyan);color:var(--cyan)">SC-Tasten aus Spiel lesen</button>
-      <button id="save" type="button" style="border-color:var(--amber);color:var(--amber);font-weight:700">Speichern</button>
-      <button id="copy" type="button">Als Kopie speichern</button>
-      <button id="fresh" type="button">+ Neues Dashboard</button>
-      <button id="remove-board" type="button" style="border-color:var(--red);color:var(--red)">Löschen</button>
-      <button id="done" type="button">Fertig</button>
+      <button id="sync-sc" class="gg-btn" type="button" style="border-color:var(--cyan);color:var(--cyan)">SC-Tasten lesen</button>
+      <button id="save" class="gg-btn" type="button" style="border-color:var(--amber);color:var(--amber)">Speichern</button>
+      <button id="copy" class="gg-btn" type="button">Kopie</button>
+      <button id="fresh" class="gg-btn" type="button">+ Shard</button>
+      <button id="remove-board" class="gg-btn" type="button" style="border-color:var(--red);color:var(--red)">Löschen</button>
+      <button id="done" class="gg-btn" type="button">Schließen</button>
     </div>
   </div>
 
   <div class="editor-cols">
-    <!-- Column 1: Star Citizen Action Presets & Smart Widgets -->
     <div class="editor-box">
-      <h3>1. Baukasten-Presets & Live-Widgets (1-Klick Einfügen)</h3>
+      <h3>1. Fertige Star Citizen Shards & Widgets</h3>
       <div style="display:flex;gap:6px">
         <select id="preset-cat">
           <option value="all">Alle Kategorien</option>
-          <option value="widgets">★ Live-Widgets (Schilde / Energie / Telemetrie)</option>
+          <option value="widgets">★ Live-Widgets (Schilde / Energie)</option>
           <option value="start">Start, Strom & Landung</option>
           <option value="flug">Flug, Quantum & IFCS</option>
           <option value="kampf">Kampf, Schilde & Abwehr</option>
           <option value="industrie">Mining & Salvage</option>
         </select>
-        <input id="preset-search" placeholder="Preset suchen (z.B. Flight Ready)...">
+        <input id="preset-search" placeholder="Suchen (z.B. Flight Ready)...">
       </div>
       <div id="preset-list" class="preset-chips"></div>
-      <div class="editor-actions" style="justify-content:flex-start;padding-top:4px">
-        <button id="add-page" type="button">+ Neue Seite (Tab)</button>
-        <button id="add-group" type="button">+ Neue Gruppe</button>
-        <button id="add-btn" type="button">+ Leere Taste</button>
+      <div class="editor-actions">
+        <button id="add-page" class="gg-btn" type="button">+ Seite</button>
+        <button id="add-group" class="gg-btn" type="button">+ Modul-Gruppe</button>
+        <button id="add-btn" class="gg-btn" type="button">+ Leere Kachel</button>
       </div>
     </div>
 
-    <!-- Column 2: Selected Tile / Button Inspector -->
     <div class="editor-box">
-      <h3>2. Gewählte Kachel bearbeiten</h3>
+      <h3>2. Gewählte Kachel anpassen</h3>
       <div class="form-grid">
-        <label>Beschriftung<input id="f-label" maxlength="40" placeholder="z.B. Flight Ready"></label>
-        <label>Hinweis / Untertitel<input id="f-hint" maxlength="60" placeholder="z.B. R-Alt + R"></label>
-        <label>Tasten-Kombination<input id="f-keys" placeholder="ralt+r oder f5"></label>
-        <label>Auslöse-Art
+        <label>Name<input id="f-label" maxlength="40"></label>
+        <label>Untertitel / Keybind<input id="f-hint" maxlength="60"></label>
+        <label>Tasten<input id="f-keys" placeholder="ralt+r oder f5"></label>
+        <label>Modus
           <select id="f-mode">
-            <option value="tap">Impuls / Tippen (80ms)</option>
-            <option value="toggle">Schalter (Umschalten)</option>
-            <option value="hold">Gedrückthalten (Hold)</option>
+            <option value="tap">Impuls (80ms)</option>
+            <option value="toggle">Schalter (Toggle)</option>
+            <option value="hold">Halten (Hold)</option>
           </select>
         </label>
-        <label>Farbe
+        <label>Hologramm-Farbe
           <select id="f-color">
-            <option value="amber">Amber (Antrieb/Haupt)</option>
-            <option value="cyan">Cyan (Schilde/System)</option>
-            <option value="red">Rot (Waffen/Gefahr)</option>
-            <option value="blue">Blau (Flug/Navigation)</option>
-            <option value="green">Grün (Strom/Bereit)</option>
-            <option value="slate">Stahlgrau (Standard)</option>
+            <option value="cyan">Cyan (MFD System)</option>
+            <option value="amber">Amber (Antrieb / Quantum)</option>
+            <option value="red">Rot (Kampf / Gefahr)</option>
+            <option value="green">Grün (Strom / Bereit)</option>
+            <option value="blue">Blau (Navigation / IFCS)</option>
+            <option value="slate">Stahl (Hilfssystem)</option>
           </select>
         </label>
-        <label>Kachel-Breite
+        <label>Breite
           <select id="f-span">
-            <option value="1">1x Standard</option>
+            <option value="1">1x Kompakt</option>
             <option value="2">2x Breit</option>
             <option value="3">3x Banner</option>
           </select>
         </label>
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-        <label class="check"><input id="f-danger" type="checkbox"> Gesichert (Gefahr-Schutzstreifen)</label>
+        <label class="check"><input id="f-danger" type="checkbox"> Gesichert (Waffen-Safe)</label>
         <div class="editor-actions">
-          <button id="apply" type="button" style="border-color:var(--cyan);color:var(--cyan)">Kachel übernehmen</button>
-          <button id="remove-btn" type="button" style="border-color:var(--red);color:var(--red)">Kachel entfernen</button>
+          <button id="apply" class="gg-btn" type="button" style="border-color:var(--cyan);color:var(--cyan)">Übernehmen</button>
+          <button id="remove-btn" class="gg-btn" type="button" style="border-color:var(--red);color:var(--red)">Entfernen</button>
         </div>
       </div>
     </div>
 
-    <!-- Column 3: Custom Background & Theme Settings -->
     <div class="editor-box">
-      <h3>3. Hintergrundbild & Cockpit-Design</h3>
-      <div class="bg-thumbs">
-        <button type="button" class="bg-btn" data-bg="">Standard Void</button>
-        <button type="button" class="bg-btn" data-bg="preset:aegis">Aegis Tactical Grid</button>
-        <button type="button" class="bg-btn" data-bg="preset:crusader">Crusader Horizon</button>
-        <button type="button" class="bg-btn" data-bg="preset:drake">Drake Industrial</button>
-        <button type="button" class="bg-btn" data-bg="preset:starmap">Quantum Starmap</button>
+      <h3>3. Shard-Hintergrund & Atmosphäre</h3>
+      <div class="editor-actions">
+        <button type="button" class="gg-btn bg-btn" data-bg="">Deep Space</button>
+        <button type="button" class="gg-btn bg-btn" data-bg="preset:aegis">Aegis Holo</button>
+        <button type="button" class="gg-btn bg-btn" data-bg="preset:crusader">Crusader</button>
+        <button type="button" class="gg-btn bg-btn" data-bg="preset:drake">Drake</button>
+        <button type="button" class="gg-btn bg-btn" data-bg="preset:starmap">Starmap</button>
       </div>
       <div class="form-grid">
-        <label>Eigene Bild-URL oder Datei
-          <input id="f-bg-url" placeholder="https://... oder Bilddatei wählen">
-        </label>
-        <label>Eigenes Bild hochladen
-          <input id="f-bg-file" type="file" accept="image/*" style="padding:4px">
-        </label>
+        <label>Bild-URL<input id="f-bg-url" placeholder="https://..."></label>
+        <label>Eigenes Bild<input id="f-bg-file" type="file" accept="image/*" style="padding:3px"></label>
       </div>
-      <label>Hintergrund-Deckkraft (<span id="bg-op-val">35%</span>)
+      <label>Deckkraft (<span id="bg-op-val">35%</span>)
         <input id="f-bg-opacity" type="range" min="5" max="95" value="35">
       </label>
     </div>
   </div>
 </section>
 
-<main id="pages"></main>
-<footer id="foot"></footer>
+<!-- Main GameGlass Shard Workspace -->
+<div class="gg-workspace">
+  <aside class="gg-rail">
+    <nav id="tabs" class="gg-tabs"></nav>
+    <div class="gg-rail-footer">
+      <span id="board-meta">SHARD AKTIV</span>
+      <b id="last-act">BEREIT</b>
+    </div>
+  </aside>
+
+  <main id="pages" class="gg-stage"></main>
+</div>
+
 <div id="toast" hidden></div>
 
 <script>
-// Built-in Star Citizen Baukasten Presets (inspired by tablet-deck & SC 4.x Default Keybinds)
-const SC_PRESETS = [
-  // Smart Interactive Live Widgets
-  { cat: "widgets", kind: "shield", label: "Schild-Kompass (Interaktiv)", hint: "Vorn/Hinten/Links/Rechts/Reset", keys: ["num5"], color: "cyan", wide: true },
-  { cat: "widgets", kind: "power", label: "Energie-Dreieck (Live-Widget)", hint: "Waffen (F5) · Antrieb (F6) · Schilde (F7)", keys: ["f8"], color: "amber", wide: true },
-  { cat: "widgets", kind: "telemetry", label: "Schiffs-TelemetrieMonitor", hint: "Live Status & System-Anzeige", keys: ["f1"], color: "blue", wide: true },
+// Contextual Vector Icons for GameGlass Shards
+function getIconSVG(id, label) {
+  const s = ((id || "") + " " + (label || "")).toLowerCase();
+  if (s.includes("flight") || s.includes("power") || s.includes("strom")) {
+    return `<svg viewBox="0 0 24 24"><path d="M12 2v10"/><path d="M18.4 6.6a9 9 0 1 1-12.77.04"/></svg>`;
+  }
+  if (s.includes("gear") || s.includes("fahrwerk") || s.includes("land")) {
+    return `<svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m8 11 4 4 4-4"/><path d="M4 20h16"/></svg>`;
+  }
+  if (s.includes("quantum") || s.includes("master") || s.includes("nav")) {
+    return `<svg viewBox="0 0 24 24"><polygon points="12 2 19 21 12 17 5 21 12 2"/></svg>`;
+  }
+  if (s.includes("shield") || s.includes("schild")) {
+    return `<svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`;
+  }
+  if (s.includes("waffe") || s.includes("fire") || s.includes("target") || s.includes("ziel") || s.includes("gimbal") || s.includes("missile") || s.includes("rakete")) {
+    return `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>`;
+  }
+  if (s.includes("mining") || s.includes("laser") || s.includes("modul")) {
+    return `<svg viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>`;
+  }
+  if (s.includes("light") || s.includes("licht") || s.includes("night")) {
+    return `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2"/></svg>`;
+  }
+  if (s.includes("ping") || s.includes("scan") || s.includes("radar") || s.includes("map") || s.includes("mobi")) {
+    return `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 12 18 6"/><circle cx="12" cy="12" r="2"/></svg>`;
+  }
+  if (s.includes("door") || s.includes("tür") || s.includes("lock")) {
+    return `<svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/></svg>`;
+  }
+  if (s.includes("boost") || s.includes("vtol") || s.includes("antrieb") || s.includes("cruise") || s.includes("decouple")) {
+    return `<svg viewBox="0 0 24 24"><path d="m13 17 5-5-5-5M6 17l5-5-5-5"/></svg>`;
+  }
+  return `<svg viewBox="0 0 24 24"><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/></svg>`;
+}
 
-  // Start, Strom & Landung
+const SC_PRESETS = [
+  { cat: "widgets", kind: "shield", label: "Schild-Matrix (GameGlass)", hint: "Vorn/Hinten/Links/Rechts/Reset", keys: ["num5"], color: "cyan", wide: true },
+  { cat: "widgets", kind: "power", label: "Energie-Verteiler (Live)", hint: "Waffen (F5) · Antrieb (F6) · Schilde (F7)", keys: ["f8"], color: "amber", wide: true },
   { cat: "start", sc: "v_flightready", label: "Flight Ready", hint: "R-Alt + R", keys: ["ralt", "r"], mode: "tap", color: "green", wide: true },
-  { cat: "start", sc: "v_power_toggle", label: "Hauptstrom (Power)", hint: "U", keys: ["u"], mode: "toggle", color: "green" },
-  { cat: "start", sc: "v_power_toggle_thrusters", label: "Triebwerke Ein/Aus", hint: "I", keys: ["i"], mode: "toggle", color: "amber" },
+  { cat: "start", sc: "v_power_toggle", label: "Hauptstrom", hint: "U", keys: ["u"], mode: "toggle", color: "green" },
+  { cat: "start", sc: "v_power_toggle_thrusters", label: "Triebwerke", hint: "I", keys: ["i"], mode: "toggle", color: "amber" },
   { cat: "start", sc: "v_power_toggle_weapons", label: "Waffen-Strom", hint: "P", keys: ["p"], mode: "toggle", color: "red" },
   { cat: "start", sc: "v_power_toggle_shields", label: "Schild-Strom", hint: "O", keys: ["o"], mode: "toggle", color: "cyan" },
   { cat: "start", sc: "v_toggle_landing_system", label: "Fahrwerk", hint: "N", keys: ["n"], mode: "toggle", color: "cyan" },
-  { cat: "start", sc: "v_autoland", label: "Autolandung", hint: "N gedrückt", keys: ["n"], mode: "hold", color: "cyan" },
+  { cat: "start", sc: "v_autoland", label: "Autolandung", hint: "N halten", keys: ["n"], mode: "hold", color: "cyan" },
   { cat: "start", sc: "v_atc_request", label: "Landeerlaubnis (ATC)", hint: "L-Alt + N", keys: ["lalt", "n"], mode: "tap", color: "amber" },
-  { cat: "start", sc: "v_vtol_toggle", label: "VTOL Düsen", hint: "K", keys: ["k"], mode: "toggle", color: "cyan" },
+  { cat: "start", sc: "v_vtol_toggle", label: "VTOL Modus", hint: "K", keys: ["k"], mode: "toggle", color: "cyan" },
   { cat: "start", sc: "v_lights", label: "Scheinwerfer", hint: "L", keys: ["l"], mode: "toggle", color: "amber" },
   { cat: "start", sc: "v_toggle_all_doors", label: "Alle Türen", hint: "R-Alt + K", keys: ["ralt", "k"], mode: "toggle", color: "slate" },
-  { cat: "start", sc: "v_lock_all_doors", label: "Türen verriegeln", hint: "R-Alt + L", keys: ["ralt", "l"], mode: "toggle", color: "slate" },
-
-  // Flug, Quantum & IFCS
   { cat: "flug", sc: "v_toggle_quantum_mode", label: "Master Mode (SCM/NAV)", hint: "B halten", keys: ["b"], mode: "hold", color: "amber", wide: true },
   { cat: "flug", sc: "v_afterburner", label: "Boost / Nachbrenner", hint: "L-Shift halten", keys: ["lshift"], mode: "hold", color: "red", wide: true },
-  { cat: "flug", sc: "v_ifcs_vector_decoupling_toggle", label: "Decoupled Mode", hint: "C", keys: ["c"], mode: "toggle", color: "blue" },
-  { cat: "flug", sc: "v_ifcs_toggle_cruise_control", label: "Tempomat (Cruise)", hint: "L-Alt + C", keys: ["lalt", "c"], mode: "toggle", color: "blue" },
-  { cat: "flug", sc: "v_ifcs_toggle_esp", label: "ESP Stabilität", hint: "R-Alt + O", keys: ["ralt", "o"], mode: "toggle", color: "blue" },
-  { cat: "flug", sc: "v_ifcs_toggle_gforce_safety", label: "G-Safe Schutz", hint: "R-Alt + G", keys: ["ralt", "g"], mode: "toggle", color: "blue" },
+  { cat: "flug", sc: "v_ifcs_vector_decoupling_toggle", label: "Decoupled", hint: "C", keys: ["c"], mode: "toggle", color: "blue" },
+  { cat: "flug", sc: "v_ifcs_toggle_cruise_control", label: "Cruise Control", hint: "L-Alt + C", keys: ["lalt", "c"], mode: "toggle", color: "blue" },
   { cat: "flug", sc: "v_invoke_ping", label: "Radar Ping", hint: "Tab halten", keys: ["tab"], mode: "hold", color: "cyan" },
   { cat: "flug", sc: "v_toggle_scan_mode", label: "Scan-Modus", hint: "V", keys: ["v"], mode: "toggle", color: "cyan" },
   { cat: "flug", sc: "mobiglas", label: "mobiGlas", hint: "F1", keys: ["f1"], mode: "tap", color: "blue" },
-  { cat: "flug", sc: "v_starmap", label: "Sternkarte (Starmap)", hint: "F2", keys: ["f2"], mode: "tap", color: "blue" },
-  { cat: "flug", sc: "visor_wipe", label: "Helmvisier abwischen", hint: "L-Alt + X", keys: ["lalt", "x"], mode: "tap", color: "slate" },
-
-  // Kampf, Schilde & Abwehr
-  { cat: "kampf", sc: "v_engineering_assignment_weapons_increase", label: "Energie -> Waffen", hint: "F5", keys: ["f5"], mode: "tap", color: "red" },
-  { cat: "kampf", sc: "v_engineering_assignment_engine_increase", label: "Energie -> Antrieb", hint: "F6", keys: ["f6"], mode: "tap", color: "amber" },
-  { cat: "kampf", sc: "v_engineering_assignment_shields_increase", label: "Energie -> Schilde", hint: "F7", keys: ["f7"], mode: "tap", color: "cyan" },
-  { cat: "kampf", sc: "v_engineering_assignment_reset", label: "Energie Ausgleich", hint: "F8", keys: ["f8"], mode: "tap", color: "slate" },
+  { cat: "flug", sc: "v_starmap", label: "Skyline Starmap", hint: "F2", keys: ["f2"], mode: "tap", color: "blue" },
   { cat: "kampf", sc: "v_target_nearest_hostile", label: "Nächster Feind", hint: "T", keys: ["t"], mode: "tap", color: "red" },
   { cat: "kampf", sc: "v_weapon_gimbals_state_toggle", label: "Gimbal Modus", hint: "G", keys: ["g"], mode: "tap", color: "blue" },
-  { cat: "kampf", sc: "v_weapon_countermeasure_decoy_launch", label: "Täuschkörper (Flare)", hint: "H", keys: ["h"], mode: "tap", color: "amber" },
-  { cat: "kampf", sc: "v_weapon_countermeasure_noise_launch", label: "Störfeld (Noise)", hint: "J", keys: ["j"], mode: "tap", color: "cyan" },
+  { cat: "kampf", sc: "v_weapon_countermeasure_decoy_launch", label: "Flare / Täuschkörper", hint: "H", keys: ["h"], mode: "tap", color: "amber" },
+  { cat: "kampf", sc: "v_weapon_countermeasure_noise_launch", label: "Noise / Störfeld", hint: "J", keys: ["j"], mode: "tap", color: "cyan" },
   { cat: "kampf", sc: "v_attack1", label: "Waffengruppe 1", hint: "Maus Links", keys: ["mouse1"], mode: "hold", color: "red", danger: true, wide: true },
   { cat: "kampf", sc: "v_attack2", label: "Waffengruppe 2", hint: "Maus Rechts", keys: ["mouse2"], mode: "hold", color: "red", danger: true, wide: true },
   { cat: "kampf", sc: "v_eject", label: "Schleudersitz", hint: "R-Alt + Y", keys: ["ralt", "y"], mode: "hold", color: "red", danger: true },
-  { cat: "kampf", sc: "v_self_destruct", label: "Selbstzerstörung", hint: "L-Alt + Backspace", keys: ["lalt", "backspace"], mode: "hold", color: "red", danger: true },
-
-  // Industrie: Mining & Salvage
   { cat: "industrie", sc: "v_toggle_mining_mode", label: "Mining-Modus", hint: "M", keys: ["m"], mode: "toggle", color: "amber", wide: true },
   { cat: "industrie", sc: "v_mining_laser", label: "Mining-Laser", hint: "Maus Links", keys: ["mouse1"], mode: "hold", color: "red", danger: true, wide: true },
-  { cat: "industrie", sc: "v_mining_use_consumable1", label: "Mining-Modul 1", hint: "L-Alt + 1", keys: ["lalt", "1"], mode: "tap", color: "cyan" },
-  { cat: "industrie", sc: "v_mining_use_consumable2", label: "Mining-Modul 2", hint: "L-Alt + 2", keys: ["lalt", "2"], mode: "tap", color: "cyan" },
-  { cat: "industrie", sc: "v_mining_use_consumable3", label: "Mining-Modul 3", hint: "L-Alt + 3", keys: ["lalt", "3"], mode: "tap", color: "cyan" },
+  { cat: "industrie", sc: "v_mining_use_consumable1", label: "Modul 1", hint: "L-Alt + 1", keys: ["lalt", "1"], mode: "tap", color: "cyan" },
+  { cat: "industrie", sc: "v_mining_use_consumable2", label: "Modul 2", hint: "L-Alt + 2", keys: ["lalt", "2"], mode: "tap", color: "cyan" },
+  { cat: "industrie", sc: "v_mining_use_consumable3", label: "Modul 3", hint: "L-Alt + 3", keys: ["lalt", "3"], mode: "tap", color: "cyan" },
   { cat: "industrie", sc: "v_jettison_volatile_cargo", label: "Fracht abwerfen", hint: "L-Alt + J", keys: ["lalt", "j"], mode: "tap", color: "red", danger: true }
 ];
 
 const BG_PRESETS = {
-  "preset:aegis": "radial-gradient(circle at 50% 25%, rgba(62,200,196,0.26), transparent 60%), repeating-linear-gradient(0deg, rgba(62,200,196,0.06) 0px, rgba(62,200,196,0.06) 1px, transparent 1px, transparent 32px), repeating-linear-gradient(90deg, rgba(62,200,196,0.06) 0px, rgba(62,200,196,0.06) 1px, transparent 1px, transparent 32px), linear-gradient(180deg, #071318 0%, #0b0e13 100%)",
-  "preset:crusader": "radial-gradient(900px 500px at 80% 10%, rgba(106,164,255,0.32), transparent 65%), radial-gradient(700px 450px at 15% 85%, rgba(226,162,58,0.22), transparent 60%), linear-gradient(135deg, #0f1928 0%, #0a0e14 100%)",
-  "preset:drake": "repeating-linear-gradient(-45deg, rgba(226,162,58,0.07) 0px, rgba(226,162,58,0.07) 14px, transparent 14px, transparent 28px), radial-gradient(circle at 20% 20%, rgba(225,91,76,0.22), transparent 60%), linear-gradient(180deg, #18130e 0%, #0b0d10 100%)",
-  "preset:starmap": "radial-gradient(2px 2px at 20% 30%, #fff, transparent), radial-gradient(2px 2px at 75% 18%, #3ec8c4, transparent), radial-gradient(2px 2px at 42% 72%, #e2a23a, transparent), radial-gradient(750px 750px at 50% 50%, rgba(62,200,196,0.18), transparent 70%), linear-gradient(180deg, #050a12 0%, #09131c 100%)"
+  "preset:aegis": "radial-gradient(circle at 50% 20%, rgba(0,229,255,0.22), transparent 60%), linear-gradient(180deg, #06121c 0%, #05080d 100%)",
+  "preset:crusader": "radial-gradient(900px 500px at 80% 10%, rgba(61,139,255,0.28), transparent 65%), radial-gradient(700px 450px at 15% 85%, rgba(255,171,0,0.18), transparent 60%), linear-gradient(135deg, #0c1726 0%, #05080d 100%)",
+  "preset:drake": "radial-gradient(circle at 20% 20%, rgba(255,61,87,0.20), transparent 60%), linear-gradient(180deg, #17110b 0%, #07090c 100%)",
+  "preset:starmap": "radial-gradient(750px 750px at 50% 50%, rgba(0,229,255,0.18), transparent 70%), linear-gradient(180deg, #040912 0%, #07121c 100%)"
 };
 
 const statusEl = document.getElementById("status");
+const statusDotEl = document.getElementById("status-dot");
 const tabsEl = document.getElementById("tabs");
 const pagesEl = document.getElementById("pages");
 const toastEl = document.getElementById("toast");
@@ -673,15 +1009,14 @@ let liveTelemetry = {
   power: { weapons: 33, engines: 34, shields: 33 },
   shields: { front: 25, back: 25, left: 25, right: 25 },
   systems: { gear: true, power_all: true, vtol: false, lights: false, decoupled: false, master_mode: "SCM" },
-  sc_ship: "SCHIFFSSYSTEME",
-  last_action: "-"
+  sc_ship: "SC COCKPIT // SHARD"
 };
 
 function toast(text) {
   toastEl.hidden = false;
   toastEl.textContent = text;
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { toastEl.hidden = true; }, 3200);
+  toastTimer = setTimeout(() => { toastEl.hidden = true; }, 3000);
 }
 
 function headers() {
@@ -723,8 +1058,8 @@ async function sendKeys(id, keys, mode = "tap") {
     });
     if (res.telemetry) updateTelemetryUI(res.telemetry);
   } catch (err) {
-    statusEl.className = "off";
-    statusEl.textContent = "Fehler: " + err.message;
+    statusDotEl.className = "status-dot off";
+    statusEl.textContent = "FEHLER: " + err.message;
     if (mode !== "down") toast(err.message);
   }
 }
@@ -732,7 +1067,7 @@ async function sendKeys(id, keys, mode = "tap") {
 async function send(button, mode) {
   if (editing) return;
   if (button.danger && !armed && mode !== "up") {
-    toast("Gesicherte Taste: zuerst oben 'Gefahr AN' schalten");
+    toast("Waffen gesichert — oben 'Waffen SAFE' entsperren");
     return;
   }
   await sendKeys(button.id, button.keys, mode);
@@ -745,30 +1080,23 @@ function updateTelemetryUI(t) {
   const s = t.shields || { front: 25, back: 25, left: 25, right: 25 };
   const sys = t.systems || {};
 
-  document.getElementById("tele-pwr-txt").textContent = `W:${p.weapons}% E:${p.engines}% S:${p.shields}%`;
-  document.getElementById("bar-wep").style.width = p.weapons + "%";
-  document.getElementById("bar-eng").style.width = p.engines + "%";
-  document.getElementById("bar-shd").style.width = p.shields + "%";
-
-  document.getElementById("tele-shd-txt").textContent = `V:${s.front}% H:${s.back}% L:${s.left}% R:${s.right}%`;
-  document.getElementById("bar-sf").style.width = s.front + "%";
-  document.getElementById("bar-sb").style.width = s.back + "%";
-  document.getElementById("bar-sl").style.width = s.left + "%";
-  document.getElementById("bar-sr").style.width = s.right + "%";
-
-  document.getElementById("tele-ship").textContent = t.sc_ship || "SCHIFFSSYSTEME";
+  document.getElementById("tele-pwr-txt").textContent = `W:${p.weapons} E:${p.engines} S:${p.shields}`;
+  document.getElementById("tele-shd-txt").textContent = `F:${s.front} B:${s.back} L:${s.left} R:${s.right}`;
   document.getElementById("tele-mode").textContent = sys.master_mode || "SCM";
+
+  if (t.sc_ship && t.sc_ship !== "AEGIS / UEE COCKPIT") {
+    document.getElementById("ship-title").textContent = t.sc_ship;
+  }
   document.getElementById("pill-pwr").classList.toggle("active", !!sys.power_all);
   document.getElementById("pill-gear").classList.toggle("active", !!sys.gear);
   document.getElementById("pill-vtol").classList.toggle("active", !!sys.vtol);
   document.getElementById("pill-light").classList.toggle("active", !!sys.lights);
-  document.getElementById("pill- cpl")?.classList.toggle("active", !!sys.decoupled);
+  document.getElementById("pill-cpl").classList.toggle("active", !!sys.decoupled);
 
   if (t.last_action && t.last_action !== "-") {
-    document.getElementById("last-act").textContent = "Letzte Aktion: " + t.last_action;
+    document.getElementById("last-act").textContent = t.last_action;
   }
 
-  // Update embedded live widgets if present on active page
   document.querySelectorAll("[data-live-shd]").forEach((el) => {
     const zone = el.getAttribute("data-live-shd");
     if (s[zone] !== undefined) el.textContent = s[zone] + "%";
@@ -789,7 +1117,7 @@ function applyBackground(data) {
   bgLayerEl.style.opacity = String(op);
   document.getElementById("f-bg-opacity").value = String(Math.round(op * 100));
   document.getElementById("bg-op-val").textContent = Math.round(op * 100) + "%";
-  document.getElementById("f-bg-url").value = bg.startsWith("data:") ? "(Eigenes Bild geladen)" : bg;
+  document.getElementById("f-bg-url").value = bg.startsWith("data:") ? "(Eigenes Bild aktiv)" : bg;
 
   if (!bg) {
     bgLayerEl.style.backgroundImage = "none";
@@ -809,7 +1137,7 @@ function fillForm(button) {
   document.getElementById("f-hint").value = button?.hint || "";
   document.getElementById("f-keys").value = (button?.keys || []).join("+");
   document.getElementById("f-mode").value = button?.mode || "tap";
-  document.getElementById("f-color").value = button?.color || "slate";
+  document.getElementById("f-color").value = button?.color || "cyan";
   const span = button?.span || (button?.wide ? 2 : 1);
   document.getElementById("f-span").value = String(span);
   document.getElementById("f-danger").checked = !!button?.danger;
@@ -840,16 +1168,16 @@ function makeWidgetCard(button, ref) {
   if (button.kind === "shield") {
     const s = liveTelemetry.shields || { front: 25, back: 25, left: 25, right: 25 };
     card.innerHTML = `
-      <div class="widget-title"><span>❖ ${button.label || "SCHILD-VERTEILUNG"}</span><small style="color:var(--muted)">Sektor antippen</small></div>
-      <div class="shield-compass">
+      <div class="widget-title"><span>❖ ${button.label || "SCHILD-SEKTOR-MATRIX"}</span><small style="color:var(--muted)">GAMEGLASS SHARD</small></div>
+      <div class="gg-shield-matrix">
         <div></div>
-        <button type="button" class="sh-zone" data-keys="num8">VORN<span data-live-shd="front">${s.front}%</span></button>
+        <button type="button" class="sh-zone" data-keys="num8">BUG / VORN<span data-live-shd="front">${s.front}%</span></button>
         <div></div>
-        <button type="button" class="sh-zone" data-keys="num4">LINKS<span data-live-shd="left">${s.left}%</span></button>
-        <button type="button" class="sh-zone reset" data-keys="num5">AUSGLEICH<span>RESET (NP5)</span></button>
-        <button type="button" class="sh-zone" data-keys="num6">RECHTS<span data-live-shd="right">${s.right}%</span></button>
+        <button type="button" class="sh-zone" data-keys="num4">BACKBORD<span data-live-shd="left">${s.left}%</span></button>
+        <button type="button" class="sh-zone reset" data-keys="num5">BALANCE<span>RESET (NP5)</span></button>
+        <button type="button" class="sh-zone" data-keys="num6">STEUERBORD<span data-live-shd="right">${s.right}%</span></button>
         <div></div>
-        <button type="button" class="sh-zone" data-keys="num2">HINTEN<span data-live-shd="back">${s.back}%</span></button>
+        <button type="button" class="sh-zone" data-keys="num2">HECK / HINTEN<span data-live-shd="back">${s.back}%</span></button>
         <div></div>
       </div>
     `;
@@ -861,31 +1189,31 @@ function makeWidgetCard(button, ref) {
         sendKeys(button.id + "-" + k[0], k, "tap");
       });
     });
-  } else if (button.kind === "power") {
+  } else {
     const p = liveTelemetry.power || { weapons: 33, engines: 34, shields: 33 };
     card.innerHTML = `
       <div class="widget-title" style="color:var(--amber)">
-        <span>⚡ ${button.label || "ENERGIE-DREIECK"}</span>
-        <button type="button" class="bg-btn" data-pwr-key="f8">Reset (F8)</button>
+        <span>⚡ ${button.label || "ENERGIE-KONDENSATOR"}</span>
+        <button type="button" class="gg-btn" style="height:26px;font-size:10px" data-pwr-key="f8">Ausgleich (F8)</button>
       </div>
-      <div class="power-bars-widget">
+      <div class="gg-power-matrix">
         <button type="button" class="pwr-col" data-pwr-key="f5">
-          <strong style="color:var(--red)">WAFFEN</strong>
-          <span class="pwr-pct" style="font-family:Consolas,monospace">${p.weapons}%</span>
+          <strong style="color:var(--red);font-size:12px">WAFFEN</strong>
+          <span class="pwr-pct" style="font-family:Consolas,monospace;font-size:14px">${p.weapons}%</span>
           <div class="pwr-meter"><div class="pwr-fill" data-live-pwr="weapons" style="width:${p.weapons}%;background:var(--red)"></div></div>
-          <small style="color:var(--muted)">+ F5</small>
+          <small style="color:var(--muted);font-size:10px">BOOST [F5]</small>
         </button>
         <button type="button" class="pwr-col" data-pwr-key="f6">
-          <strong style="color:var(--amber)">ANTRIEB</strong>
-          <span class="pwr-pct" style="font-family:Consolas,monospace">${p.engines}%</span>
+          <strong style="color:var(--amber);font-size:12px">ANTRIEB</strong>
+          <span class="pwr-pct" style="font-family:Consolas,monospace;font-size:14px">${p.engines}%</span>
           <div class="pwr-meter"><div class="pwr-fill" data-live-pwr="engines" style="width:${p.engines}%;background:var(--amber)"></div></div>
-          <small style="color:var(--muted)">+ F6</small>
+          <small style="color:var(--muted);font-size:10px">BOOST [F6]</small>
         </button>
         <button type="button" class="pwr-col" data-pwr-key="f7">
-          <strong style="color:var(--cyan)">SCHILDE</strong>
-          <span class="pwr-pct" style="font-family:Consolas,monospace">${p.shields}%</span>
+          <strong style="color:var(--cyan);font-size:12px">SCHILDE</strong>
+          <span class="pwr-pct" style="font-family:Consolas,monospace;font-size:14px">${p.shields}%</span>
           <div class="pwr-meter"><div class="pwr-fill" data-live-pwr="shields" style="width:${p.shields}%;background:var(--cyan)"></div></div>
-          <small style="color:var(--muted)">+ F7</small>
+          <small style="color:var(--muted);font-size:10px">BOOST [F7]</small>
         </button>
       </div>
     `;
@@ -897,20 +1225,6 @@ function makeWidgetCard(button, ref) {
         sendKeys("pwr-" + k, [k], "tap");
       });
     });
-  } else {
-    card.innerHTML = `
-      <div class="widget-title" style="color:var(--blue)"><span>◈ ${button.label || "SCHIFFS-TELEMETRIE"}</span><small>LIVE</small></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px">
-        <div style="background:#0e141d;padding:10px;border-radius:8px">
-          <div style="color:var(--muted);font-size:11px">AKTIVES SCHIFF</div>
-          <strong style="color:var(--cyan)">${liveTelemetry.sc_ship || "AEGIS COCKPIT"}</strong>
-        </div>
-        <div style="background:#0e141d;padding:10px;border-radius:8px">
-          <div style="color:var(--muted);font-size:11px">MASTER MODE</div>
-          <strong style="color:var(--amber)">${liveTelemetry.systems?.master_mode || "SCM"}</strong>
-        </div>
-      </div>
-    `;
   }
   return card;
 }
@@ -927,12 +1241,27 @@ function makeButton(button, ref) {
     el.classList.add("hazard-stripe");
     if (!armed) el.classList.add("locked");
   }
+  if (toggled.has(button.id)) el.classList.add("on");
+
   el.dataset.pi = String(ref.pi);
   el.dataset.gi = String(ref.gi);
   el.dataset.bi = String(ref.bi);
-  el.innerHTML = "<b></b><small></small>";
+
+  const keyBadge = button.hint || (button.keys || []).join("+").toUpperCase();
+  const modeTxt = button.mode === "hold" ? "HOLD · HALTEN" : (button.mode === "toggle" ? "TOGGLE · SCHALTER" : "TAP · IMPULS");
+  el.innerHTML = `
+    <div class="key-top">
+      <div class="key-icon">${getIconSVG(button.id, button.label)}</div>
+      <span class="key-badge"></span>
+    </div>
+    <div class="key-bottom">
+      <b></b>
+      <small></small>
+    </div>
+  `;
+  el.querySelector(".key-badge").textContent = keyBadge;
   el.querySelector("b").textContent = button.label || button.id;
-  el.querySelector("small").textContent = button.hint || (button.keys || []).join("+").toUpperCase();
+  el.querySelector("small").textContent = modeTxt;
 
   const refreshLock = () => { if (button.danger) el.classList.toggle("locked", !armed); };
   el._refreshLock = refreshLock;
@@ -945,7 +1274,7 @@ function makeButton(button, ref) {
   if (button.mode === "hold") {
     const down = (event) => {
       if (editing) return pick(event);
-      if (button.danger && !armed) { toast("Zuerst oben 'Gefahr AN' schalten"); return; }
+      if (button.danger && !armed) { toast("Waffen gesichert — oben 'Waffen SAFE' entsperren"); return; }
       event.preventDefault();
       el.setPointerCapture?.(event.pointerId);
       held.add(button.id);
@@ -964,7 +1293,7 @@ function makeButton(button, ref) {
   } else {
     el.addEventListener("pointerup", (event) => {
       if (editing) return pick(event);
-      if (button.danger && !armed) { toast("Zuerst oben 'Gefahr AN' schalten"); return; }
+      if (button.danger && !armed) { toast("Waffen gesichert — oben 'Waffen SAFE' entsperren"); return; }
       if (button.mode === "toggle") {
         if (toggled.has(button.id)) toggled.delete(button.id);
         else toggled.add(button.id);
@@ -982,7 +1311,7 @@ function render(data, keepPageIndex) {
   localStorage.setItem("sc-cached-layout-" + (data.id || "standard"), JSON.stringify(data));
   applyBackground(data);
 
-  document.getElementById("board-meta").textContent = data._source === "local" ? "Eigenes Dashboard" : "Mitgeliefert (Baukasten speichert eigene Kopie)";
+  document.getElementById("board-meta").textContent = (data.title || data.id).toUpperCase() + (data._source === "local" ? " // CUSTOM" : " // SHARD");
   document.getElementById("remove-board").hidden = data._source !== "local";
 
   const activeIdx = keepPageIndex !== undefined ? keepPageIndex : 0;
@@ -994,7 +1323,7 @@ function render(data, keepPageIndex) {
     const tab = document.createElement("button");
     tab.type = "button";
     tab.className = "tab";
-    tab.textContent = page.label || page.id;
+    tab.innerHTML = `<span>${page.label || page.id}</span><small style="opacity:0.5;font-size:10px">0${pi + 1}</small>`;
     tab.setAttribute("aria-selected", isAct ? "true" : "false");
     tab.addEventListener("click", () => activatePage(pi));
     tabsEl.appendChild(tab);
@@ -1009,16 +1338,18 @@ function render(data, keepPageIndex) {
       const hdr = document.createElement("div");
       hdr.className = "group-header";
       const title = document.createElement("h2");
-      title.textContent = group.title || "Steuerung";
+      title.textContent = group.title || "SYSTEME";
       hdr.appendChild(title);
 
       if (editing) {
         const renameBtn = document.createElement("button");
         renameBtn.type = "button";
-        renameBtn.className = "bg-btn";
-        renameBtn.textContent = "Gruppe umbenennen";
+        renameBtn.className = "gg-btn";
+        renameBtn.style.height = "26px";
+        renameBtn.style.fontSize = "10px";
+        renameBtn.textContent = "Umbenennen";
         renameBtn.addEventListener("click", () => {
-          const nt = prompt("Name der Gruppe:", group.title || "Steuerung");
+          const nt = prompt("Modul-Name:", group.title || "SYSTEME");
           if (nt) {
             group.title = nt.slice(0, 40);
             render(current, activePageIndex());
@@ -1036,8 +1367,6 @@ function render(data, keepPageIndex) {
     pagesEl.appendChild(section);
   });
 
-  const where = data._source === "local" ? "eigene Datei" : "Vorlage";
-  document.getElementById("foot").innerHTML = `<span><b>${data.title || data.id}</b> · ${where}</span><span>Baukasten-System & Live-Telemetrie aktiv</span>`;
   if (selected) selectButton(selected);
 }
 
@@ -1051,7 +1380,6 @@ function activePageIndex() {
   return el ? Number(el.dataset.index) : 0;
 }
 
-// Render Preset Catalog in Baukasten Editor
 function renderPresets() {
   const cat = document.getElementById("preset-cat").value;
   const q = (document.getElementById("preset-search").value || "").trim().toLowerCase();
@@ -1086,7 +1414,7 @@ function insertPresetIntoPage(preset) {
     hint: preset.hint || preset.keys.join("+").toUpperCase(),
     keys: [...preset.keys],
     mode: preset.mode || "tap",
-    color: preset.color || "amber",
+    color: preset.color || "cyan",
     wide: !!preset.wide,
     span: preset.wide ? 2 : 1,
     danger: !!preset.danger
@@ -1098,7 +1426,7 @@ function insertPresetIntoPage(preset) {
   const bi = targetGroup.buttons.length - 1;
   render(current, pi);
   selectButton({ pi, gi: Math.max(0, gi), bi });
-  toast(`Baustein '${preset.label}' eingefügt`);
+  toast(`Shard '${preset.label}' eingefügt`);
 }
 
 function applyForm(showToast) {
@@ -1107,7 +1435,7 @@ function applyForm(showToast) {
   if (!button) return false;
   const keys = parseKeys(document.getElementById("f-keys").value);
   if (!button.kind && (!keys.length || keys.length > 4)) {
-    toast("Bitte 1 bis 4 Tasten angeben (z. B. ralt+r)");
+    toast("1 bis 4 Tasten angeben (z.B. ralt+r)");
     return false;
   }
   button.label = document.getElementById("f-label").value.trim() || button.label;
@@ -1124,7 +1452,7 @@ function applyForm(showToast) {
   const pi = activePageIndex();
   render(current, pi);
   selectButton(keep);
-  if (showToast) toast("Kachel aktualisiert (bitte noch auf Speichern klicken)");
+  if (showToast) toast("Übernommen (bitte Speichern)");
   return true;
 }
 
@@ -1145,7 +1473,7 @@ async function refreshList(selectId) {
   (list.dashboards || []).forEach((item) => {
     const option = document.createElement("option");
     option.value = item.id;
-    option.textContent = item.title + (item.source === "local" ? " · eigen" : "");
+    option.textContent = item.title + (item.source === "local" ? " ★" : "");
     boardEl.appendChild(option);
   });
   const wanted = selectId || list.active || localStorage.getItem("sc-last-board") || (list.dashboards?.[0]?.id) || "standard";
@@ -1166,7 +1494,6 @@ async function openBoard(id) {
     render(data, 0);
     api("/api/active", { method: "POST", headers: headers(), body: JSON.stringify({ id: data.id }) }).catch(() => {});
   } catch (err) {
-    // Fallback to /api/layout or cached layout so reload NEVER shows a blank page!
     try {
       const fallback = await api("/api/layout");
       render(fallback, 0);
@@ -1189,11 +1516,10 @@ async function saveBoard() {
     const pi = activePageIndex();
     await refreshList(saved.id);
     render(saved, pi);
-    toast("Dashboard gespeichert!");
+    toast("Shard gespeichert!");
   } catch (err) { toast(err.message); }
 }
 
-// Event Listeners
 document.getElementById("preset-cat").addEventListener("change", renderPresets);
 document.getElementById("preset-search").addEventListener("input", renderPresets);
 
@@ -1219,7 +1545,6 @@ document.getElementById("f-bg-file").addEventListener("change", (e) => {
   if (!file || !current) return;
   const reader = new FileReader();
   reader.onload = () => {
-    // Downscale image on canvas so JSON stays compact & fast
     const img = new Image();
     img.onload = () => {
       const canvas = document.createElement("canvas");
@@ -1231,7 +1556,7 @@ document.getElementById("f-bg-file").addEventListener("change", (e) => {
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       current.background = canvas.toDataURL("image/jpeg", 0.78);
       applyBackground(current);
-      toast("Hintergrundbild geladen (Speichern nicht vergessen)");
+      toast("Hintergrund geladen");
     };
     img.src = String(reader.result);
   };
@@ -1248,7 +1573,7 @@ document.getElementById("sync-sc").addEventListener("click", async () => {
   try {
     const res = await api("/api/sc-bindings");
     if (!res.found) {
-      toast("Keine lokale Star Citizen actionmaps.xml gefunden — Standard-Presets aktiv.");
+      toast("Keine lokale actionmaps.xml gefunden — Standard-Presets aktiv");
       return;
     }
     const map = res.bindings || {};
@@ -1265,14 +1590,14 @@ document.getElementById("sync-sc").addEventListener("click", async () => {
       }
     }
     render(current, activePageIndex());
-    toast(`Star Citizen Profil gelesen (${updated} Tasten synchronisiert)`);
+    toast(`${updated} Star Citizen Keybinds synchronisiert`);
   } catch (err) { toast(err.message); }
 });
 
 editEl.addEventListener("click", () => {
   editing = !editing;
   editEl.setAttribute("aria-pressed", editing ? "true" : "false");
-  editEl.textContent = editing ? "Baukasten AN" : "Baukasten / Anpassen";
+  editEl.textContent = editing ? "Baukasten AN" : "Baukasten";
   editorEl.hidden = !editing;
   document.body.classList.toggle("editing", editing);
   if (editing) {
@@ -1288,7 +1613,7 @@ document.getElementById("apply").addEventListener("click", () => applyForm(true)
 document.getElementById("save").addEventListener("click", saveBoard);
 
 document.getElementById("fresh").addEventListener("click", async () => {
-  const title = prompt("Name des neuen Dashboards:", "Mein Schiff");
+  const title = prompt("Name des neuen GameGlass Shards:", "Mein Schiff");
   if (!title) return;
   const id = slug(title);
   const body = {
@@ -1298,15 +1623,15 @@ document.getElementById("fresh").addEventListener("click", async () => {
     activate: true,
     pages: [{
       id: "cockpit",
-      label: "Cockpit & Systeme",
+      label: "Flug & Systeme",
       groups: [{
-        title: "Hauptsysteme",
+        title: "Flight Systems",
         buttons: [
           { id: "flight-ready", sc: "v_flightready", label: "Flight Ready", hint: "R-Alt + R", keys: ["ralt", "r"], mode: "tap", color: "green", wide: true },
           { id: "gear", sc: "v_toggle_landing_system", label: "Fahrwerk", hint: "N", keys: ["n"], mode: "toggle", color: "cyan" },
-          { id: "lights", sc: "v_lights", label: "Lichter", hint: "L", keys: ["l"], mode: "toggle", color: "amber" },
-          { id: "pwr-widget", kind: "power", label: "Energie-Dreieck", hint: "F5 / F6 / F7 / F8", keys: ["f8"], mode: "tap", color: "amber", wide: true },
-          { id: "shd-widget", kind: "shield", label: "Schild-Kompass", hint: "Sektoren", keys: ["num5"], mode: "tap", color: "cyan", wide: true }
+          { id: "lights", sc: "v_lights", label: "Scheinwerfer", hint: "L", keys: ["l"], mode: "toggle", color: "amber" },
+          { id: "pwr-widget", kind: "power", label: "Energie-Kondensator", hint: "F5 / F6 / F7 / F8", keys: ["f8"], mode: "tap", color: "amber", wide: true },
+          { id: "shd-widget", kind: "shield", label: "Schild-Matrix", hint: "Sektoren", keys: ["num5"], mode: "tap", color: "cyan", wide: true }
         ]
       }]
     }]
@@ -1317,12 +1642,12 @@ document.getElementById("fresh").addEventListener("click", async () => {
     });
     await refreshList(saved.id);
     render(saved, 0);
-    toast("Neues Baukasten-Dashboard angelegt!");
+    toast("Neuer Shard angelegt!");
   } catch (err) { toast(err.message); }
 });
 
 document.getElementById("copy").addEventListener("click", async () => {
-  const title = prompt("Name der Kopie:", (current.title || "Dashboard") + " Kopie");
+  const title = prompt("Name der Shard-Kopie:", (current.title || "Shard") + " Kopie");
   if (!title) return;
   const id = slug(title);
   try {
@@ -1345,12 +1670,12 @@ document.getElementById("copy").addEventListener("click", async () => {
 
 document.getElementById("remove-board").addEventListener("click", async () => {
   if (current._source !== "local") return;
-  if (!confirm("Eigene Kopie von " + current.title + " wirklich löschen?")) return;
+  if (!confirm("Eigene Kopie von " + current.title + " löschen?")) return;
   try {
     await api("/api/dashboard/" + encodeURIComponent(current.id), { method: "DELETE" });
     const id = await refreshList("standard");
     await openBoard(id);
-    toast("Eigene Kopie gelöscht");
+    toast("Gelöscht");
   } catch (err) { toast(err.message); }
 });
 
@@ -1359,7 +1684,7 @@ document.getElementById("remove-btn").addEventListener("click", () => {
   const pi = selected.pi;
   const buttons = current.pages[pi].groups[selected.gi].buttons;
   if (buttons.length < 2 && current.pages[pi].groups.length < 2 && current.pages.length < 2) {
-    toast("Mindestens eine Kachel muss im Dashboard bleiben");
+    toast("Mindestens eine Kachel muss bleiben");
     return;
   }
   buttons.splice(selected.bi, 1);
@@ -1373,15 +1698,15 @@ document.getElementById("remove-btn").addEventListener("click", () => {
 document.getElementById("add-btn").addEventListener("click", () => {
   const pi = activePageIndex();
   const page = current.pages[pi];
-  if (!page.groups.length) page.groups.push({ title: "Steuerung", buttons: [] });
+  if (!page.groups.length) page.groups.push({ title: "Systeme", buttons: [] });
   const gi = page.groups.length - 1;
   page.groups[gi].buttons.push({
-    id: "taste-" + Math.floor(Math.random() * 900 + 100),
-    label: "Neue Taste",
+    id: "shard-" + Math.floor(Math.random() * 900 + 100),
+    label: "Neue Aktion",
     hint: "N",
     keys: ["n"],
     mode: "tap",
-    color: "slate"
+    color: "cyan"
   });
   const bi = page.groups[gi].buttons.length - 1;
   render(current, pi);
@@ -1389,7 +1714,7 @@ document.getElementById("add-btn").addEventListener("click", () => {
 });
 
 document.getElementById("add-group").addEventListener("click", () => {
-  const title = prompt("Name der neuen Gruppe:", "Neue Sektion");
+  const title = prompt("Name der neuen Modul-Gruppe:", "System-Modul");
   if (!title) return;
   const pi = activePageIndex();
   current.pages[pi].groups.push({
@@ -1400,7 +1725,7 @@ document.getElementById("add-group").addEventListener("click", () => {
       hint: "R-Alt + R",
       keys: ["ralt", "r"],
       mode: "tap",
-      color: "amber"
+      color: "green"
     }]
   });
   const gi = current.pages[pi].groups.length - 1;
@@ -1409,21 +1734,21 @@ document.getElementById("add-group").addEventListener("click", () => {
 });
 
 document.getElementById("add-page").addEventListener("click", () => {
-  const label = prompt("Name der neuen Seite (Tab):", "Seite " + (current.pages.length + 1));
+  const label = prompt("Name der neuen Seite:", "Shard " + (current.pages.length + 1));
   if (!label) return;
   current.pages.push({
     id: slug(label),
     label: label.slice(0, 24),
     groups: [{
       title: "Steuerung",
-      buttons: [{ id: "neu-" + Date.now(), label: "Flight Ready", hint: "R-Alt + R", keys: ["ralt", "r"], mode: "tap", color: "amber" }]
+      buttons: [{ id: "neu-" + Date.now(), label: "Flight Ready", hint: "R-Alt + R", keys: ["ralt", "r"], mode: "tap", color: "green" }]
     }]
   });
   render(current, current.pages.length - 1);
 });
 
 boardEl.addEventListener("change", () => {
-  if (editing && current && boardEl.value !== current.id && !confirm("Ohne Speichern das Dashboard wechseln?")) {
+  if (editing && current && boardEl.value !== current.id && !confirm("Ohne Speichern wechseln?")) {
     boardEl.value = current.id;
     return;
   }
@@ -1433,7 +1758,7 @@ boardEl.addEventListener("change", () => {
 armEl.addEventListener("click", () => {
   armed = !armed;
   armEl.setAttribute("aria-pressed", armed ? "true" : "false");
-  armEl.textContent = armed ? "Gefahr AN" : "Gefahr AUS";
+  armEl.textContent = armed ? "Waffen ARMED" : "Waffen SAFE";
   document.querySelectorAll(".key").forEach((el) => el._refreshLock && el._refreshLock());
 });
 
@@ -1471,16 +1796,16 @@ function findButton(id) {
 async function health() {
   try {
     const data = await api("/api/health");
-    statusEl.className = "on";
-    statusEl.textContent = data.dry_run ? "Trockenlauf · Verbunden" : "PC verbunden · Live";
+    statusDotEl.className = "status-dot on";
+    statusEl.textContent = data.dry_run ? "SIMULATION // ONLINE" : "LINK AKTIV // PC VERBUNDEN";
     if (data.telemetry) updateTelemetryUI(data.telemetry);
     if (!current) {
       const id = await refreshList();
       await openBoard(id);
     }
   } catch (err) {
-    statusEl.className = "off";
-    statusEl.textContent = "Verbinde mit PC...";
+    statusDotEl.className = "status-dot off";
+    statusEl.textContent = "SUCHE HOST...";
   }
 }
 
@@ -1491,7 +1816,6 @@ document.addEventListener("visibilitychange", () => {
   }
 });
 
-// Resilient Startup with automatic retry & cache fallback so page reload never stays blank
 async function initCockpit() {
   try {
     const id = await refreshList();
