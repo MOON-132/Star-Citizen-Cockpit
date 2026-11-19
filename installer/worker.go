@@ -60,16 +60,17 @@ func initEnvironment() {
 	}
 
 	if !forceInstaller {
-		if forceLauncher || (selfExe != "" && strings.EqualFold(filepath.Clean(filepath.Dir(selfExe)), filepath.Clean(app.AppDir))) {
+		exeDir := ""
+		if selfExe != "" {
+			exeDir = filepath.Dir(selfExe)
+		}
+		if forceLauncher {
 			app.Mode = ModeLauncher
-		} else if !app.ExistingInst {
-			app.Mode = ModeInstaller
+			enablePortableOrInstalledMode()
+		} else if selfExe != "" && strings.EqualFold(filepath.Clean(exeDir), filepath.Clean(app.AppDir)) {
+			app.Mode = ModeLauncher
 		} else {
-			// If run from repo/download and already installed, check if server.py sits next to us
-			if _, err := os.Stat(filepath.Join(filepath.Dir(selfExe), "server.py")); err == nil && forceLauncher {
-				app.AppDir = filepath.Dir(selfExe)
-				app.Mode = ModeLauncher
-			}
+			app.Mode = ModeInstaller
 		}
 	}
 
@@ -105,6 +106,21 @@ func initEnvironment() {
 
 	app.LanIP = detectPrimaryLANIP()
 	loadConfigPort()
+}
+
+func enablePortableOrInstalledMode() {
+	selfExe, err := os.Executable()
+	if err != nil || selfExe == "" {
+		return
+	}
+	exeDir := filepath.Dir(selfExe)
+	if !strings.EqualFold(filepath.Clean(exeDir), filepath.Clean(app.AppDir)) {
+		if _, err := os.Stat(filepath.Join(exeDir, "server.py")); err == nil {
+			app.AppDir = exeDir
+			app.UserDir = filepath.Join(exeDir, "dashboards", "local")
+			app.UserDashDir = filepath.Join(exeDir, "dashboards", "local")
+		}
+	}
 }
 
 func detectPrimaryLANIP() string {

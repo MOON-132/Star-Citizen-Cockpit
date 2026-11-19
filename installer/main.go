@@ -717,8 +717,13 @@ func paintInstallerMode(hdc uintptr, w, h int32) {
 		btnLabel := "JETZT INSTALLIEREN  ►"
 		if app.ExistingInst {
 			btnLabel = "AKTUALISIEREN  ►"
-			btnUninst := RECT{cx, h - sc(68), cx + sc(165), h - sc(22)}
+			btnUninst := RECT{cx, h - sc(68), cx + sc(155), h - sc(22)}
 			drawButton(hdc, CtrlInstSwitchUninstall, btnUninst, "DEINSTALLIEREN", "danger")
+			btnDirect := RECT{btnUninst.Right + sc(10), h - sc(68), btnUninst.Right + sc(195), h - sc(22)}
+			drawButton(hdc, CtrlInstSecondary, btnDirect, "DIREKT ÖFFNEN", "cyan")
+		} else {
+			btnDirect := RECT{cx, h - sc(68), cx + sc(210), h - sc(22)}
+			drawButton(hdc, CtrlInstSecondary, btnDirect, "PORTABEL TESTEN", "cyan")
 		}
 		drawButton(hdc, CtrlInstPrimary, btnPrimary, btnLabel, "amber")
 
@@ -1413,9 +1418,16 @@ func handleControlClick(id int) {
 	}
 
 	switch id {
-	case CtrlWinClose, CtrlInstSecondary:
+	case CtrlWinClose:
 		stopServer()
 		pPostQuitMessage.Call(0)
+	case CtrlInstSecondary:
+		// Switch directly into the Live Cockpit without installing/reinstalling!
+		enablePortableOrInstalledMode()
+		app.Mode = ModeLauncher
+		app.Tab = TabLiveCockpit
+		reloadDashboards()
+		startServer()
 	case CtrlWinMin:
 		pShowWindow.Call(app.Hwnd, SW_MINIMIZE)
 

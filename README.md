@@ -42,7 +42,10 @@ Das Bedien-Gerät braucht nur einen aktuellen Browser. Eine App und ein Account 
 
 Ein späterer Start von `SC-Cockpit-Setup.exe` erkennt die bestehende Installation automatisch und bietet ein Update (oder die Deinstallation) an. Eigene Dashboards und `config.local.json` im Ordner `user` bleiben beim Update erhalten.
 
-Ohne Installation, zum Ausprobieren oder zum Weiterentwickeln: `start.bat` im geklonten Ordner. Eigene Dashboards liegen dann in `dashboards/local/` und kommen nicht ins Git.
+Ohne Installation, zum direkten lokalen Testen oder Weiterentwickeln im geklonten Git-Ordner (`git pull`):
+- Einfach **`start.bat` doppelklicken** (oder `SC-Cockpit-Setup.exe --launcher` starten) — das öffnet **sofort das grafische GameGlass Live-Cockpit im portablen Modus** direkt aus deinem Repo-Ordner heraus, ganz ohne Installieren oder Deinstallieren!
+- Alternativ gibt es auch im Installer-Fenster von `SC-Cockpit-Setup.exe` unten links den Button **PORTABEL TESTEN** bzw. **DIREKT ÖFFNEN**, mit dem du ohne Neuinstallation direkt ins Live-Cockpit springst.
+- Wenn du nur den reinen Python-Server im Konsolenfenster ohne die `.exe` testen möchtest: `start.bat --console` oder `py -3 server.py`.
 
 ## Starten & GameGlass Shard Hub (In-App Live Cockpit)
 
