@@ -30,16 +30,17 @@ Das Bedien-Gerät braucht nur einen aktuellen Browser. Eine App und ein Account 
 
 ## Installieren
 
-Im Projektordner `install.bat` doppelklicken. Eine Administrator-Abfrage kommt dabei nicht. Der Installer kopiert das Programm nach `%LOCALAPPDATA%\SC Cockpit\app` und legt an:
+`SC-Cockpit-Setup.exe` (oder `install.bat`) doppelklicken. Es öffnet sich der grafische Installer im Star-Citizen-MFD-Design. Eine Administrator-Abfrage kommt dabei nicht. Der Installer ist komplett eigenständig (alle Programmdateien und Dashboards sind in der `.exe` eingebettet), prüft auf Wunsch Python 3 bzw. bietet die automatische Installation über `winget` an, kopiert das Programm nach `%LOCALAPPDATA%\SC Cockpit\app` und legt an:
 
 | Was | Wo |
 | --- | --- |
-| Programm, Doku, mitgelieferte Dashboards | `%LOCALAPPDATA%\SC Cockpit\app` |
+| Programm, Doku, mitgelieferte Dashboards, Uninstaller | `%LOCALAPPDATA%\SC Cockpit\app` |
 | Eigene Dashboards | `%LOCALAPPDATA%\SC Cockpit\user\dashboards` |
 | Startmenü | Ordner **SC Cockpit** |
-| Desktop | Verknüpfung **SC Cockpit** |
+| Desktop | Verknüpfung **SC Cockpit** (mit SC-Cockpit-Icon) |
+| Windows „Installierte Apps“ | Eintrag **SC Cockpit** zur einfachen Deinstallation |
 
-Ein späteres `install.bat` ersetzt nur den Programmordner. Eigene Dashboards und `config.local.json` im Ordner `user` bleiben.
+Ein späterer Start von `SC-Cockpit-Setup.exe` erkennt die bestehende Installation automatisch und bietet ein Update (oder die Deinstallation) an. Eigene Dashboards und `config.local.json` im Ordner `user` bleiben beim Update erhalten.
 
 Ohne Installation, zum Ausprobieren oder zum Weiterentwickeln: `start.bat` im geklonten Ordner. Eigene Dashboards liegen dann in `dashboards/local/` und kommen nicht ins Git.
 
@@ -102,22 +103,24 @@ Mitgeliefert sind **Standard** (Flug, Energie, Quantum, Kampf) und **Mining**. D
 
 ## Deinstallieren
 
-Startmenü, Ordner SC Cockpit, **Deinstallieren**. Oder im Programmordner `uninstall.bat`.
+Über Windows **Installierte Apps**, im Startmenü unter **SC Cockpit → Deinstallieren**, oder im Programmordner `SC-Cockpit-Setup.exe --uninstall` (bzw. `uninstall.bat`).
 
-Weg kommen Verknüpfungen und der Programmordner. Eigene Dashboards unter `%LOCALAPPDATA%\SC Cockpit\user` bleiben. Wirklich alles löschen:
+Im grafischen Deinstaller kann per Checkbox gewählt werden, ob nur das Programm und die Verknüpfungen entfernt werden (Standard: eigene Dashboards unter `%LOCALAPPDATA%\SC Cockpit\user` bleiben erhalten) oder ob alles inklusive eigener Dashboards gelöscht werden soll (`-Purge`):
 
 ```bat
-uninstall.bat -Purge
+SC-Cockpit-Setup.exe --uninstall -Purge
 ```
 
 ## Dateien
 
 ```text
+SC-Cockpit-Setup.exe      Eigenständiger Windows-GUI-Installer & Uninstaller (Star-Citizen-HUD)
+installer/                Quellcode (Go/Win32) & Build-Skript (build_installer.py) für die .exe
 server.py                 Server, nur Python-Standardbibliothek
 index.html                Oberfläche, wird vom Server ausgeliefert
 start.bat                 Start ohne Installation
-install.bat               Installation für den aktuellen Benutzer
-uninstall.bat             Deinstallation
+install.bat               Startet SC-Cockpit-Setup.exe (Fallback auf install.ps1)
+uninstall.bat             Startet den Deinstaller (Fallback auf uninstall.ps1)
 dashboards/*.json         mitgelieferte Dashboards
 dashboards/local/*.json   eigene Dashboards im Repo-Betrieb
 docs/DASHBOARD.md         Format, Tasten, API, Regeln für eine KI
@@ -165,7 +168,13 @@ py -3 server.py --self-test
 
 Der Test prüft die mitgelieferten Dashboards, das Beispiel in `docs/beispiel.json` und die HTTP-Schnittstelle. Er sendet auf einem anderen System als Windows keine echten Tasten.
 
-`main` ist die Fassung für den Spiel-PC. Layout-Experimente auf einen eigenen Branch. Ein `git pull` auf dem Spiel-PC und ein Neuladen der Seite übernehmen neue mitgelieferte Dashboards. Die installierte Kopie aktualisiert sich nicht von selbst: nach einem Pull dort erneut `install.bat` ausführen. Der Ordner `user` bleibt dabei.
+`main` ist die Fassung für den Spiel-PC. Layout-Experimente auf einen eigenen Branch. Ein `git pull` auf dem Spiel-PC und ein Neuladen der Seite übernehmen neue mitgelieferte Dashboards. Die installierte Kopie aktualisiert sich nicht von selbst: nach einem Pull dort erneut `SC-Cockpit-Setup.exe` (oder `install.bat`) ausführen. Der Ordner `user` bleibt dabei.
+
+Wenn Änderungen an `server.py`, `index.html`, den mitgelieferten Dashboards oder dem Installer-Code unter `installer/` vorgenommen wurden, wird die `SC-Cockpit-Setup.exe` (benötigt Python 3 und Go) neu gebaut mit:
+
+```bat
+python installer/build_installer.py
+```
 
 Nicht committen: `config.local.json`, `dashboards/local/*.json`, `state.json`.
 
@@ -180,4 +189,5 @@ Nicht committen: `config.local.json`, `dashboards/local/*.json`, `state.json`.
 
 ## Stand
 
-`0.2.0`. Mehrere Dashboards, Editor im Browser, Installer und Deinstaller. Das Dashboard-Format ist in `docs/DASHBOARD.md` festgelegt.
+`0.2.0`. Mehrere Dashboards, Editor im Browser, eigenständiger Windows-GUI-Installer & Uninstaller (`SC-Cockpit-Setup.exe`) im Star-Citizen-HUD-Design. Das Dashboard-Format ist in `docs/DASHBOARD.md` festgelegt.
+

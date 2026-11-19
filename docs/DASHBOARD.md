@@ -11,7 +11,7 @@ Der Dateiname ist immer `<id>.json`. Die `id` im JSON ist derselbe Name.
 | Situation | Ordner |
 | --- | --- |
 | Aus dem geklonten Repo mit `start.bat` | `dashboards/local/<id>.json` |
-| Nach `install.bat` | `%LOCALAPPDATA%\SC Cockpit\user\dashboards\<id>.json` |
+| Nach Installation (`SC-Cockpit-Setup.exe` / `install.bat`) | `%LOCALAPPDATA%\SC Cockpit\user\dashboards\<id>.json` |
 | Mitliefern, für alle, im Git | `dashboards/<id>.json` |
 
 `dashboards/local/` wird nicht committed. Eine lokale Datei mit derselben `id` wie eine mitgelieferte ersetzt diese nur für dich. Die Datei im Git bleibt. Löschen der lokalen Datei stellt das Original wieder her.

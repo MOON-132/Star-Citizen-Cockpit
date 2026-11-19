@@ -12,3 +12,6 @@ venv/
 .idea/
 .vscode/
 *.log
+installer/payload.zip
+installer/rsrc_windows_amd64.syso
+
