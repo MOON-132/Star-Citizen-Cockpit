@@ -143,7 +143,7 @@ Höchstens vier Einträge. Unbekannte Namen lehnt der Server ab.
 
 ## Standardbelegung, nur als Ausgangspunkt
 
-Das sind die häufig genannten Tastatur-Defaults um Alpha 4.10, nicht das Profil des Spielers. Steht im Spiel eine andere Taste, diese nehmen und in `hint` so hinschreiben, wie sie im Keybind-Menü steht. Schildseiten (vorne, hinten, links, rechts) haben hier keine Defaults, weil die Belegung oft leer oder geändert ist. Die nicht erfinden.
+Das sind die häufig genannten Tastatur-Defaults um Alpha 4.10, nicht das Profil des Spielers. Steht im Spiel eine andere Taste, diese nehmen und in `hint` so hinschreiben, wie sie im Keybind-Menü steht. Schildseiten (vorne, hinten, links, rechts) haben hier keine Defaults, weil die Belegung oft leer oder geändert ist. Die nicht erfinden. Türen öffnen, schließen und verriegeln haben ebenfalls keinen Tastatur-Default. R-Alt+K ist nur Port Lock. R-Alt+L ist Lichtverstärkung.
 
 | Aktion | keys | mode | danger |
 | --- | --- | --- | --- |
@@ -155,7 +155,8 @@ Das sind die häufig genannten Tastatur-Defaults um Alpha 4.10, nicht das Profil
 | Decoupled | `c` | toggle | nein |
 | Cruise | `lalt`, `c` | toggle | nein |
 | Landeanfrage | `lalt`, `n` | tap | nein |
-| Türen und Ports | `ralt`, `k` | tap | nein |
+| Ladebereich anfragen | `ralt`, `n` | tap | nein |
+| Port Lock | `ralt`, `k` | tap | nein |
 | Mehr Power Waffen | `f5` | tap | nein |
 | Mehr Power Antrieb | `f6` | tap | nein |
 | Mehr Power Schilde | `f7` | tap | nein |
@@ -167,15 +168,19 @@ Das sind die häufig genannten Tastatur-Defaults um Alpha 4.10, nicht das Profil
 | Master Mode | `b` | hold | nein |
 | mobiGlas | `f1` | tap | nein |
 | Radar-Ping | `tab` | hold | nein |
-| Ziel wechseln | `t` | tap | nein |
+| Ziel wechseln (in Sicht) | `t` | tap | nein |
 | Gimbal-Modus | `g` | tap | nein |
 | Flares | `h` | tap | nein |
 | Noise | `j` | tap | nein |
-| Raketenmodus | `mouse3` | tap | nein |
+| Nächster Operator-Modus | `mouse3` | tap | nein |
 | Mining-Modus | `m` | toggle | nein |
 | Mining-Laser | `mouse1` | hold | ja |
 | Mining-Modul 1 bis 3 | `lalt` plus `1`, `2` oder `3` | tap | nein |
 | Fracht abwerfen | `lalt`, `j` | tap | ja |
+| Fokus alle Salvage-Köpfe | `lalt`, `s` | tap | nein |
+| Fokus Salvage-Kopf links | `lalt`, `a` | tap | nein |
+| Fokus Salvage-Kopf rechts | `lalt`, `d` | tap | nein |
+| Salvage Desintegration | `ralt`, `s` | tap | nein |
 
 Die eigene Belegung exportiert Star Citizen über Optionen, Keybindings, Advanced Controls Customization, Control Profiles. Die Datei liegt unter:
 

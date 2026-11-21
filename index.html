@@ -1445,7 +1445,7 @@
           <input type="checkbox" value="cargo">
           <div>
             <b style="color:var(--green);font-size:13px">Fracht, Rampen & Hangar</b>
-            <div style="color:var(--muted);font-size:11px">Rampen, Verriegelung, Portlocks, Ladebereich ATC</div>
+            <div style="color:var(--muted);font-size:11px">Rampen, Port Lock, Ladebereich ATC</div>
           </div>
         </label>
       </div>
@@ -1694,7 +1694,7 @@ const SUBSYSTEM_TEMPLATES = {
     groups: [{
       title: "Gefechtssysteme & Gegenmaßnahmen",
       buttons: [
-        { id: "target-hostile", sc: "v_target_nearest_hostile", label: "Nächster Feind", hint: "T", keys: ["t"], mode: "tap", color: "red" },
+        { id: "target-hostile", sc: "v_target_cycle_in_view_fwd", label: "Ziel wechseln", hint: "T", keys: ["t"], mode: "tap", color: "red" },
         { id: "gimbal", sc: "v_weapon_gimbals_state_toggle", label: "Gimbal Modus", hint: "G", keys: ["g"], mode: "tap", color: "blue" },
         { id: "flares", sc: "v_weapon_countermeasure_decoy_launch", label: "Flare / Köder", hint: "H", keys: ["h"], mode: "tap", color: "amber" },
         { id: "noise", sc: "v_weapon_countermeasure_noise_launch", label: "Noise / Störfeld", hint: "J", keys: ["j"], mode: "tap", color: "cyan" }
@@ -1726,10 +1726,10 @@ const SUBSYSTEM_TEMPLATES = {
       buttons: [
         { id: "salvage-mode", sc: "v_toggle_salvage_mode", label: "Salvage-Modus", hint: "M", keys: ["m"], mode: "toggle", color: "amber", wide: true },
         { id: "salvage-beam", label: "Scraper-Strahl", hint: "Maus Links halten", keys: ["mouse1"], mode: "hold", color: "red", danger: true, wide: true },
-        { id: "salvage-all", sc: "v_salvage_focus_all_heads", label: "Beide Köpfe", hint: "R-Alt + S", keys: ["ralt", "s"], mode: "tap", color: "amber" },
+        { id: "salvage-all", sc: "v_salvage_focus_all_heads", label: "Fokus alle Köpfe", hint: "L-Alt + S", keys: ["lalt", "s"], mode: "tap", color: "amber" },
         { id: "salvage-gimbal", sc: "v_salvage_toggle_gimbal_mode", label: "Salvage Gimbal", hint: "G", keys: ["g"], mode: "toggle", color: "cyan" },
         { id: "salvage-fracture", sc: "v_salvage_toggle_fire_fracture", label: "Fraktur-Feld", hint: "R-Alt + W", keys: ["ralt", "w"], mode: "tap", color: "red", wide: true },
-        { id: "salvage-cm", sc: "v_salvage_toggle_fire_disintegrate", label: "Desintegration (CM)", hint: "R-Alt + X", keys: ["ralt", "x"], mode: "tap", color: "amber", wide: true }
+        { id: "salvage-cm", sc: "v_salvage_toggle_fire_disintegrate", label: "Desintegration (CM)", hint: "R-Alt + S", keys: ["ralt", "s"], mode: "tap", color: "amber", wide: true }
       ]
     }]
   }),
@@ -1737,12 +1737,10 @@ const SUBSYSTEM_TEMPLATES = {
     id: "cargo",
     label: "Fracht & Rampen",
     groups: [{
-      title: "Hangar, Rampen & Frachtgitter",
+      title: "Hangar & Rampen",
       buttons: [
-        { id: "doors-all", sc: "v_toggle_all_doors", label: "Alle Rampen / Türen", hint: "R-Alt + K", keys: ["ralt", "k"], mode: "toggle", color: "amber", wide: true },
-        { id: "doors-lock", sc: "v_lock_all_doors", label: "Verriegeln", hint: "R-Alt + L", keys: ["ralt", "l"], mode: "toggle", color: "cyan" },
-        { id: "portlocks", sc: "v_toggle_all_portlocks", label: "Frachtgitter / Portlocks", hint: "R-Alt + P", keys: ["ralt", "p"], mode: "toggle", color: "amber" },
-        { id: "cargo-atc", sc: "v_atc_loading_area_request", label: "Ladebereich anfragen", hint: "L-Alt + K", keys: ["lalt", "k"], mode: "tap", color: "green", wide: true }
+        { id: "doors-all", sc: "v_toggle_all_portlocks", label: "Port Lock", hint: "R-Alt + K", keys: ["ralt", "k"], mode: "toggle", color: "amber", wide: true },
+        { id: "cargo-atc", sc: "v_atc_loading_area_request", label: "Ladebereich anfragen", hint: "R-Alt + N", keys: ["ralt", "n"], mode: "tap", color: "green", wide: true }
       ]
     }]
   })
@@ -1761,7 +1759,7 @@ const SC_PRESETS = [
   { cat: "start", sc: "v_atc_request", label: "Landeerlaubnis (ATC)", hint: "L-Alt + N", keys: ["lalt", "n"], mode: "tap", color: "amber" },
   { cat: "start", sc: "v_vtol_toggle", label: "VTOL Modus", hint: "K", keys: ["k"], mode: "toggle", color: "cyan" },
   { cat: "start", sc: "v_lights", label: "Scheinwerfer", hint: "L", keys: ["l"], mode: "toggle", color: "amber" },
-  { cat: "start", sc: "v_toggle_all_doors", label: "Alle Türen", hint: "R-Alt + K", keys: ["ralt", "k"], mode: "toggle", color: "slate" },
+  { cat: "start", sc: "v_toggle_all_portlocks", label: "Port Lock", hint: "R-Alt + K", keys: ["ralt", "k"], mode: "toggle", color: "slate" },
   { cat: "flug", sc: "v_toggle_quantum_mode", label: "Master Mode (SCM/NAV)", hint: "B halten", keys: ["b"], mode: "hold", color: "amber", wide: true },
   { cat: "flug", sc: "v_ifcs_vector_decoupling_toggle", label: "Decoupled", hint: "C", keys: ["c"], mode: "toggle", color: "blue" },
   { cat: "flug", sc: "v_ifcs_toggle_cruise_control", label: "Cruise Control", hint: "L-Alt + C", keys: ["lalt", "c"], mode: "toggle", color: "blue" },
@@ -1769,7 +1767,7 @@ const SC_PRESETS = [
   { cat: "flug", sc: "v_toggle_scan_mode", label: "Scan-Modus", hint: "V", keys: ["v"], mode: "toggle", color: "cyan" },
   { cat: "flug", sc: "mobiglas", label: "mobiGlas", hint: "F1", keys: ["f1"], mode: "tap", color: "blue" },
   { cat: "flug", sc: "v_starmap", label: "Skyline Starmap", hint: "F2", keys: ["f2"], mode: "tap", color: "blue" },
-  { cat: "kampf", sc: "v_target_nearest_hostile", label: "Nächster Feind", hint: "T", keys: ["t"], mode: "tap", color: "red" },
+  { cat: "kampf", sc: "v_target_cycle_in_view_fwd", label: "Ziel wechseln", hint: "T", keys: ["t"], mode: "tap", color: "red" },
   { cat: "kampf", sc: "v_weapon_gimbals_state_toggle", label: "Gimbal Modus", hint: "G", keys: ["g"], mode: "tap", color: "blue" },
   { cat: "kampf", sc: "v_weapon_countermeasure_decoy_launch", label: "Flare / Täuschkörper", hint: "H", keys: ["h"], mode: "tap", color: "amber" },
   { cat: "kampf", sc: "v_weapon_countermeasure_noise_launch", label: "Noise / Störfeld", hint: "J", keys: ["j"], mode: "tap", color: "cyan" },
@@ -1780,7 +1778,7 @@ const SC_PRESETS = [
   { cat: "industrie", sc: "v_mining_use_consumable3", label: "Mining Modul 3", hint: "L-Alt + 3", keys: ["lalt", "3"], mode: "tap", color: "cyan" },
   { cat: "industrie", sc: "v_toggle_salvage_mode", label: "Salvage-Modus", hint: "M", keys: ["m"], mode: "toggle", color: "amber", wide: true },
   { cat: "industrie", sc: "v_salvage_toggle_fire_fracture", label: "Salvage Fraktur", hint: "R-Alt + W", keys: ["ralt", "w"], mode: "tap", color: "red", wide: true },
-  { cat: "industrie", sc: "v_salvage_toggle_fire_disintegrate", label: "Desintegration (CM)", hint: "R-Alt + X", keys: ["ralt", "x"], mode: "tap", color: "amber", wide: true },
+  { cat: "industrie", sc: "v_salvage_toggle_fire_disintegrate", label: "Desintegration (CM)", hint: "R-Alt + S", keys: ["ralt", "s"], mode: "tap", color: "amber", wide: true },
   { cat: "industrie", sc: "v_jettison_volatile_cargo", label: "Fracht abwerfen", hint: "L-Alt + J", keys: ["lalt", "j"], mode: "tap", color: "red", danger: true }
 ];
 

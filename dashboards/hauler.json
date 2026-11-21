@@ -17,22 +17,12 @@
           "buttons": [
             {
               "id": "doors-toggle",
-              "sc": "v_toggle_all_doors",
-              "label": "Alle Rampen / Türen",
+              "sc": "v_toggle_all_portlocks",
+              "label": "Port Lock",
               "hint": "R-Alt + K",
               "keys": ["ralt", "k"],
               "mode": "toggle",
               "color": "amber",
-              "wide": true
-            },
-            {
-              "id": "doors-lock",
-              "sc": "v_lock_all_doors",
-              "label": "Schiff Verriegeln",
-              "hint": "R-Alt + L",
-              "keys": ["ralt", "l"],
-              "mode": "toggle",
-              "color": "cyan",
               "wide": true
             },
             {
@@ -49,20 +39,11 @@
               "id": "cargo-atc",
               "sc": "v_atc_loading_area_request",
               "label": "Ladebereich anfragen",
-              "hint": "L-Alt + K",
-              "keys": ["lalt", "k"],
+              "hint": "R-Alt + N",
+              "keys": ["ralt", "n"],
               "mode": "tap",
               "color": "cyan",
               "wide": true
-            },
-            {
-              "id": "portlocks",
-              "sc": "v_toggle_all_portlocks",
-              "label": "Frachtgitter / Portlocks",
-              "hint": "R-Alt + P",
-              "keys": ["ralt", "p"],
-              "mode": "toggle",
-              "color": "amber"
             },
             {
               "id": "autoland",
