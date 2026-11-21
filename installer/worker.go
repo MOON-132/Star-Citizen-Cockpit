@@ -302,9 +302,12 @@ func reloadDashboards() {
 				continue
 			}
 			var parsed struct {
-				ID    string     `json:"id"`
-				Title string     `json:"title"`
-				Pages []DashPage `json:"pages"`
+				ID           string     `json:"id"`
+				Title        string     `json:"title"`
+				Ship         string     `json:"ship"`
+				Manufacturer string     `json:"manufacturer"`
+				Role         string     `json:"role"`
+				Pages        []DashPage `json:"pages"`
 			}
 			if json.Unmarshal(data, &parsed) != nil || len(parsed.Pages) == 0 {
 				continue
@@ -316,6 +319,18 @@ func reloadDashboards() {
 			if title == "" {
 				title = id
 			}
+			ship := parsed.Ship
+			if ship == "" {
+				ship = title
+			}
+			mfg := parsed.Manufacturer
+			if mfg == "" {
+				mfg = "UEE"
+			}
+			role := parsed.Role
+			if role == "" {
+				role = "Multi-Role"
+			}
 			btnCount := 0
 			for _, p := range parsed.Pages {
 				for _, g := range p.Groups {
@@ -323,13 +338,16 @@ func reloadDashboards() {
 				}
 			}
 			info := DashboardInfo{
-				ID:          id,
-				Title:       title,
-				Source:      source,
-				Path:        fullPath,
-				PageCount:   len(parsed.Pages),
-				ButtonCount: btnCount,
-				Pages:       parsed.Pages,
+				ID:           id,
+				Title:        title,
+				Ship:         ship,
+				Manufacturer: mfg,
+				Role:         role,
+				Source:       source,
+				Path:         fullPath,
+				PageCount:    len(parsed.Pages),
+				ButtonCount:  btnCount,
+				Pages:        parsed.Pages,
 			}
 			if existingIdx, ok := index[id]; ok {
 				list[existingIdx] = info
@@ -467,6 +485,7 @@ func duplicateDashboard(src DashboardInfo) (string, error) {
 
 	data["id"] = newID
 	data["title"] = src.Title + " (Kopie)"
+	data["ship"] = src.Ship + " (Kopie)"
 	out, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		return "", err
@@ -491,11 +510,15 @@ func createNewDashboard() (string, error) {
 		n++
 	}
 
+	shipTitle := fmt.Sprintf("Eigenes Schiff %d", n-1)
 	template := map[string]interface{}{
-		"id":         newID,
-		"title":      fmt.Sprintf("Eigenes Schiff %d", n-1),
-		"background": "preset:aegis",
-		"bg_opacity": 0.40,
+		"id":           newID,
+		"title":        shipTitle,
+		"ship":         shipTitle,
+		"manufacturer": "RSI",
+		"role":         "Multi-Role // Custom",
+		"background":   "preset:aegis",
+		"bg_opacity":   0.40,
 		"pages": []map[string]interface{}{
 			{
 				"id":    "flug",
@@ -565,6 +588,153 @@ func createNewDashboard() (string, error) {
 	setActiveDashboard(newID)
 	reloadDashboards()
 	return newID, nil
+}
+
+func toggleAlwaysOnTop() {
+	app.AlwaysOnTop = !app.AlwaysOnTop
+	pSetWindowPos := user32.NewProc("SetWindowPos")
+	// HWND_TOPMOST = -1, HWND_NOTOPMOST = -2, SWP_NOMOVE|SWP_NOSIZE = 0x0003
+	var zOrder uintptr
+	if app.AlwaysOnTop {
+		zOrder = ^uintptr(0) // -1 (HWND_TOPMOST)
+		app.ToastMsg = "OVERLAY-MODUS AKTIV: Fenster bleibt über Star Citizen (Borderless) im Vordergrund."
+	} else {
+		zOrder = ^uintptr(1) // -2 (HWND_NOTOPMOST)
+		app.ToastMsg = "Overlay-Modus deaktiviert."
+	}
+	pSetWindowPos.Call(app.Hwnd, zOrder, 0, 0, 0, 0, 0x0003)
+}
+
+func addSubsystemToActiveShip(subKind string) {
+	var cur *DashboardInfo
+	for i := range app.Dashboards {
+		if app.Dashboards[i].ID == app.ActiveDash {
+			cur = &app.Dashboards[i]
+			break
+		}
+	}
+	if cur == nil {
+		app.ToastMsg = "Bitte zuerst ein Schiff wählen."
+		return
+	}
+
+	raw, err := os.ReadFile(cur.Path)
+	if err != nil {
+		app.ToastMsg = "Lesefehler: " + err.Error()
+		return
+	}
+	var data map[string]interface{}
+	if err := json.Unmarshal(raw, &data); err != nil {
+		app.ToastMsg = "JSON-Fehler: " + err.Error()
+		return
+	}
+
+	var newPage map[string]interface{}
+	switch subKind {
+	case "mining":
+		newPage = map[string]interface{}{
+			"id":    fmt.Sprintf("mining-%d", cur.PageCount+1),
+			"label": "Mining & Laser",
+			"groups": []map[string]interface{}{
+				{
+					"title": "Mining-Laser & Verbrauchsgüter",
+					"buttons": []map[string]interface{}{
+						{"id": "mine-mode", "sc": "v_toggle_mining_mode", "label": "Mining-Modus", "hint": "M", "keys": []string{"m"}, "mode": "toggle", "color": "amber", "wide": true},
+						{"id": "mine-laser", "label": "Laser / Extraktion", "hint": "Maus Links halten", "keys": []string{"mouse1"}, "mode": "hold", "color": "red", "danger": true, "wide": true},
+						{"id": "mine-up", "label": "Laser-Leistung +", "hint": "Mausrad Hoch", "keys": []string{"wheelup"}, "mode": "tap", "color": "amber"},
+						{"id": "mine-dn", "label": "Laser-Leistung —", "hint": "Mausrad Runter", "keys": []string{"wheeldown"}, "mode": "tap", "color": "cyan"},
+						{"id": "mine-m1", "sc": "v_mining_use_consumable1", "label": "Modul 1", "hint": "L-Alt + 1", "keys": []string{"lalt", "1"}, "mode": "tap", "color": "cyan"},
+						{"id": "mine-m2", "sc": "v_mining_use_consumable2", "label": "Modul 2", "hint": "L-Alt + 2", "keys": []string{"lalt", "2"}, "mode": "tap", "color": "cyan"},
+						{"id": "mine-m3", "sc": "v_mining_use_consumable3", "label": "Modul 3", "hint": "L-Alt + 3", "keys": []string{"lalt", "3"}, "mode": "tap", "color": "cyan"},
+						{"id": "mine-jet", "sc": "v_jettison_volatile_cargo", "label": "Erz abwerfen", "hint": "L-Alt + J", "keys": []string{"lalt", "j"}, "mode": "tap", "color": "red", "danger": true},
+					},
+				},
+			},
+		}
+	case "salvage":
+		newPage = map[string]interface{}{
+			"id":    fmt.Sprintf("salvage-%d", cur.PageCount+1),
+			"label": "Salvage & Scraper",
+			"groups": []map[string]interface{}{
+				{
+					"title": "Hüllen-Bergung & Struktur-Fraktur",
+					"buttons": []map[string]interface{}{
+						{"id": "slv-mode", "sc": "v_toggle_salvage_mode", "label": "Salvage-Modus", "hint": "M", "keys": []string{"m"}, "mode": "toggle", "color": "amber", "wide": true},
+						{"id": "slv-beam", "label": "Scraper-Strahl", "hint": "Maus Links halten", "keys": []string{"mouse1"}, "mode": "hold", "color": "red", "danger": true, "wide": true},
+						{"id": "slv-all", "sc": "v_salvage_focus_all_heads", "label": "Beide Köpfe", "hint": "R-Alt + S", "keys": []string{"ralt", "s"}, "mode": "tap", "color": "amber"},
+						{"id": "slv-gimb", "sc": "v_salvage_toggle_gimbal_mode", "label": "Salvage Gimbal", "hint": "G", "keys": []string{"g"}, "mode": "toggle", "color": "cyan"},
+						{"id": "slv-frac", "sc": "v_salvage_toggle_fire_fracture", "label": "Fraktur-Feld", "hint": "R-Alt + W", "keys": []string{"ralt", "w"}, "mode": "tap", "color": "red", "wide": true},
+						{"id": "slv-cm", "sc": "v_salvage_toggle_fire_disintegrate", "label": "Desintegration (CM)", "hint": "R-Alt + X", "keys": []string{"ralt", "x"}, "mode": "tap", "color": "amber", "wide": true},
+					},
+				},
+			},
+		}
+	case "kampf":
+		newPage = map[string]interface{}{
+			"id":    fmt.Sprintf("kampf-%d", cur.PageCount+1),
+			"label": "Kampf & Waffen",
+			"groups": []map[string]interface{}{
+				{
+					"title": "Gefechtssysteme & Gegenmaßnahmen",
+					"buttons": []map[string]interface{}{
+						{"id": "kmp-tgt", "sc": "v_target_nearest_hostile", "label": "Nächster Feind", "hint": "T", "keys": []string{"t"}, "mode": "tap", "color": "red"},
+						{"id": "kmp-gmb", "sc": "v_weapon_gimbals_state_toggle", "label": "Gimbal Modus", "hint": "G", "keys": []string{"g"}, "mode": "tap", "color": "blue"},
+						{"id": "kmp-flr", "sc": "v_weapon_countermeasure_decoy_launch", "label": "Flare / Köder", "hint": "H", "keys": []string{"h"}, "mode": "tap", "color": "amber"},
+						{"id": "kmp-nse", "sc": "v_weapon_countermeasure_noise_launch", "label": "Noise / Störfeld", "hint": "J", "keys": []string{"j"}, "mode": "tap", "color": "cyan"},
+						{"id": "kmp-f1", "sc": "v_attack1", "label": "Waffengruppe 1", "hint": "Maus Links", "keys": []string{"mouse1"}, "mode": "hold", "color": "red", "danger": true, "wide": true},
+						{"id": "kmp-f2", "sc": "v_attack2", "label": "Waffengruppe 2", "hint": "Maus Rechts", "keys": []string{"mouse2"}, "mode": "hold", "color": "red", "danger": true, "wide": true},
+					},
+				},
+			},
+		}
+	case "cargo":
+		newPage = map[string]interface{}{
+			"id":    fmt.Sprintf("cargo-%d", cur.PageCount+1),
+			"label": "Fracht & Rampen",
+			"groups": []map[string]interface{}{
+				{
+					"title": "Hangar, Rampen & Frachtgitter",
+					"buttons": []map[string]interface{}{
+						{"id": "crg-drs", "sc": "v_toggle_all_doors", "label": "Alle Rampen / Türen", "hint": "R-Alt + K", "keys": []string{"ralt", "k"}, "mode": "toggle", "color": "amber", "wide": true},
+						{"id": "crg-lck", "sc": "v_lock_all_doors", "label": "Verriegeln", "hint": "R-Alt + L", "keys": []string{"ralt", "l"}, "mode": "toggle", "color": "cyan"},
+						{"id": "crg-prt", "sc": "v_toggle_all_portlocks", "label": "Frachtgitter / Portlocks", "hint": "R-Alt + P", "keys": []string{"ralt", "p"}, "mode": "toggle", "color": "amber"},
+						{"id": "crg-atc", "sc": "v_atc_loading_area_request", "label": "Ladebereich anfragen", "hint": "L-Alt + K", "keys": []string{"lalt", "k"}, "mode": "tap", "color": "green", "wide": true},
+					},
+				},
+			},
+		}
+	default: // "energie"
+		newPage = map[string]interface{}{
+			"id":    fmt.Sprintf("energie-%d", cur.PageCount+1),
+			"label": "Energie & Schilde",
+			"groups": []map[string]interface{}{
+				{
+					"title": "Energie-Dreieck & Schilde",
+					"buttons": []map[string]interface{}{
+						{"id": "pwr-wep", "label": "Energie -> Waffen", "hint": "F5", "keys": []string{"f5"}, "mode": "tap", "color": "red"},
+						{"id": "pwr-eng", "label": "Energie -> Antrieb", "hint": "F6", "keys": []string{"f6"}, "mode": "tap", "color": "amber"},
+						{"id": "pwr-shd", "label": "Energie -> Schilde", "hint": "F7", "keys": []string{"f7"}, "mode": "tap", "color": "cyan"},
+						{"id": "pwr-rst", "label": "Energie Reset", "hint": "F8", "keys": []string{"f8"}, "mode": "tap", "color": "slate"},
+					},
+				},
+			},
+		}
+	}
+
+	pagesArr, _ := data["pages"].([]interface{})
+	pagesArr = append(pagesArr, newPage)
+	data["pages"] = pagesArr
+
+	_ = os.MkdirAll(app.UserDashDir, 0755)
+	targetFile := filepath.Join(app.UserDashDir, cur.ID+".json")
+	out, err := json.MarshalIndent(data, "", "  ")
+	if err != nil {
+		app.ToastMsg = "Speicherfehler: " + err.Error()
+		return
+	}
+	_ = os.WriteFile(targetFile, append(out, '\n'), 0644)
+	reloadDashboards()
+	app.ToastMsg = fmt.Sprintf("Unterpunkt '%s' wurde zum Schiff '%s' hinzugefügt!", newPage["label"], cur.Ship)
 }
 
 func syncStarCitizenActionmaps() string {

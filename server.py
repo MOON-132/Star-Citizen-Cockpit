@@ -505,9 +505,21 @@ def _read_dashboard(path: Path, source: str, items: list, index: dict) -> None:
     if dash_id in RESERVED_IDS or not ID_RE.fullmatch(dash_id):
         log(f"Dashboard-Id ungültig: {dash_id}")
         return
+    pages_list = data.get("pages") or []
+    btn_count = sum(
+        len(g.get("buttons") or [])
+        for p in pages_list if isinstance(p, dict)
+        for g in (p.get("groups") or []) if isinstance(g, dict)
+    )
     entry = {
         "id": dash_id,
         "title": str(data.get("title") or dash_id)[:40],
+        "ship": str(data.get("ship") or data.get("title") or dash_id)[:40],
+        "manufacturer": str(data.get("manufacturer") or "UEE")[:24],
+        "role": str(data.get("role") or "Multi-Role")[:40],
+        "icon": str(data.get("icon") or "combat")[:20],
+        "page_count": len(pages_list),
+        "button_count": btn_count,
         "source": source,
         "path": path,
         "data": data,
@@ -654,6 +666,10 @@ def clean_dashboard(data: dict, dash_id: str) -> dict:
             "groups": groups,
         })
     result = {"id": dash_id, "title": str(data.get("title") or dash_id)[:40], "pages": pages}
+    for meta_key, max_len in (("ship", 40), ("manufacturer", 24), ("role", 40), ("icon", 20)):
+        val = str(data.get(meta_key) or "").strip()
+        if val:
+            result[meta_key] = val[:max_len]
     bg = str(data.get("background") or "").strip()
     if bg and len(bg) <= 250000:
         result["background"] = bg
@@ -1056,7 +1072,17 @@ class Handler(BaseHTTPRequestHandler):
             self._json(200, {
                 "active": active_id(items),
                 "dashboards": [
-                    {"id": item["id"], "title": item["title"], "source": item["source"]}
+                    {
+                        "id": item["id"],
+                        "title": item["title"],
+                        "ship": item.get("ship", item["title"]),
+                        "manufacturer": item.get("manufacturer", "UEE"),
+                        "role": item.get("role", "Multi-Role"),
+                        "icon": item.get("icon", "combat"),
+                        "page_count": item.get("page_count", len(item["data"].get("pages", []))),
+                        "button_count": item.get("button_count", 0),
+                        "source": item["source"],
+                    }
                     for item in items
                 ],
             })

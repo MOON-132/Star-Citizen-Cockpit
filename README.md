@@ -47,18 +47,20 @@ Ohne Installation, zum direkten lokalen Testen oder Weiterentwickeln im geklonte
 - Alternativ gibt es auch im Installer-Fenster von `SC-Cockpit-Setup.exe` unten links den Button **PORTABEL TESTEN** bzw. **DIREKT ÖFFNEN**, mit dem du ohne Neuinstallation direkt ins Live-Cockpit springst.
 - Wenn du nur den reinen Python-Server im Konsolenfenster ohne die `.exe` testen möchtest: `start.bat --console` oder `py -3 server.py`.
 
-## Starten & GameGlass Shard Hub (In-App Live Cockpit)
+## Starten & GameGlass Shard Hub (In-App Live Cockpit & Flotten-Manager)
 
-**SC Cockpit** auf dem Desktop oder im Startmenü starten. Es öffnet sich der **SC Cockpit // GameGlass Shard Hub** im holografischen GameGlass-MFD-Design (abgeschrägte Holo-Shards, Electric Cyan & Quantum Amber) mit vier Bereichen in der linken Seitenleiste:
+**SC Cockpit** auf dem Desktop oder im Startmenü starten (oder im Repo direkt `start.bat` doppelklicken). Es öffnet sich der **SC Cockpit // GameGlass Shard Hub** im holografischen GameGlass-MFD-Design (abgeschrägte Holo-Shards, Electric Cyan & Quantum Amber) mit vier Bereichen in der linken Seitenleiste:
 
-1. **LIVE COCKPIT (Dashboards direkt in der App nutzen!)**:
-   - **Sofort bedienbares In-App Cockpit-Deck**: Du kannst alle deine Dashboards und Shards (**Standard**, **Mining**, eigene Schiffe) direkt innerhalb des Windows-Programms bedienen — ideal für einen Zweitmonitor, Touchscreen-Monitor oder Windows-Tablet!
-   - **Seiten & Shards umschalten**: Oben zwischen den Dashboards (`◄` / `►`) und darunter zwischen den Seiten-Reitern (*Flug*, *Energie & Schilde*, *Quantum*, *Kampf*) wechseln.
+1. **LIVE COCKPIT (Dashboards & Schiffe direkt in der App nutzen!)**:
+   - **1-Klick Schiffsflotten-Leiste (Quick Ship Switcher)**: Oben unter der Titelleiste siehst du alle deine Schiffe nebeneinander (z. B. **Aegis Gladius**, **MISC Prospector**, **Drake Vulture**, **Crusader C2** sowie deine eigenen Schiffe) und wechselst mit **einem Klick** das aktive Schiff.
+   - **Unterpunkte / Subsystem-Tabs je Schiff**: Darunter liegen die spezialisierten Unterpunkte des gewählten Schiffs (z. B. *Mining & Laser*, *Salvage & Scraper*, *Fracht & Hangar*, *Flug & Quantum*, *Energie & Schilde*, *Kampf*).
+   - **📌 OVERLAY (Immer im Vordergrund)**: Hält das In-App Live-Cockpit auf Wunsch im Vordergrund über Star Citizen (im Borderless-Window-Modus).
    - **Direktes Senden an Star Citizen**: Ein Klick auf eine Holo-Kachel im Programm fokussiert automatisch das laufende Star-Citizen-Fenster und sendet den Keybind direkt ins Spiel.
    - **Waffen SAFE / ARMED**: Gesicherte Tasten (Waffen, Laser, Abwerfen) werden über den Schalter **WAFFEN SAFE / ARMED** oben rechts scharfgeschaltet.
-2. **SHARDS & DECKS**:
-   - Übersicht aller mitgelieferten und eigenen Shards mit Seiten- und Tastenanzahl.
-   - Per Klick: **IM COCKPIT NUTZEN** (lädt das Dashboard sofort in das In-App Live-Cockpit), **BAUKASTEN** (öffnet den visuellen Shard-Editor), **KOPIE**, **LÖSCHEN**, **+ NEUER SHARD** sowie **SC-TASTEN LESEN** (liest deine `actionmaps.xml` aus Star Citizen).
+2. **SHARDS & DECKS (Flotte, Schiffe & Unterpunkte verwalten)**:
+   - Übersicht deiner gesamten Schiffsflotte inklusive Hersteller-Badge (`[AEGIS]`, `[MISC]`, `[DRAKE]`, `[CRUSADER]`), Rolle und aller vorhandenen Unterpunkte.
+   - **1-Klick Unterpunkt zum aktiven Schiff hinzufügen**: Über die Leiste **UNTERPUNKT ZUM AKTIVEN SCHIFF (+)** kannst du jedem Schiff sofort per Klick auf **`+ MINING`**, **`+ SALVAGE`**, **`+ KAMPF`**, **`+ FRACHT`** oder **`+ ENERGIE`** einen komplett bestückten neuen Unterpunkt (Seite) hinzufügen!
+   - Per Klick: **SCHIFF WÄHLEN**, **BAUKASTEN**, **KOPIE**, **LÖSCHEN**, **+ NEUES SCHIFF** sowie **SC-TASTEN LESEN** (liest deine `actionmaps.xml` aus Star Citizen).
 3. **TABLET / SERVER**:
    - **Server an- und ausschalten**: Großer Button **SERVER STARTEN** / **SERVER STOPPEN** für externe Tablets & Smartphones im WLAN.
    - Zeigt die echte WLAN-Adresse (z. B. `http://192.168.1.180:8765/`), den **ALS ADMIN STARTEN**-Button und das Live-Tastenprotokoll.
@@ -67,34 +69,35 @@ Ohne Installation, zum direkten lokalen Testen oder Weiterentwickeln im geklonte
 
 Wenn Windows beim ersten Serverstart nach der Firewall fragt: Zugriff im privaten Netzwerk erlauben.
 
-## Bedienen & Live-Telemetrie
+## Bedienen, Flotten-Wechsel & Live-Telemetrie
 
-Oben steht der Verbindungsstatus zum PC sowie die **Live-Telemetrie-Leiste**:
-- **Energie-Dreieck (Live)**: Zeigt die aktuelle prozentuale Verteilung auf **Waffen (F5)**, **Antrieb (F6)** und **Schilde (F7)**.
-- **Schild-Sektoren (Live)**: Zeigt die Verteilung auf **Vorn**, **Hinten**, **Links** und **Rechts**.
-- **Schiffssysteme & Star Citizen Status**: Erkennt automatisch über die lokale Star Citizen `Game.log`, welches Schiff aktiv ist, und zeigt den Status von Hauptstrom (`PWR`), Fahrwerk (`GEAR`), `VTOL`, `LICHT`, `DECOUPLED` sowie den `Master Mode` (`SCM` / `NAV`). Über `POST /api/telemetry` können zudem externe Tools Live-Werte ans Dashboard senden.
+Sowohl im Browser (Tablet/Smartphone) als auch in der Windows-App hast du sofortigen Zugriff auf deine gesamte Flotte:
+- **1-Tap Schiffsflotten-Leiste**: Oben im Web-Interface sitzen die **Schiffs-Chips** mit Hersteller-Badge, Schiffsname und Rolle. Ein Tipp wechselt sofort auf das jeweilige Schiff.
+- **Mitgelieferte Schiffe & Spezial-Shards**:
+  1. **Aegis Gladius // Allround & Kampf** (*Flug*, *Energie & Schilde*, *Quantum*, *Kampf*)
+  2. **MISC Prospector // Mining** (*Mining & Laser*, *Scan & Flug*, *Energie & Schilde*)
+  3. **Drake Vulture // Salvage** (*Salvage & Scraper*, *Flug & Landung*, *Energie & Schilde*)
+  4. **Crusader C2 // Cargo & Hauling** (*Fracht & Hangar*, *Flug & Quantum*, *Schilde & Abwehr*)
+- **Live-Telemetrie-Leiste**: Zeigt **Energie-Kondensator** (`Waffen / Antrieb / Schilde`), **Schild-Sektoren** (`Bug / Heck / Backbord / Steuerbord`), `Master Mode` (`SCM` / `NAV`) sowie Status-Pills für `PWR`, `GEAR`, `VTOL`, `LIGHT` und `DECOUPLED`.
 
-| Element | Wirkung |
-| --- | --- |
-| Dashboard-Liste | Wechselt das Panel. Die Wahl bleibt auf dem PC und lokal im Browser gespeichert (auch bei einem Seiten-Reload sofort verfügbar). |
-| Tab | Seite innerhalb des Dashboards, zum Beispiel Flug, Energie & Schilde oder Kampf. |
-| Taste / Widget | Sendet den hinterlegten Keybind (Standard-Impuls 80 ms wie in `tablet-deck`, oder `hold` solange der Finger gedrückt bleibt). |
-| **Gefahr AUS / AN** | Gesicherte Tasten (mit gelb-rotem Warnstreifen wie Waffen, Laser, Selbstzerstörung, Abwerfen) sind gesperrt, bis das auf AN steht. |
-| **Loslassen** | Alle Tasten, die hängengeblieben sein könnten, werden sofort losgelassen. |
-| **Vollbild** | Blendet die Browser-Leiste aus. |
-| **Baukasten / Anpassen** | Öffnet den modularen Baukasten-Editor (inspiriert von Home Assistant & Tablet Deck). |
+## Neues Schiff & Unterpunkte anlegen (Modularer Baukasten)
 
-## Eigenes Dashboard (Modularer Baukasten & Hintergrundbilder)
-
-Drei Wege, dasselbe Format. Details, erlaubte Tasten und die Default-Belegung stehen in [docs/DASHBOARD.md](docs/DASHBOARD.md).
-
-1. **Modularer Baukasten im Browser (`Baukasten / Anpassen`)**:
-   - **1-Klick Star Citizen Presets**: Aus über 35 fertigen Star-Citizen-Bausteinen wählen (z. B. *Flight Ready = R-Alt + R*, *Fahrwerk = N*, *Landeerlaubnis = L-Alt + N*, *Master Mode = B*, *Täuschkörper*, *Mining-Module*) oder danach suchen — ein Klick fügt den fertigen Baustein sofort in die aktuelle Seite ein.
-   - **Interaktive Live-Widgets**: Füge per Klick komplette Spezial-Kacheln wie den **Schild-Kompass (Interaktiv)** oder das **Energie-Dreieck (Live-Widget)** wie in Home Assistant hinzu.
-   - **SC-Tasten aus Spiel lesen**: Ein Klick auf **SC-Tasten aus Spiel lesen** durchsucht automatisch deine lokale Star-Citizen-Installation (`LIVE/user/client/0/Profiles/default/actionmaps.xml`) und übernimmt deine echten Keybinds ins Dashboard.
-   - **Eigene Hintergrundbilder & Cockpit-Themes**: Wähle zwischen fertigen Star-Citizen-Themes (*Aegis Tactical Grid*, *Crusader Horizon*, *Drake Industrial*, *Quantum Starmap*), füge eine Bild-URL ein oder lade ein **eigenes Hintergrundbild** direkt vom Gerät hoch — inklusive einstellbarer Deckkraft (`5%` bis `95%`).
-2. **Als Datei**: `docs/beispiel.json` in den lokalen Dashboard-Ordner kopieren, Dateiname und `id` ändern, Seite neu laden.
-3. **Mit einer KI**: Siehe Beispiel-Prompt in [docs/DASHBOARD.md](docs/DASHBOARD.md).
+1. **`+ Neues Schiff` (Schiffs- & Subsystem-Assistent)**:
+   - Klicke oben rechts auf **`+ Neues Schiff`**:
+   - Gib **Schiffsname** (z. B. *RSI Constellation* oder *Argo Mole*), **Hersteller**, **Rolle** und **Cockpit-Atmosphäre** ein.
+   - Hake einfach per Checkbox an, welche **Unterpunkte (Subsystem-Seiten)** das Schiff erhalten soll:
+     - ☑ **Flug & Start/Landung**
+     - ☑ **Energie & Schilde (Live)**
+     - ☑ **Quantum & Navigation**
+     - ☐ **Kampf & Abwehr**
+     - ☐ **Mining & Erzabbau**
+     - ☐ **Salvage & Bergung**
+     - ☐ **Fracht, Rampen & Hangar**
+   - Ein Klick auf **Schiff in Flotte anlegen ►** baut sofort das komplette Schiff mit allen gewählten Unterpunkten.
+2. **Bestehendem Schiff neue Unterpunkte hinzufügen (`+ Unterpunkt`)**:
+   - Links unter der Seiten-Navigation auf **`+ Unterpunkt`** klicken (oder im Baukasten das Dropdown *„+ Fertigen Unterpunkt (Seite) zum Schiff hinzufügen...“* bzw. in der Windows-App **`+ MINING` / `+ SALVAGE` / `+ KAMPF` / `+ FRACHT`** wählen).
+3. **Einzelne Kacheln & Hintergrundbilder anpassen (`Baukasten`)**:
+   - Über 35 fertige Star-Citizen-Presets und interaktive Live-Widgets per 1-Klick einfügen, eigene Hintergrundbilder hochladen und mit **SC-Tasten lesen** deine persönliche `actionmaps.xml` synchronisieren.
 
 ## Deinstallieren
 

@@ -1,0 +1,217 @@
+{
+  "id": "hauler",
+  "title": "Crusader C2 // Cargo & Hauling",
+  "ship": "Crusader C2 Hercules",
+  "manufacturer": "CRUSADER",
+  "role": "Fracht & Transport",
+  "icon": "cargo",
+  "background": "preset:crusader",
+  "bg_opacity": 0.40,
+  "pages": [
+    {
+      "id": "cargo",
+      "label": "Fracht & Hangar",
+      "groups": [
+        {
+          "title": "Rampen, Luken & Andocken",
+          "buttons": [
+            {
+              "id": "doors-toggle",
+              "sc": "v_toggle_all_doors",
+              "label": "Alle Rampen / Türen",
+              "hint": "R-Alt + K",
+              "keys": ["ralt", "k"],
+              "mode": "toggle",
+              "color": "amber",
+              "wide": true
+            },
+            {
+              "id": "doors-lock",
+              "sc": "v_lock_all_doors",
+              "label": "Schiff Verriegeln",
+              "hint": "R-Alt + L",
+              "keys": ["ralt", "l"],
+              "mode": "toggle",
+              "color": "cyan",
+              "wide": true
+            },
+            {
+              "id": "atc-request",
+              "sc": "v_atc_request",
+              "label": "Landeerlaubnis (ATC)",
+              "hint": "L-Alt + N",
+              "keys": ["lalt", "n"],
+              "mode": "tap",
+              "color": "green",
+              "wide": true
+            },
+            {
+              "id": "cargo-atc",
+              "sc": "v_atc_loading_area_request",
+              "label": "Ladebereich anfragen",
+              "hint": "L-Alt + K",
+              "keys": ["lalt", "k"],
+              "mode": "tap",
+              "color": "cyan",
+              "wide": true
+            },
+            {
+              "id": "portlocks",
+              "sc": "v_toggle_all_portlocks",
+              "label": "Frachtgitter / Portlocks",
+              "hint": "R-Alt + P",
+              "keys": ["ralt", "p"],
+              "mode": "toggle",
+              "color": "amber"
+            },
+            {
+              "id": "autoland",
+              "sc": "v_autoland",
+              "label": "Autolandung",
+              "hint": "N halten",
+              "keys": ["n"],
+              "mode": "hold",
+              "color": "cyan"
+            },
+            {
+              "id": "gear",
+              "sc": "v_toggle_landing_system",
+              "label": "Fahrwerk",
+              "hint": "N",
+              "keys": ["n"],
+              "mode": "toggle",
+              "color": "cyan"
+            },
+            {
+              "id": "vtol",
+              "sc": "v_vtol_toggle",
+              "label": "VTOL Schwerlast",
+              "hint": "K",
+              "keys": ["k"],
+              "mode": "toggle",
+              "color": "amber"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "flug",
+      "label": "Flug & Quantum",
+      "groups": [
+        {
+          "title": "Hercules Flug- & Quantumnavigation",
+          "buttons": [
+            {
+              "id": "flight-ready",
+              "sc": "v_flightready",
+              "label": "Flight Ready",
+              "hint": "R-Alt + R",
+              "keys": ["ralt", "r"],
+              "mode": "tap",
+              "color": "green",
+              "wide": true
+            },
+            {
+              "id": "master-mode",
+              "sc": "v_toggle_quantum_mode",
+              "label": "Master Mode (SCM/NAV)",
+              "hint": "B halten",
+              "keys": ["b"],
+              "mode": "hold",
+              "color": "amber",
+              "wide": true
+            },
+            {
+              "id": "cruise",
+              "sc": "v_ifcs_toggle_cruise_control",
+              "label": "Tempomat (Cruise)",
+              "hint": "L-Alt + C",
+              "keys": ["lalt", "c"],
+              "mode": "toggle",
+              "color": "blue"
+            },
+            {
+              "id": "decoupled",
+              "sc": "v_ifcs_vector_decoupling_toggle",
+              "label": "Decoupled",
+              "hint": "C",
+              "keys": ["c"],
+              "mode": "toggle",
+              "color": "blue"
+            },
+            {
+              "id": "starmap",
+              "sc": "v_starmap",
+              "label": "Handelsroute (Starmap)",
+              "hint": "F2",
+              "keys": ["f2"],
+              "mode": "tap",
+              "color": "cyan"
+            },
+            {
+              "id": "lights",
+              "sc": "v_lights",
+              "label": "Scheinwerfer",
+              "hint": "L",
+              "keys": ["l"],
+              "mode": "toggle",
+              "color": "amber"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "verteidigung",
+      "label": "Schilde & Abwehr",
+      "groups": [
+        {
+          "title": "Transporter-Verteidigung",
+          "buttons": [
+            {
+              "id": "c2-shd",
+              "kind": "shield",
+              "label": "Schild-Matrix (Sektoren)",
+              "hint": "Bug / Heck / Backbord / Steuerbord",
+              "keys": ["num5"],
+              "mode": "tap",
+              "color": "cyan",
+              "wide": true
+            },
+            {
+              "id": "c2-pwr",
+              "kind": "power",
+              "label": "Energie-Kondensator",
+              "hint": "F5 / F6 / F7 / F8",
+              "keys": ["f8"],
+              "mode": "tap",
+              "color": "amber",
+              "wide": true
+            },
+            {
+              "id": "flares",
+              "sc": "v_weapon_countermeasure_decoy_launch",
+              "label": "Täuschkörper (Flares)",
+              "hint": "H",
+              "keys": ["h"],
+              "mode": "tap",
+              "color": "amber",
+              "wide": true
+            },
+            {
+              "id": "noise",
+              "sc": "v_weapon_countermeasure_noise_launch",
+              "label": "Störfeld (Noise)",
+              "hint": "J",
+              "keys": ["j"],
+              "mode": "tap",
+              "color": "cyan",
+              "wide": true
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

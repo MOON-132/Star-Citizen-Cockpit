@@ -1,6 +1,12 @@
 {
   "id": "standard",
-  "title": "Standard",
+  "title": "Aegis Gladius // Allround & Kampf",
+  "ship": "Aegis Combat / Universal",
+  "manufacturer": "AEGIS",
+  "role": "Flug, Quantum & Kampf",
+  "icon": "combat",
+  "background": "preset:aegis",
+  "bg_opacity": 0.35,
   "pages": [
     {
       "id": "flug",

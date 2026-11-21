@@ -17,6 +17,22 @@
       "minLength": 1,
       "maxLength": 40
     },
+    "ship": {
+      "type": "string",
+      "maxLength": 40
+    },
+    "manufacturer": {
+      "type": "string",
+      "maxLength": 24
+    },
+    "role": {
+      "type": "string",
+      "maxLength": 40
+    },
+    "icon": {
+      "type": "string",
+      "maxLength": 20
+    },
     "background": {
       "type": "string",
       "description": "Optionales Hintergrundbild (URL, data:image/... oder preset:aegis/crusader/drake/starmap)."

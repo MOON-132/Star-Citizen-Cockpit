@@ -6,13 +6,13 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="color-scheme" content="dark">
-<title>SC Cockpit // GameGlass Shard Interface</title>
+<title>SC Cockpit // GameGlass Fleet & Shard Interface</title>
 <style>
   :root {
     --bg: #05080d;
-    --bg-panel: rgba(11, 17, 26, 0.84);
-    --bg-glass: rgba(15, 23, 35, 0.78);
-    --bg-glass-hi: rgba(23, 35, 52, 0.90);
+    --bg-panel: rgba(11, 17, 26, 0.86);
+    --bg-glass: rgba(15, 23, 35, 0.80);
+    --bg-glass-hi: rgba(23, 35, 52, 0.92);
     --line: rgba(54, 79, 108, 0.48);
     --line-hi: rgba(0, 229, 255, 0.65);
     --text: #eef5fc;
@@ -72,17 +72,17 @@
   /* GameGlass Top MFD Telemetry & Navigation Header */
   .gg-topbar {
     position: relative;
-    z-index: 10;
+    z-index: 15;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    gap: 10px;
     padding:
       calc(8px + env(safe-area-inset-top))
-      calc(16px + env(safe-area-inset-right))
+      calc(14px + env(safe-area-inset-right))
       8px
-      calc(16px + env(safe-area-inset-left));
-    background: rgba(7, 11, 18, 0.92);
+      calc(14px + env(safe-area-inset-left));
+    background: rgba(7, 11, 18, 0.94);
     border-bottom: 1px solid var(--line);
     backdrop-filter: blur(16px);
   }
@@ -90,8 +90,8 @@
     content: "";
     position: absolute;
     bottom: -1px;
-    left: 24px;
-    width: 180px;
+    left: 20px;
+    width: 200px;
     height: 2px;
     background: linear-gradient(90deg, var(--cyan), transparent);
   }
@@ -99,7 +99,7 @@
   .gg-brand {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     min-width: 0;
   }
   .gg-hex {
@@ -118,7 +118,7 @@
   }
   .gg-title-block strong {
     display: block;
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 800;
     letter-spacing: 0.14em;
     text-transform: uppercase;
@@ -127,8 +127,8 @@
   .gg-status-line {
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-size: 11px;
+    gap: 7px;
+    font-size: 10px;
     letter-spacing: 0.06em;
     color: var(--muted);
   }
@@ -146,27 +146,27 @@
   .gg-tele-strip {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     flex-wrap: wrap;
   }
   .gg-tele-pod {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 5px 12px;
+    gap: 7px;
+    padding: 4px 10px;
     background: rgba(14, 22, 34, 0.85);
     border: 1px solid var(--line);
-    clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+    clip-path: polygon(7px 0, 100% 0, calc(100% - 7px) 100%, 0 100%);
     font-size: 11px;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.06em;
   }
   .gg-tele-pod span { color: var(--muted); text-transform: uppercase; }
   .gg-tele-pod b { font-family: Consolas, monospace; font-size: 12px; color: var(--cyan); }
   .gg-sys-pill {
     font-size: 10px;
     font-weight: 700;
-    letter-spacing: 0.08em;
-    padding: 3px 8px;
+    letter-spacing: 0.07em;
+    padding: 3px 7px;
     border-radius: 4px;
     border: 1px solid rgba(124, 147, 173, 0.3);
     color: var(--muted);
@@ -188,32 +188,28 @@
   .gg-actions {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
+    flex-wrap: wrap;
   }
   .gg-btn, select, input {
     border: 1px solid var(--line);
     background: rgba(14, 22, 34, 0.88);
     color: var(--text);
-    height: 36px;
-    padding: 0 13px;
+    height: 34px;
+    padding: 0 12px;
     font: inherit;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     cursor: pointer;
-    clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+    clip-path: polygon(7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 7px);
     transition: all 0.15s ease;
   }
   .gg-btn:hover, select:hover {
     border-color: var(--cyan);
     background: rgba(20, 34, 52, 0.95);
     color: #fff;
-  }
-  #board {
-    min-width: 155px;
-    color: var(--amber);
-    border-color: rgba(255, 171, 0, 0.45);
   }
   #arm[aria-pressed="true"] {
     background: rgba(255, 61, 87, 0.22);
@@ -228,7 +224,96 @@
     box-shadow: 0 0 16px var(--amber-glow);
   }
 
-  /* GameGlass Workspace Layout: Left Shard Rail + Center Shard Canvas */
+  /* =========================================================================
+     QUICK SHIP FLEET SWITCHER BAR (1-TAP MULTI-SHIP SWITCHING)
+     ========================================================================= */
+  .gg-fleet-bar {
+    position: relative;
+    z-index: 12;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 6px 14px;
+    background: rgba(9, 14, 22, 0.90);
+    border-bottom: 1px solid var(--line);
+    backdrop-filter: blur(12px);
+  }
+  .fleet-scroll {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 2px 0;
+    flex: 1;
+  }
+  .ship-chip {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    height: 38px;
+    padding: 0 14px;
+    border: 1px solid var(--line);
+    background: rgba(15, 23, 35, 0.78);
+    color: var(--muted);
+    font: inherit;
+    cursor: pointer;
+    white-space: nowrap;
+    clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+    transition: all 0.15s ease;
+  }
+  .ship-chip:hover {
+    border-color: rgba(0, 229, 255, 0.5);
+    color: var(--text);
+    background: rgba(22, 34, 50, 0.92);
+  }
+  .ship-chip.active {
+    border-color: var(--amber);
+    color: var(--text);
+    background: linear-gradient(90deg, rgba(255, 171, 0, 0.20), rgba(16, 25, 38, 0.94));
+    box-shadow: 0 0 16px rgba(255, 171, 0, 0.18);
+  }
+  .ship-chip.active::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 5px; bottom: 5px;
+    width: 3px;
+    background: var(--amber);
+    box-shadow: 0 0 8px var(--amber);
+  }
+  .ship-chip-mfg {
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    padding: 2px 5px;
+    border-radius: 3px;
+    background: rgba(0, 0, 0, 0.45);
+    color: var(--cyan);
+    text-transform: uppercase;
+  }
+  .ship-chip.active .ship-chip-mfg {
+    color: var(--amber);
+  }
+  .ship-chip-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    line-height: 1.1;
+  }
+  .ship-chip-info b {
+    font-size: 12px;
+    font-weight: 750;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .ship-chip-info small {
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+  }
+
+  /* GameGlass Workspace Layout: Left Subsystem Shard Rail + Center Shard Canvas */
   .gg-workspace {
     position: relative;
     z-index: 2;
@@ -238,24 +323,37 @@
     overflow: hidden;
   }
 
-  /* Left Vertical Shard Rail */
+  /* Left Vertical Subsystem Rail (Unterpunkte: Mining, Salvage, Flug, Kampf, Fracht...) */
   .gg-rail {
-    width: 185px;
-    background: rgba(8, 13, 21, 0.88);
+    width: 210px;
+    background: rgba(8, 13, 21, 0.90);
     border-right: 1px solid var(--line);
-    padding: 14px 10px;
+    padding: 12px 10px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    gap: 12px;
+    gap: 10px;
     backdrop-filter: blur(12px);
     flex-shrink: 0;
+  }
+  .rail-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    color: var(--muted);
+    text-transform: uppercase;
+    padding: 0 4px 6px;
+    border-bottom: 1px solid var(--line);
   }
   .gg-tabs {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 7px;
     overflow-y: auto;
+    flex: 1;
   }
   .tab {
     position: relative;
@@ -263,27 +361,27 @@
     align-items: center;
     justify-content: space-between;
     width: 100%;
-    min-height: 48px;
-    padding: 0 14px;
+    min-height: 46px;
+    padding: 0 13px;
     border: 1px solid var(--line);
     background: rgba(15, 23, 35, 0.72);
     color: var(--muted);
     font: inherit;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 700;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.09em;
     text-transform: uppercase;
     text-align: left;
     cursor: pointer;
-    clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+    clip-path: polygon(0 0, calc(100% - 11px) 0, 100% 11px, 100% 100%, 9px 100%, 0 calc(100% - 9px));
     transition: all 0.16s ease;
   }
   .tab::before {
     content: "";
     position: absolute;
     left: 0;
-    top: 8px;
-    bottom: 8px;
+    top: 7px;
+    bottom: 7px;
     width: 3px;
     background: transparent;
     transition: background 0.16s ease;
@@ -304,13 +402,22 @@
     box-shadow: 0 0 10px var(--cyan);
   }
 
-  .gg-rail-footer {
+  /* Quick Subsystem Generator Menu in Left Rail */
+  .subsys-adder {
     border-top: 1px solid var(--line);
-    padding-top: 10px;
+    padding-top: 8px;
     display: flex;
     flex-direction: column;
     gap: 6px;
-    font-size: 11px;
+  }
+
+  .gg-rail-footer {
+    border-top: 1px solid var(--line);
+    padding-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 10px;
     color: var(--muted);
   }
   .gg-rail-footer b {
@@ -417,7 +524,6 @@
   .key.green { --accent: var(--green); --glow: var(--green-glow); border-color: rgba(0, 230, 118, 0.48); }
   .key.slate { --accent: var(--slate); --glow: rgba(141, 162, 184, 0.18); }
 
-  /* Left holographic laser bar */
   .key::after {
     content: "";
     position: absolute;
@@ -433,9 +539,7 @@
     box-shadow: 0 0 20px var(--glow), inset 0 0 15px var(--glow);
     background: linear-gradient(155deg, rgba(33, 49, 72, 0.96) 0%, rgba(16, 25, 38, 0.96) 100%);
   }
-  .key:active {
-    transform: scale(0.975);
-  }
+  .key:active { transform: scale(0.975); }
 
   .key-top {
     display: flex;
@@ -499,7 +603,6 @@
   .key.wide, .key.span-2 { grid-column: span 2; }
   .key.span-3 { grid-column: span 3; }
 
-  /* Active / Toggled / Holding Hologram State */
   .key.on, .key.holding {
     border-color: var(--cyan);
     background: linear-gradient(155deg, rgba(0, 229, 255, 0.24) 0%, rgba(12, 28, 42, 0.95) 100%);
@@ -509,7 +612,6 @@
   .key.on .key-badge { color: var(--cyan); border-color: var(--cyan); }
   .key.holding { border-color: var(--amber); box-shadow: 0 0 26px var(--amber-glow); }
 
-  /* Hazard Striped Safety Guard */
   .key.hazard-stripe::before {
     content: "";
     position: absolute;
@@ -519,7 +621,7 @@
   }
   .key.locked { opacity: 0.42; }
 
-  /* GameGlass Interactive MFD Widgets (Shield Octagon & Power Triangle) */
+  /* GameGlass Interactive MFD Widgets */
   .widget-card {
     grid-column: span 2;
     position: relative;
@@ -542,8 +644,6 @@
     text-transform: uppercase;
     color: var(--cyan);
   }
-
-  /* GameGlass Octagonal Ship Shield Touch Schematic */
   .gg-shield-matrix {
     display: grid;
     grid-template-columns: 1fr 1.25fr 1fr;
@@ -573,11 +673,7 @@
     background: rgba(0, 229, 255, 0.2);
     box-shadow: 0 0 16px var(--cyan-glow);
   }
-  .sh-zone span {
-    font-size: 12px;
-    color: var(--cyan);
-    font-family: Consolas, monospace;
-  }
+  .sh-zone span { font-size: 12px; color: var(--cyan); font-family: Consolas, monospace; }
   .sh-zone.reset {
     border-color: var(--amber);
     color: var(--amber);
@@ -585,7 +681,6 @@
   }
   .sh-zone.reset span { color: var(--text); font-size: 10px; }
 
-  /* GameGlass Power Capacitor Equalizer Bars */
   .gg-power-matrix {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -621,6 +716,51 @@
     box-shadow: 0 0 24px var(--amber-glow);
   }
 
+  /* =========================================================================
+     FLEET & SHIP CREATOR MODAL (MULTI-SHIP + SUBSYSTEM WIZARD)
+     ========================================================================= */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    background: rgba(3, 6, 10, 0.84);
+    backdrop-filter: blur(10px);
+    display: grid;
+    place-items: center;
+    padding: 16px;
+  }
+  .modal-backdrop[hidden] { display: none; }
+  .gg-modal {
+    width: min(740px, 100%);
+    max-height: 90vh;
+    overflow-y: auto;
+    background: rgba(11, 18, 28, 0.98);
+    border: 1px solid var(--cyan);
+    clip-path: polygon(0 0, calc(100% - 22px) 0, 100% 22px, 100% 100%, 22px 100%, 0 calc(100% - 22px));
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.85), 0 0 30px var(--cyan-glow);
+  }
+  .subsys-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+  }
+  .subsys-card {
+    border: 1px solid var(--line);
+    background: rgba(16, 25, 38, 0.85);
+    padding: 10px 12px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    cursor: pointer;
+    clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+  }
+  .subsys-card:hover { border-color: var(--cyan); }
+  .subsys-card input { width: 18px; height: 18px; margin-top: 2px; }
+
   /* Slide-Over Baukasten Drawer */
   #editor {
     position: relative;
@@ -632,7 +772,7 @@
     clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
     display: grid;
     gap: 12px;
-    max-height: 48vh;
+    max-height: 46vh;
     overflow-y: auto;
     box-shadow: 0 14px 40px rgba(0, 0, 0, 0.75);
   }
@@ -671,14 +811,14 @@
     grid-template-columns: repeat(auto-fit, minmax(125px, 1fr));
     gap: 8px;
   }
-  #editor label { display: grid; gap: 4px; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; }
-  #editor input, #editor select { width: 100%; height: 34px; text-transform: none; font-weight: 600; }
+  #editor label, .gg-modal label { display: grid; gap: 4px; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; }
+  #editor input, #editor select, .gg-modal input, .gg-modal select { width: 100%; height: 34px; text-transform: none; font-weight: 600; }
   .check { display: flex !important; align-items: center; gap: 8px; color: var(--text) !important; }
   .preset-chips {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
-    max-height: 135px;
+    max-height: 130px;
     overflow-y: auto;
   }
   .chip {
@@ -717,25 +857,27 @@
     box-shadow: 0 0 24px var(--cyan-glow);
   }
 
-  /* Responsive Tablet / Mobile Bottom or Top Rail */
   @media (max-width: 820px) {
-    .gg-tele-strip { display: none; }
+    .gg-topbar { flex-wrap: wrap; }
+    .gg-tele-strip { width: 100%; justify-content: space-between; order: 3; padding-top: 4px; border-top: 1px solid var(--line); }
     .gg-workspace { flex-direction: column; }
     .gg-rail {
       width: 100%;
-      padding: 8px 12px;
+      padding: 6px 12px;
       border-right: none;
       border-bottom: 1px solid var(--line);
       flex-direction: row;
       align-items: center;
+      gap: 8px;
     }
+    .rail-header, .gg-rail-footer { display: none; }
+    .subsys-adder { border-top: none; padding-top: 0; flex-shrink: 0; }
     .gg-tabs {
       flex-direction: row;
       overflow-x: auto;
       width: 100%;
     }
-    .tab { min-height: 40px; width: auto; white-space: nowrap; padding: 0 16px; }
-    .gg-rail-footer { display: none; }
+    .tab { min-height: 38px; width: auto; white-space: nowrap; padding: 0 14px; }
     .page.active { grid-template-columns: 1fr; }
     .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .key.wide, .key.span-2, .key.span-3, .widget-card { grid-column: span 2; }
@@ -750,7 +892,7 @@
   <div class="gg-brand">
     <div class="gg-hex">SC</div>
     <div class="gg-title-block">
-      <strong id="ship-title">SC COCKPIT // SHARD</strong>
+      <strong id="ship-title">SC COCKPIT // FLEET SHARD</strong>
       <div class="gg-status-line">
         <span id="status-dot" class="status-dot"></span>
         <span id="status">INITIALISIERE...</span>
@@ -783,7 +925,7 @@
 
   <!-- Quick MFD Controls -->
   <div class="gg-actions">
-    <select id="board" aria-label="Shard wählen"></select>
+    <button id="open-ship-wizard" class="gg-btn" type="button" style="border-color:var(--amber);color:var(--amber)">+ Neues Schiff</button>
     <button id="edit" class="gg-btn" type="button" aria-pressed="false">Baukasten</button>
     <button id="arm" class="gg-btn" type="button" aria-pressed="false">Waffen SAFE</button>
     <button id="release" class="gg-btn" type="button">Reset</button>
@@ -791,26 +933,136 @@
   </div>
 </header>
 
+<!-- 1-Tap Fleet / Ship Switcher Bar -->
+<div class="gg-fleet-bar">
+  <div id="fleet-chips" class="fleet-scroll" role="tablist" aria-label="Schiffsflotte"></div>
+  <select id="board" aria-label="Schiff wählen" style="min-width:140px;height:32px"></select>
+</div>
+
+<!-- Multi-Ship & Subsystem Creator Modal -->
+<div id="ship-modal" class="modal-backdrop" hidden>
+  <div class="gg-modal">
+    <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);padding-bottom:10px">
+      <div>
+        <strong style="color:var(--amber);font-size:16px;letter-spacing:0.12em">NEUES SCHIFF & UNTERPUNKTE ANLEGEN</strong>
+        <div style="color:var(--muted);font-size:12px">Stelle dein Schiff und alle benötigten Subsysteme (Mining, Salvage, Flug, Kampf, Fracht…) zusammen.</div>
+      </div>
+      <button id="close-ship-modal" class="gg-btn" type="button">✕</button>
+    </div>
+
+    <div class="form-grid">
+      <label>Schiffsname / Titel
+        <input id="wiz-title" placeholder="z.B. Drake Cutlass Black oder RSI Constellation">
+      </label>
+      <label>Hersteller
+        <select id="wiz-mfg">
+          <option value="AEGIS">AEGIS DYNAMICS</option>
+          <option value="ANVIL">ANVIL AEROSPACE</option>
+          <option value="RSI">ROBERTS SPACE INDUSTRIES</option>
+          <option value="DRAKE">DRAKE INTERPLANETARY</option>
+          <option value="MISC">MISC</option>
+          <option value="CRUSADER">CRUSADER INDUSTRIES</option>
+          <option value="ORIGIN">ORIGIN JUMPWORKS</option>
+          <option value="ARGO">ARGO ASTRONAUTICS</option>
+          <option value="MIRAI">MIRAI</option>
+        </select>
+      </label>
+      <label>Hauptrolle
+        <input id="wiz-role" placeholder="z.B. Multi-Role / Mining / Salvage">
+      </label>
+      <label>Cockpit-Atmosphäre
+        <select id="wiz-bg">
+          <option value="preset:aegis">Aegis Holo Grid (Cyan)</option>
+          <option value="preset:drake">Drake Industrial (Amber/Red)</option>
+          <option value="preset:crusader">Crusader Horizon (Blue/Gold)</option>
+          <option value="preset:starmap">Quantum Starmap</option>
+        </select>
+      </label>
+    </div>
+
+    <div>
+      <div style="font-size:11px;font-weight:800;letter-spacing:0.12em;color:var(--cyan);margin-bottom:8px;text-transform:uppercase">
+        Unterpunkte / Subsystem-Seiten für dieses Schiff auswählen:
+      </div>
+      <div class="subsys-grid">
+        <label class="subsys-card">
+          <input type="checkbox" value="flug" checked>
+          <div>
+            <b style="color:var(--text);font-size:13px">Flug & Start/Landung</b>
+            <div style="color:var(--muted);font-size:11px">Flight Ready, Strom, Fahrwerk, VTOL, ATC, Licht, Türen</div>
+          </div>
+        </label>
+        <label class="subsys-card">
+          <input type="checkbox" value="energie" checked>
+          <div>
+            <b style="color:var(--cyan);font-size:13px">Energie & Schilde (Live)</b>
+            <div style="color:var(--muted);font-size:11px">Interaktive Schild-Matrix & Energie-Kondensator</div>
+          </div>
+        </label>
+        <label class="subsys-card">
+          <input type="checkbox" value="quantum" checked>
+          <div>
+            <b style="color:var(--amber);font-size:13px">Quantum & Navigation</b>
+            <div style="color:var(--muted);font-size:11px">Master Mode (SCM/NAV), Starmap, Radar Ping, Scan</div>
+          </div>
+        </label>
+        <label class="subsys-card">
+          <input type="checkbox" value="kampf">
+          <div>
+            <b style="color:var(--red);font-size:13px">Kampf & Abwehr</b>
+            <div style="color:var(--muted);font-size:11px">Feindaufschaltung, Gimbal, Flares, Noise, Waffengruppen</div>
+          </div>
+        </label>
+        <label class="subsys-card">
+          <input type="checkbox" value="mining">
+          <div>
+            <b style="color:var(--amber);font-size:13px">Mining & Erzabbau</b>
+            <div style="color:var(--muted);font-size:11px">Mining-Modus, Laser, Leistung +/-, Module 1-3, Abwurf</div>
+          </div>
+        </label>
+        <label class="subsys-card">
+          <input type="checkbox" value="salvage">
+          <div>
+            <b style="color:var(--amber);font-size:13px">Salvage & Bergung</b>
+            <div style="color:var(--muted);font-size:11px">Salvage-Modus, Scraper, Cinch/Abrade, Fraktur, CM-Zerlegung</div>
+          </div>
+        </label>
+        <label class="subsys-card">
+          <input type="checkbox" value="cargo">
+          <div>
+            <b style="color:var(--green);font-size:13px">Fracht, Rampen & Hangar</b>
+            <div style="color:var(--muted);font-size:11px">Rampen, Verriegelung, Portlocks, Ladebereich ATC</div>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;gap:10px;border-top:1px solid var(--line);padding-top:12px">
+      <button id="cancel-ship-modal" class="gg-btn" type="button">Abbrechen</button>
+      <button id="create-ship-confirm" class="gg-btn" type="button" style="border-color:var(--amber);background:var(--amber);color:#05080d">Schiff in Flotte anlegen ►</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modular Baukasten Drawer -->
 <section id="editor" hidden>
   <div class="editor-top">
     <div>
       <strong style="color:var(--amber);letter-spacing:0.12em">GAMEGLASS SHARD BAUKASTEN</strong>
-      <div style="color:var(--muted);font-size:11px">1-Klick Star Citizen Presets & Live-Widgets einfügen, Kacheln antippen oder eigenes Hintergrundbild wählen.</div>
+      <div style="color:var(--muted);font-size:11px">1-Klick Star Citizen Presets & Unterpunkte einfügen, Kacheln antippen oder eigenes Hintergrundbild wählen.</div>
     </div>
     <div class="editor-actions">
       <button id="sync-sc" class="gg-btn" type="button" style="border-color:var(--cyan);color:var(--cyan)">SC-Tasten lesen</button>
       <button id="save" class="gg-btn" type="button" style="border-color:var(--amber);color:var(--amber)">Speichern</button>
-      <button id="copy" class="gg-btn" type="button">Kopie</button>
-      <button id="fresh" class="gg-btn" type="button">+ Shard</button>
-      <button id="remove-board" class="gg-btn" type="button" style="border-color:var(--red);color:var(--red)">Löschen</button>
+      <button id="copy" class="gg-btn" type="button">Schiff duplizieren</button>
+      <button id="remove-board" class="gg-btn" type="button" style="border-color:var(--red);color:var(--red)">Schiff löschen</button>
       <button id="done" class="gg-btn" type="button">Schließen</button>
     </div>
   </div>
 
   <div class="editor-cols">
     <div class="editor-box">
-      <h3>1. Fertige Star Citizen Shards & Widgets</h3>
+      <h3>1. Fertige Star Citizen Shards & Unterpunkte</h3>
       <div style="display:flex;gap:6px">
         <select id="preset-cat">
           <option value="all">Alle Kategorien</option>
@@ -824,9 +1076,18 @@
       </div>
       <div id="preset-list" class="preset-chips"></div>
       <div class="editor-actions">
-        <button id="add-page" class="gg-btn" type="button">+ Seite</button>
-        <button id="add-group" class="gg-btn" type="button">+ Modul-Gruppe</button>
-        <button id="add-btn" class="gg-btn" type="button">+ Leere Kachel</button>
+        <select id="quick-subsys-select" style="flex:1">
+          <option value="">+ Fertigen Unterpunkt (Seite) zum Schiff hinzufügen...</option>
+          <option value="mining">Unterpunkt: Mining & Laser</option>
+          <option value="salvage">Unterpunkt: Salvage & Bergung</option>
+          <option value="kampf">Unterpunkt: Kampf & Waffen</option>
+          <option value="cargo">Unterpunkt: Fracht & Rampen</option>
+          <option value="energie">Unterpunkt: Energie & Schilde (Live)</option>
+          <option value="quantum">Unterpunkt: Quantum & Navigation</option>
+          <option value="custom">Eigener leerer Unterpunkt...</option>
+        </select>
+        <button id="add-group" class="gg-btn" type="button">+ Gruppe</button>
+        <button id="add-btn" class="gg-btn" type="button">+ Taste</button>
       </div>
     </div>
 
@@ -846,7 +1107,7 @@
         <label>Hologramm-Farbe
           <select id="f-color">
             <option value="cyan">Cyan (MFD System)</option>
-            <option value="amber">Amber (Antrieb / Quantum)</option>
+            <option value="amber">Amber (Antrieb / Industrie)</option>
             <option value="red">Rot (Kampf / Gefahr)</option>
             <option value="green">Grün (Strom / Bereit)</option>
             <option value="blue">Blau (Navigation / IFCS)</option>
@@ -871,10 +1132,15 @@
     </div>
 
     <div class="editor-box">
-      <h3>3. Shard-Hintergrund & Atmosphäre</h3>
+      <h3>3. Schiffs-Infos & Hintergrund</h3>
+      <div class="form-grid">
+        <label>Schiffsname<input id="f-ship-name" maxlength="40" placeholder="z.B. Drake Vulture"></label>
+        <label>Hersteller<input id="f-ship-mfg" maxlength="20" placeholder="z.B. DRAKE"></label>
+        <label>Rolle<input id="f-ship-role" maxlength="40" placeholder="z.B. Salvage & Bergung"></label>
+      </div>
       <div class="editor-actions">
-        <button type="button" class="gg-btn bg-btn" data-bg="">Deep Space</button>
-        <button type="button" class="gg-btn bg-btn" data-bg="preset:aegis">Aegis Holo</button>
+        <button type="button" class="gg-btn bg-btn" data-bg="">Void</button>
+        <button type="button" class="gg-btn bg-btn" data-bg="preset:aegis">Aegis</button>
         <button type="button" class="gg-btn bg-btn" data-bg="preset:crusader">Crusader</button>
         <button type="button" class="gg-btn bg-btn" data-bg="preset:drake">Drake</button>
         <button type="button" class="gg-btn bg-btn" data-bg="preset:starmap">Starmap</button>
@@ -893,7 +1159,14 @@
 <!-- Main GameGlass Shard Workspace -->
 <div class="gg-workspace">
   <aside class="gg-rail">
+    <div class="rail-header">
+      <span>UNTERPUNKTE // SHARDS</span>
+      <span id="page-count-badge" style="color:var(--cyan)">0</span>
+    </div>
     <nav id="tabs" class="gg-tabs"></nav>
+    <div class="subsys-adder">
+      <button id="rail-add-subsys" class="gg-btn" type="button" style="width:100%;border-color:rgba(0,229,255,0.4);color:var(--cyan)">+ Unterpunkt</button>
+    </div>
     <div class="gg-rail-footer">
       <span id="board-meta">SHARD AKTIV</span>
       <b id="last-act">BEREIT</b>
@@ -906,7 +1179,6 @@
 <div id="toast" hidden></div>
 
 <script>
-// Contextual Vector Icons for GameGlass Shards
 function getIconSVG(id, label) {
   const s = ((id || "") + " " + (label || "")).toLowerCase();
   if (s.includes("flight") || s.includes("power") || s.includes("strom")) {
@@ -924,7 +1196,7 @@ function getIconSVG(id, label) {
   if (s.includes("waffe") || s.includes("fire") || s.includes("target") || s.includes("ziel") || s.includes("gimbal") || s.includes("missile") || s.includes("rakete")) {
     return `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>`;
   }
-  if (s.includes("mining") || s.includes("laser") || s.includes("modul")) {
+  if (s.includes("mining") || s.includes("laser") || s.includes("modul") || s.includes("salvage") || s.includes("scraper") || s.includes("fraktur")) {
     return `<svg viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>`;
   }
   if (s.includes("light") || s.includes("licht") || s.includes("night")) {
@@ -933,7 +1205,7 @@ function getIconSVG(id, label) {
   if (s.includes("ping") || s.includes("scan") || s.includes("radar") || s.includes("map") || s.includes("mobi")) {
     return `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 12 18 6"/><circle cx="12" cy="12" r="2"/></svg>`;
   }
-  if (s.includes("door") || s.includes("tür") || s.includes("lock")) {
+  if (s.includes("door") || s.includes("tür") || s.includes("rampe") || s.includes("lock") || s.includes("fracht")) {
     return `<svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/></svg>`;
   }
   if (s.includes("boost") || s.includes("vtol") || s.includes("antrieb") || s.includes("cruise") || s.includes("decouple")) {
@@ -941,6 +1213,109 @@ function getIconSVG(id, label) {
   }
   return `<svg viewBox="0 0 24 24"><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/></svg>`;
 }
+
+// Pre-packaged Subsystem Page Templates (Unterpunkte) for Ships
+const SUBSYSTEM_TEMPLATES = {
+  flug: () => ({
+    id: "flug",
+    label: "Flug & Systeme",
+    groups: [{
+      title: "Flugbereitschaft & Landung",
+      buttons: [
+        { id: "flight-ready", sc: "v_flightready", label: "Flight Ready", hint: "R-Alt + R", keys: ["ralt", "r"], mode: "tap", color: "green", wide: true },
+        { id: "power-all", sc: "v_power_toggle", label: "Hauptstrom", hint: "U", keys: ["u"], mode: "toggle", color: "green" },
+        { id: "gear", sc: "v_toggle_landing_system", label: "Fahrwerk", hint: "N", keys: ["n"], mode: "toggle", color: "cyan" },
+        { id: "vtol", sc: "v_vtol_toggle", label: "VTOL Modus", hint: "K", keys: ["k"], mode: "toggle", color: "amber" },
+        { id: "lights", sc: "v_lights", label: "Scheinwerfer", hint: "L", keys: ["l"], mode: "toggle", color: "amber" },
+        { id: "atc", sc: "v_atc_request", label: "Landeerlaubnis (ATC)", hint: "L-Alt + N", keys: ["lalt", "n"], mode: "tap", color: "cyan", wide: true }
+      ]
+    }]
+  }),
+  energie: () => ({
+    id: "energie",
+    label: "Energie & Schilde",
+    groups: [{
+      title: "Live Schiffs-Verteiler",
+      buttons: [
+        { id: "live-pwr-" + Date.now(), kind: "power", label: "Energie-Kondensator", hint: "F5 / F6 / F7 / F8", keys: ["f8"], mode: "tap", color: "amber", wide: true },
+        { id: "live-shd-" + Date.now(), kind: "shield", label: "Schild-Matrix", hint: "Sektoren", keys: ["num5"], mode: "tap", color: "cyan", wide: true }
+      ]
+    }]
+  }),
+  quantum: () => ({
+    id: "quantum",
+    label: "Quantum & Nav",
+    groups: [{
+      title: "Quantum Drive & Sensoren",
+      buttons: [
+        { id: "master-mode", sc: "v_toggle_quantum_mode", label: "Master Mode (SCM/NAV)", hint: "B halten", keys: ["b"], mode: "hold", color: "amber", wide: true },
+        { id: "starmap", sc: "v_starmap", label: "Skyline Starmap", hint: "F2", keys: ["f2"], mode: "tap", color: "blue" },
+        { id: "mobiglas", sc: "mobiglas", label: "mobiGlas", hint: "F1", keys: ["f1"], mode: "tap", color: "blue" },
+        { id: "ping", sc: "v_invoke_ping", label: "Radar Ping", hint: "Tab halten", keys: ["tab"], mode: "hold", color: "cyan", wide: true }
+      ]
+    }]
+  }),
+  kampf: () => ({
+    id: "kampf",
+    label: "Kampf & Waffen",
+    groups: [{
+      title: "Gefechtssysteme & Gegenmaßnahmen",
+      buttons: [
+        { id: "target-hostile", sc: "v_target_nearest_hostile", label: "Nächster Feind", hint: "T", keys: ["t"], mode: "tap", color: "red" },
+        { id: "gimbal", sc: "v_weapon_gimbals_state_toggle", label: "Gimbal Modus", hint: "G", keys: ["g"], mode: "tap", color: "blue" },
+        { id: "flares", sc: "v_weapon_countermeasure_decoy_launch", label: "Flare / Köder", hint: "H", keys: ["h"], mode: "tap", color: "amber" },
+        { id: "noise", sc: "v_weapon_countermeasure_noise_launch", label: "Noise / Störfeld", hint: "J", keys: ["j"], mode: "tap", color: "cyan" },
+        { id: "fire-1", sc: "v_attack1", label: "Waffengruppe 1", hint: "Maus Links", keys: ["mouse1"], mode: "hold", color: "red", danger: true, wide: true },
+        { id: "fire-2", sc: "v_attack2", label: "Waffengruppe 2", hint: "Maus Rechts", keys: ["mouse2"], mode: "hold", color: "red", danger: true, wide: true }
+      ]
+    }]
+  }),
+  mining: () => ({
+    id: "mining",
+    label: "Mining & Laser",
+    groups: [{
+      title: "Erzabbau & Verbrauchsgüter",
+      buttons: [
+        { id: "mining-mode", sc: "v_toggle_mining_mode", label: "Mining-Modus", hint: "M", keys: ["m"], mode: "toggle", color: "amber", wide: true },
+        { id: "mining-laser", label: "Laser / Extraktion", hint: "Maus Links halten", keys: ["mouse1"], mode: "hold", color: "red", danger: true, wide: true },
+        { id: "laser-up", label: "Laser-Leistung +", hint: "Mausrad Hoch", keys: ["wheelup"], mode: "tap", color: "amber" },
+        { id: "laser-down", label: "Laser-Leistung —", hint: "Mausrad Runter", keys: ["wheeldown"], mode: "tap", color: "cyan" },
+        { id: "mod-1", sc: "v_mining_use_consumable1", label: "Modul 1", hint: "L-Alt + 1", keys: ["lalt", "1"], mode: "tap", color: "cyan" },
+        { id: "mod-2", sc: "v_mining_use_consumable2", label: "Modul 2", hint: "L-Alt + 2", keys: ["lalt", "2"], mode: "tap", color: "cyan" },
+        { id: "mod-3", sc: "v_mining_use_consumable3", label: "Modul 3", hint: "L-Alt + 3", keys: ["lalt", "3"], mode: "tap", color: "cyan" },
+        { id: "jettison", sc: "v_jettison_volatile_cargo", label: "Erz abwerfen", hint: "L-Alt + J", keys: ["lalt", "j"], mode: "tap", color: "red", danger: true }
+      ]
+    }]
+  }),
+  salvage: () => ({
+    id: "salvage",
+    label: "Salvage & Scraper",
+    groups: [{
+      title: "Hüllen-Bergung & Struktur-Fraktur",
+      buttons: [
+        { id: "salvage-mode", sc: "v_toggle_salvage_mode", label: "Salvage-Modus", hint: "M", keys: ["m"], mode: "toggle", color: "amber", wide: true },
+        { id: "salvage-beam", label: "Scraper-Strahl", hint: "Maus Links halten", keys: ["mouse1"], mode: "hold", color: "red", danger: true, wide: true },
+        { id: "salvage-all", sc: "v_salvage_focus_all_heads", label: "Beide Köpfe", hint: "R-Alt + S", keys: ["ralt", "s"], mode: "tap", color: "amber" },
+        { id: "salvage-gimbal", sc: "v_salvage_toggle_gimbal_mode", label: "Salvage Gimbal", hint: "G", keys: ["g"], mode: "toggle", color: "cyan" },
+        { id: "salvage-fracture", sc: "v_salvage_toggle_fire_fracture", label: "Fraktur-Feld", hint: "R-Alt + W", keys: ["ralt", "w"], mode: "tap", color: "red", wide: true },
+        { id: "salvage-cm", sc: "v_salvage_toggle_fire_disintegrate", label: "Desintegration (CM)", hint: "R-Alt + X", keys: ["ralt", "x"], mode: "tap", color: "amber", wide: true }
+      ]
+    }]
+  }),
+  cargo: () => ({
+    id: "cargo",
+    label: "Fracht & Rampen",
+    groups: [{
+      title: "Hangar, Rampen & Frachtgitter",
+      buttons: [
+        { id: "doors-all", sc: "v_toggle_all_doors", label: "Alle Rampen / Türen", hint: "R-Alt + K", keys: ["ralt", "k"], mode: "toggle", color: "amber", wide: true },
+        { id: "doors-lock", sc: "v_lock_all_doors", label: "Verriegeln", hint: "R-Alt + L", keys: ["ralt", "l"], mode: "toggle", color: "cyan" },
+        { id: "portlocks", sc: "v_toggle_all_portlocks", label: "Frachtgitter / Portlocks", hint: "R-Alt + P", keys: ["ralt", "p"], mode: "toggle", color: "amber" },
+        { id: "cargo-atc", sc: "v_atc_loading_area_request", label: "Ladebereich anfragen", hint: "L-Alt + K", keys: ["lalt", "k"], mode: "tap", color: "green", wide: true }
+      ]
+    }]
+  })
+};
 
 const SC_PRESETS = [
   { cat: "widgets", kind: "shield", label: "Schild-Matrix (GameGlass)", hint: "Vorn/Hinten/Links/Rechts/Reset", keys: ["num5"], color: "cyan", wide: true },
@@ -973,9 +1348,12 @@ const SC_PRESETS = [
   { cat: "kampf", sc: "v_eject", label: "Schleudersitz", hint: "R-Alt + Y", keys: ["ralt", "y"], mode: "hold", color: "red", danger: true },
   { cat: "industrie", sc: "v_toggle_mining_mode", label: "Mining-Modus", hint: "M", keys: ["m"], mode: "toggle", color: "amber", wide: true },
   { cat: "industrie", sc: "v_mining_laser", label: "Mining-Laser", hint: "Maus Links", keys: ["mouse1"], mode: "hold", color: "red", danger: true, wide: true },
-  { cat: "industrie", sc: "v_mining_use_consumable1", label: "Modul 1", hint: "L-Alt + 1", keys: ["lalt", "1"], mode: "tap", color: "cyan" },
-  { cat: "industrie", sc: "v_mining_use_consumable2", label: "Modul 2", hint: "L-Alt + 2", keys: ["lalt", "2"], mode: "tap", color: "cyan" },
-  { cat: "industrie", sc: "v_mining_use_consumable3", label: "Modul 3", hint: "L-Alt + 3", keys: ["lalt", "3"], mode: "tap", color: "cyan" },
+  { cat: "industrie", sc: "v_mining_use_consumable1", label: "Mining Modul 1", hint: "L-Alt + 1", keys: ["lalt", "1"], mode: "tap", color: "cyan" },
+  { cat: "industrie", sc: "v_mining_use_consumable2", label: "Mining Modul 2", hint: "L-Alt + 2", keys: ["lalt", "2"], mode: "tap", color: "cyan" },
+  { cat: "industrie", sc: "v_mining_use_consumable3", label: "Mining Modul 3", hint: "L-Alt + 3", keys: ["lalt", "3"], mode: "tap", color: "cyan" },
+  { cat: "industrie", sc: "v_toggle_salvage_mode", label: "Salvage-Modus", hint: "M", keys: ["m"], mode: "toggle", color: "amber", wide: true },
+  { cat: "industrie", sc: "v_salvage_toggle_fire_fracture", label: "Salvage Fraktur", hint: "R-Alt + W", keys: ["ralt", "w"], mode: "tap", color: "red", wide: true },
+  { cat: "industrie", sc: "v_salvage_toggle_fire_disintegrate", label: "Desintegration (CM)", hint: "R-Alt + X", keys: ["ralt", "x"], mode: "tap", color: "amber", wide: true },
   { cat: "industrie", sc: "v_jettison_volatile_cargo", label: "Fracht abwerfen", hint: "L-Alt + J", keys: ["lalt", "j"], mode: "tap", color: "red", danger: true }
 ];
 
@@ -994,8 +1372,10 @@ const toastEl = document.getElementById("toast");
 const armEl = document.getElementById("arm");
 const editEl = document.getElementById("edit");
 const boardEl = document.getElementById("board");
+const fleetChipsEl = document.getElementById("fleet-chips");
 const editorEl = document.getElementById("editor");
 const bgLayerEl = document.getElementById("bg-layer");
+const shipModalEl = document.getElementById("ship-modal");
 const held = new Set();
 const toggled = new Set();
 
@@ -1005,11 +1385,12 @@ let editing = false;
 let toastTimer = 0;
 let current = null;
 let selected = null;
+let fleetCatalog = [];
 let liveTelemetry = {
   power: { weapons: 33, engines: 34, shields: 33 },
   shields: { front: 25, back: 25, left: 25, right: 25 },
   systems: { gear: true, power_all: true, vtol: false, lights: false, decoupled: false, master_mode: "SCM" },
-  sc_ship: "SC COCKPIT // SHARD"
+  sc_ship: "SC COCKPIT // FLEET SHARD"
 };
 
 function toast(text) {
@@ -1084,9 +1465,6 @@ function updateTelemetryUI(t) {
   document.getElementById("tele-shd-txt").textContent = `F:${s.front} B:${s.back} L:${s.left} R:${s.right}`;
   document.getElementById("tele-mode").textContent = sys.master_mode || "SCM";
 
-  if (t.sc_ship && t.sc_ship !== "AEGIS / UEE COCKPIT") {
-    document.getElementById("ship-title").textContent = t.sc_ship;
-  }
   document.getElementById("pill-pwr").classList.toggle("active", !!sys.power_all);
   document.getElementById("pill-gear").classList.toggle("active", !!sys.gear);
   document.getElementById("pill-vtol").classList.toggle("active", !!sys.vtol);
@@ -1126,6 +1504,35 @@ function applyBackground(data) {
   } else {
     bgLayerEl.style.backgroundImage = `url("${bg.replace(/"/g, '\\"')}")`;
   }
+}
+
+function renderFleetBar(activeId) {
+  fleetChipsEl.innerHTML = "";
+  fleetCatalog.forEach((ship) => {
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "ship-chip" + (ship.id === activeId ? " active" : "");
+    const mfg = ship.manufacturer || "UEE";
+    const name = ship.ship || ship.title || ship.id;
+    const role = ship.role || `${ship.page_count || 1} Systeme`;
+    chip.innerHTML = `
+      <span class="ship-chip-mfg">${mfg}</span>
+      <span class="ship-chip-info">
+        <b>${name}</b>
+        <small>${role}</small>
+      </span>
+    `;
+    chip.addEventListener("click", () => {
+      if (ship.id !== current?.id) {
+        if (editing && current && !confirm("Ohne Speichern das Schiff wechseln?")) {
+          return;
+        }
+        boardEl.value = ship.id;
+        openBoard(ship.id).catch((err) => toast(err.message));
+      }
+    });
+    fleetChipsEl.appendChild(chip);
+  });
 }
 
 function buttonAt(ref) {
@@ -1310,11 +1717,20 @@ function render(data, keepPageIndex) {
   localStorage.setItem("sc-last-board", data.id || "standard");
   localStorage.setItem("sc-cached-layout-" + (data.id || "standard"), JSON.stringify(data));
   applyBackground(data);
+  renderFleetBar(data.id);
 
-  document.getElementById("board-meta").textContent = (data.title || data.id).toUpperCase() + (data._source === "local" ? " // CUSTOM" : " // SHARD");
+  const shipTitle = (data.ship || data.title || data.id).toUpperCase();
+  const shipRole = (data.role || "MULTI-ROLE SHARD").toUpperCase();
+  document.getElementById("ship-title").textContent = `${shipTitle} // ${shipRole}`;
+  document.getElementById("board-meta").textContent = shipTitle + (data._source === "local" ? " ★" : "");
   document.getElementById("remove-board").hidden = data._source !== "local";
+  document.getElementById("page-count-badge").textContent = String((data.pages || []).length);
 
-  const activeIdx = keepPageIndex !== undefined ? keepPageIndex : 0;
+  document.getElementById("f-ship-name").value = data.ship || data.title || "";
+  document.getElementById("f-ship-mfg").value = data.manufacturer || "AEGIS";
+  document.getElementById("f-ship-role").value = data.role || "";
+
+  const activeIdx = keepPageIndex !== undefined ? Math.min(keepPageIndex, (data.pages || []).length - 1) : 0;
   tabsEl.innerHTML = "";
   pagesEl.innerHTML = "";
 
@@ -1342,12 +1758,16 @@ function render(data, keepPageIndex) {
       hdr.appendChild(title);
 
       if (editing) {
+        const actionsWrap = document.createElement("div");
+        actionsWrap.style.display = "flex";
+        actionsWrap.style.gap = "6px";
+
         const renameBtn = document.createElement("button");
         renameBtn.type = "button";
         renameBtn.className = "gg-btn";
-        renameBtn.style.height = "26px";
+        renameBtn.style.height = "24px";
         renameBtn.style.fontSize = "10px";
-        renameBtn.textContent = "Umbenennen";
+        renameBtn.textContent = "Gruppe umbenennen";
         renameBtn.addEventListener("click", () => {
           const nt = prompt("Modul-Name:", group.title || "SYSTEME");
           if (nt) {
@@ -1355,7 +1775,25 @@ function render(data, keepPageIndex) {
             render(current, activePageIndex());
           }
         });
-        hdr.appendChild(renameBtn);
+        actionsWrap.appendChild(renameBtn);
+
+        if (data.pages.length > 1 && gi === 0) {
+          const delPageBtn = document.createElement("button");
+          delPageBtn.type = "button";
+          delPageBtn.className = "gg-btn";
+          delPageBtn.style.height = "24px";
+          delPageBtn.style.fontSize = "10px";
+          delPageBtn.style.borderColor = "var(--red)";
+          delPageBtn.style.color = "var(--red)";
+          delPageBtn.textContent = "Unterpunkt löschen";
+          delPageBtn.addEventListener("click", () => {
+            if (!confirm(`Unterpunkt '${page.label}' aus diesem Schiff entfernen?`)) return;
+            current.pages.splice(pi, 1);
+            render(current, 0);
+          });
+          actionsWrap.appendChild(delPageBtn);
+        }
+        hdr.appendChild(actionsWrap);
       }
 
       const grid = document.createElement("div");
@@ -1429,6 +1867,30 @@ function insertPresetIntoPage(preset) {
   toast(`Shard '${preset.label}' eingefügt`);
 }
 
+function addSubsystemTemplateToCurrentShip(templateKey) {
+  if (!current) return;
+  if (templateKey === "custom") {
+    const label = prompt("Name des neuen Unterpunkts (z.B. Mining, Salvage, Turret, Medizin):", "Neues System");
+    if (!label) return;
+    current.pages.push({
+      id: slug(label),
+      label: label.slice(0, 24),
+      groups: [{
+        title: label.slice(0, 40),
+        buttons: [{ id: "neu-" + Date.now(), label: "Flight Ready", hint: "R-Alt + R", keys: ["ralt", "r"], mode: "tap", color: "green" }]
+      }]
+    });
+  } else if (SUBSYSTEM_TEMPLATES[templateKey]) {
+    const tpl = SUBSYSTEM_TEMPLATES[templateKey]();
+    tpl.id = tpl.id + "-" + (current.pages.length + 1);
+    current.pages.push(tpl);
+  } else {
+    return;
+  }
+  render(current, current.pages.length - 1);
+  toast("Unterpunkt zum Schiff hinzugefügt (bitte Speichern)");
+}
+
 function applyForm(showToast) {
   if (!selected) { toast("Zuerst eine Kachel antippen"); return false; }
   const button = buttonAt(selected);
@@ -1457,9 +1919,15 @@ function applyForm(showToast) {
 }
 
 function payload() {
+  const shipName = document.getElementById("f-ship-name").value.trim() || current.ship || current.title;
+  const shipMfg = document.getElementById("f-ship-mfg").value.trim() || current.manufacturer || "UEE";
+  const shipRole = document.getElementById("f-ship-role").value.trim() || current.role || "Multi-Role";
   return {
     id: current.id,
-    title: current.title,
+    title: shipName,
+    ship: shipName,
+    manufacturer: shipMfg,
+    role: shipRole,
     background: current.background || "",
     bg_opacity: current.bg_opacity !== undefined ? current.bg_opacity : 0.35,
     pages: current.pages,
@@ -1469,19 +1937,21 @@ function payload() {
 
 async function refreshList(selectId) {
   const list = await api("/api/dashboards");
+  fleetCatalog = list.dashboards || [];
   boardEl.innerHTML = "";
-  (list.dashboards || []).forEach((item) => {
+  fleetCatalog.forEach((item) => {
     const option = document.createElement("option");
     option.value = item.id;
-    option.textContent = item.title + (item.source === "local" ? " ★" : "");
+    option.textContent = (item.ship || item.title) + (item.source === "local" ? " ★" : "");
     boardEl.appendChild(option);
   });
-  const wanted = selectId || list.active || localStorage.getItem("sc-last-board") || (list.dashboards?.[0]?.id) || "standard";
+  const wanted = selectId || list.active || localStorage.getItem("sc-last-board") || (fleetCatalog[0]?.id) || "standard";
   if ([...boardEl.options].some((option) => option.value === wanted)) {
     boardEl.value = wanted;
   } else if (boardEl.options.length > 0) {
     boardEl.selectedIndex = 0;
   }
+  renderFleetBar(boardEl.value || wanted);
   return boardEl.value || wanted;
 }
 
@@ -1516,9 +1986,81 @@ async function saveBoard() {
     const pi = activePageIndex();
     await refreshList(saved.id);
     render(saved, pi);
-    toast("Shard gespeichert!");
+    toast("Schiff & Unterpunkte gespeichert!");
   } catch (err) { toast(err.message); }
 }
+
+// Ship Creator Wizard Modal Events
+document.getElementById("open-ship-wizard").addEventListener("click", () => {
+  document.getElementById("wiz-title").value = "";
+  document.getElementById("wiz-role").value = "";
+  shipModalEl.querySelectorAll(".subsys-card input").forEach((cb) => {
+    cb.checked = ["flug", "energie", "quantum"].includes(cb.value);
+  });
+  shipModalEl.hidden = false;
+  document.getElementById("wiz-title").focus();
+});
+document.getElementById("close-ship-modal").addEventListener("click", () => { shipModalEl.hidden = true; });
+document.getElementById("cancel-ship-modal").addEventListener("click", () => { shipModalEl.hidden = true; });
+
+document.getElementById("create-ship-confirm").addEventListener("click", async () => {
+  const shipName = document.getElementById("wiz-title").value.trim() || "Mein Schiff";
+  const mfg = document.getElementById("wiz-mfg").value;
+  const role = document.getElementById("wiz-role").value.trim() || "Custom Ship Shard";
+  const bg = document.getElementById("wiz-bg").value;
+  const checkedBoxes = [...shipModalEl.querySelectorAll(".subsys-card input:checked")].map((cb) => cb.value);
+
+  if (!checkedBoxes.length) {
+    toast("Bitte mindestens einen Unterpunkt (z.B. Flug oder Mining) auswählen");
+    return;
+  }
+
+  const pages = checkedBoxes.map((k) => SUBSYSTEM_TEMPLATES[k]()).filter(Boolean);
+  let id = slug(shipName);
+  let n = 2;
+  while (fleetCatalog.some((s) => s.id === id)) {
+    id = `${slug(shipName)}-${n}`.slice(0, 40);
+    n++;
+  }
+  const body = {
+    id,
+    title: shipName,
+    ship: shipName,
+    manufacturer: mfg,
+    role,
+    background: bg,
+    bg_opacity: 0.4,
+    activate: true,
+    pages
+  };
+
+  try {
+    const saved = await api("/api/dashboard/" + encodeURIComponent(id), {
+      method: "PUT",
+      headers: headers(),
+      body: JSON.stringify(body)
+    });
+    shipModalEl.hidden = true;
+    await refreshList(saved.id);
+    render(saved, 0);
+    toast(`Schiff '${shipName}' mit ${pages.length} Unterpunkten angelegt!`);
+  } catch (err) {
+    toast(err.message);
+  }
+});
+
+// Quick Subsystem Adder from Left Rail or Baukasten
+document.getElementById("rail-add-subsys").addEventListener("click", () => {
+  if (!editing) editEl.click();
+  document.getElementById("quick-subsys-select").focus();
+});
+
+document.getElementById("quick-subsys-select").addEventListener("change", (e) => {
+  const val = e.target.value;
+  if (!val) return;
+  addSubsystemTemplateToCurrentShip(val);
+  e.target.value = "";
+});
 
 document.getElementById("preset-cat").addEventListener("change", renderPresets);
 document.getElementById("preset-search").addEventListener("input", renderPresets);
@@ -1612,42 +2154,8 @@ document.getElementById("done").addEventListener("click", () => editEl.click());
 document.getElementById("apply").addEventListener("click", () => applyForm(true));
 document.getElementById("save").addEventListener("click", saveBoard);
 
-document.getElementById("fresh").addEventListener("click", async () => {
-  const title = prompt("Name des neuen GameGlass Shards:", "Mein Schiff");
-  if (!title) return;
-  const id = slug(title);
-  const body = {
-    title,
-    background: "preset:aegis",
-    bg_opacity: 0.4,
-    activate: true,
-    pages: [{
-      id: "cockpit",
-      label: "Flug & Systeme",
-      groups: [{
-        title: "Flight Systems",
-        buttons: [
-          { id: "flight-ready", sc: "v_flightready", label: "Flight Ready", hint: "R-Alt + R", keys: ["ralt", "r"], mode: "tap", color: "green", wide: true },
-          { id: "gear", sc: "v_toggle_landing_system", label: "Fahrwerk", hint: "N", keys: ["n"], mode: "toggle", color: "cyan" },
-          { id: "lights", sc: "v_lights", label: "Scheinwerfer", hint: "L", keys: ["l"], mode: "toggle", color: "amber" },
-          { id: "pwr-widget", kind: "power", label: "Energie-Kondensator", hint: "F5 / F6 / F7 / F8", keys: ["f8"], mode: "tap", color: "amber", wide: true },
-          { id: "shd-widget", kind: "shield", label: "Schild-Matrix", hint: "Sektoren", keys: ["num5"], mode: "tap", color: "cyan", wide: true }
-        ]
-      }]
-    }]
-  };
-  try {
-    const saved = await api("/api/dashboard/" + encodeURIComponent(id), {
-      method: "PUT", headers: headers(), body: JSON.stringify(body)
-    });
-    await refreshList(saved.id);
-    render(saved, 0);
-    toast("Neuer Shard angelegt!");
-  } catch (err) { toast(err.message); }
-});
-
 document.getElementById("copy").addEventListener("click", async () => {
-  const title = prompt("Name der Shard-Kopie:", (current.title || "Shard") + " Kopie");
+  const title = prompt("Name des duplizierten Schiffs:", (current.ship || current.title || "Schiff") + " Mk II");
   if (!title) return;
   const id = slug(title);
   try {
@@ -1656,6 +2164,9 @@ document.getElementById("copy").addEventListener("click", async () => {
       headers: headers(),
       body: JSON.stringify({
         title,
+        ship: title,
+        manufacturer: current.manufacturer || "UEE",
+        role: current.role || "Custom",
         background: current.background || "",
         bg_opacity: current.bg_opacity !== undefined ? current.bg_opacity : 0.35,
         pages: current.pages,
@@ -1664,18 +2175,18 @@ document.getElementById("copy").addEventListener("click", async () => {
     });
     await refreshList(saved.id);
     render(saved, activePageIndex());
-    toast("Kopie gespeichert");
+    toast("Schiff dupliziert!");
   } catch (err) { toast(err.message); }
 });
 
 document.getElementById("remove-board").addEventListener("click", async () => {
   if (current._source !== "local") return;
-  if (!confirm("Eigene Kopie von " + current.title + " löschen?")) return;
+  if (!confirm("Schiff " + (current.ship || current.title) + " wirklich aus deiner Flotte löschen?")) return;
   try {
     await api("/api/dashboard/" + encodeURIComponent(current.id), { method: "DELETE" });
     const id = await refreshList("standard");
     await openBoard(id);
-    toast("Gelöscht");
+    toast("Schiff gelöscht");
   } catch (err) { toast(err.message); }
 });
 
@@ -1733,22 +2244,8 @@ document.getElementById("add-group").addEventListener("click", () => {
   selectButton({ pi, gi, bi: 0 });
 });
 
-document.getElementById("add-page").addEventListener("click", () => {
-  const label = prompt("Name der neuen Seite:", "Shard " + (current.pages.length + 1));
-  if (!label) return;
-  current.pages.push({
-    id: slug(label),
-    label: label.slice(0, 24),
-    groups: [{
-      title: "Steuerung",
-      buttons: [{ id: "neu-" + Date.now(), label: "Flight Ready", hint: "R-Alt + R", keys: ["ralt", "r"], mode: "tap", color: "green" }]
-    }]
-  });
-  render(current, current.pages.length - 1);
-});
-
 boardEl.addEventListener("change", () => {
-  if (editing && current && boardEl.value !== current.id && !confirm("Ohne Speichern wechseln?")) {
+  if (editing && current && boardEl.value !== current.id && !confirm("Ohne Speichern das Schiff wechseln?")) {
     boardEl.value = current.id;
     return;
   }
