@@ -14,13 +14,19 @@ oder im Benutzerordner des Installers.
 
 from __future__ import annotations
 
+import io
 import json
 import os
 import re
+import shutil
 import socket
+import subprocess
 import sys
 import threading
 import time
+import urllib.error
+import urllib.request
+import zipfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import unquote
@@ -297,6 +303,471 @@ def state_path() -> Path:
     if user_root().resolve() == APP_ROOT.resolve():
         return local_dir() / "state.json"
     return user_root() / "state.json"
+
+
+# --- GitHub-Stand: gleicher Entscheid für Button, Web und Start-Badge ---
+
+GITHUB_API = "https://api.github.com/repos/MOON-132/Star-Citizen-Cockpit/commits/main"
+GITHUB_REPO_ZIP = "https://github.com/MOON-132/Star-Citizen-Cockpit/archive/{sha}.zip"
+COMMIT_NAME = ".sc-cockpit-commit"
+BADGE_TEXT = "Neue Version verfügbar"
+_PRESERVE_NAMES = {"config.local.json", "state.json", COMMIT_NAME, ".sc-cockpit-update.lock", ".sc-cockpit-restart"}
+
+
+def one_line(text: str, limit: int = 160) -> str:
+    text = " ".join((text or "").split())
+    if len(text) > limit:
+        return text[: limit - 1] + "…"
+    return text
+
+
+def describe_update(local_sha: str, remote_sha: str, fetch_error: str) -> dict:
+    """Vergleicht lokalen und GitHub-Commit.
+
+    status: update | current | error
+    badge: nur bei update (Start-Hinweis). Netzwerkfehler bleibt ohne Badge.
+    """
+    err = (fetch_error or "").strip()
+    remote = (remote_sha or "").strip().lower()
+    local = (local_sha or "").strip().lower()
+    if err or not remote:
+        return {
+            "ok": False,
+            "status": "error",
+            "message": "Update-Fehler: " + (err or "GitHub-Stand unbekannt"),
+            "local": local,
+            "remote": remote,
+            "badge": False,
+            "badge_text": "",
+        }
+    if local != remote:
+        return {
+            "ok": True,
+            "status": "update",
+            "message": "Update verfügbar.",
+            "local": local,
+            "remote": remote,
+            "badge": True,
+            "badge_text": BADGE_TEXT,
+        }
+    return {
+        "ok": True,
+        "status": "current",
+        "message": "SC Cockpit ist aktuell.",
+        "local": local,
+        "remote": remote,
+        "badge": False,
+        "badge_text": "",
+    }
+
+
+def _update_error(detail: str) -> dict:
+    got = describe_update("", "", one_line(detail) or "unbekannt")
+    return got
+
+
+def http_get(url: str, timeout: float) -> bytes:
+    req = urllib.request.Request(
+        url,
+        headers={"User-Agent": "SC-Cockpit", "Accept": "application/vnd.github+json"},
+    )
+    with urllib.request.urlopen(req, timeout=timeout) as res:
+        return res.read()
+
+
+def fetch_remote_sha(timeout: float = 20, url: str = "") -> tuple[str, str]:
+    try:
+        raw = http_get(url or GITHUB_API, timeout)
+        data = json.loads(raw.decode("utf-8"))
+        sha = str(data.get("sha") or "").strip()
+        if len(sha) < 7 or any(c not in "0123456789abcdefABCDEF" for c in sha):
+            return "", "GitHub-Antwort ohne Commit"
+        return sha, ""
+    except urllib.error.HTTPError as exc:
+        return "", f"GitHub HTTP {exc.code}"
+    except Exception:
+        return "", "keine Verbindung zu GitHub"
+
+
+def _git_env(root: Path) -> dict:
+    env = os.environ.copy()
+    env["GIT_CEILING_DIRECTORIES"] = str(root.resolve())
+    return env
+
+
+def read_local_sha(root: Path, timeout: float = 20) -> tuple[str, str]:
+    git_meta = root / ".git"
+    if git_meta.exists():
+        git = shutil.which("git")
+        if not git:
+            return "", "git nicht gefunden"
+        try:
+            proc = subprocess.run(
+                [git, "rev-parse", "HEAD"],
+                cwd=root,
+                capture_output=True,
+                text=True,
+                timeout=timeout,
+                env=_git_env(root),
+            )
+        except subprocess.TimeoutExpired:
+            return "", "git Zeitüberschreitung"
+        if proc.returncode != 0:
+            detail = (proc.stderr or proc.stdout or "git rev-parse fehlgeschlagen").strip()
+            return "", one_line(detail) or "git rev-parse fehlgeschlagen"
+        return proc.stdout.strip(), ""
+    marker = root / COMMIT_NAME
+    if marker.is_file():
+        parts = marker.read_text(encoding="utf-8", errors="replace").strip().split()
+        return (parts[0] if parts else ""), ""
+    return "", ""
+
+
+def _write_marker(root: Path, sha: str) -> None:
+    (root / COMMIT_NAME).write_text(sha.strip().lower() + "\n", encoding="utf-8")
+
+
+def _skip_rel(rel: str) -> bool:
+    rel = rel.replace("\\", "/").lstrip("/")
+    if not rel:
+        return True
+    parts = [p for p in rel.split("/")]
+    if any(part in {"", ".", ".."} for part in parts):
+        return True
+    if parts[-1] in _PRESERVE_NAMES or parts[-1] == "config.local.json":
+        return True
+    if rel == "dashboards/local" or rel.startswith("dashboards/local/"):
+        return True
+    if parts[0] == ".git":
+        return True
+    return False
+
+
+def _zip_prefix(names: list[str]) -> str:
+    tops = set()
+    has_slash = False
+    for name in names:
+        name = name.replace("\\", "/").lstrip("/")
+        if not name or name.endswith("/"):
+            continue
+        tops.add(name.split("/", 1)[0])
+        if "/" in name:
+            has_slash = True
+    if has_slash and len(tops) == 1:
+        return next(iter(tops)) + "/"
+    return ""
+
+
+def write_program_file(target: Path, data: bytes) -> str:
+    target.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        if target.is_file() and target.read_bytes() == data:
+            return "same"
+    except OSError:
+        pass
+    part = Path(str(target) + ".part")
+    part.write_bytes(data)
+    try:
+        os.replace(part, target)
+    except PermissionError:
+        try:
+            part.unlink()
+        except OSError:
+            pass
+        if target.suffix.lower() != ".exe":
+            raise
+        Path(str(target) + ".new").write_bytes(data)
+        return "staged"
+    if target.suffix.lower() in {".exe", ".bat", ".ps1"}:
+        try:
+            os.chmod(target, 0o755)
+        except OSError:
+            pass
+    return "written"
+
+
+def apply_repo_zip(root: Path, blob: bytes) -> dict:
+    """Ersetzt Programmdateien. config.local.json, state.json und dashboards/local bleiben."""
+    root_r = root.resolve()
+    files = 0
+    restart_exe = False
+    with zipfile.ZipFile(io.BytesIO(blob)) as zf:
+        names = [n for n in zf.namelist() if not n.endswith("/")]
+        prefix = _zip_prefix(names)
+        for info in zf.infolist():
+            if info.is_dir():
+                continue
+            rel = info.filename.replace("\\", "/")
+            if prefix and rel.startswith(prefix):
+                rel = rel[len(prefix):]
+            rel = rel.lstrip("/")
+            if _skip_rel(rel):
+                continue
+            target = (root_r / rel).resolve()
+            try:
+                target.relative_to(root_r)
+            except ValueError:
+                continue
+            how = write_program_file(target, zf.read(info))
+            files += 1
+            if rel.lower().endswith(".exe") and how in {"written", "staged"}:
+                restart_exe = True
+    mirror = _mirror_setup_exe(root_r)
+    if mirror in {"written", "staged"}:
+        restart_exe = True
+        files += 1
+    return {"files": files, "restart_exe": restart_exe}
+
+
+def _mirror_setup_exe(root: Path) -> str:
+    staged = Path(str(root / "SC-Cockpit-Setup.exe") + ".new")
+    src = staged if staged.is_file() else root / "SC-Cockpit-Setup.exe"
+    other = root / "SC-Cockpit.exe"
+    if not src.is_file():
+        return ""
+    if not other.exists() and not Path(str(other) + ".new").exists():
+        return ""
+    if src.resolve() == other.resolve():
+        return ""
+    return write_program_file(other, src.read_bytes())
+
+
+def _acquire_update_lock(root: Path) -> Path | None:
+    lock = root / ".sc-cockpit-update.lock"
+    if lock.exists():
+        try:
+            age = time.time() - lock.stat().st_mtime
+        except OSError:
+            age = 0
+        if age < 300:
+            return None
+        try:
+            lock.unlink()
+        except OSError:
+            return None
+    try:
+        fd = os.open(str(lock), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+    except FileExistsError:
+        return None
+    try:
+        os.write(fd, str(os.getpid()).encode())
+    finally:
+        os.close(fd)
+    return lock
+
+
+def _download_zip(sha: str) -> bytes:
+    clean = sha.strip().lower()
+    if len(clean) < 7 or any(c not in "0123456789abcdef" for c in clean):
+        raise ValueError("Commit ungültig")
+    return http_get(GITHUB_REPO_ZIP.format(sha=clean), 120)
+
+
+def _apply_git(root: Path, remote: str) -> dict:
+    git = shutil.which("git")
+    if not git:
+        return _update_error("git nicht gefunden")
+    try:
+        proc = subprocess.run(
+            [git, "pull", "--ff-only"],
+            cwd=root,
+            capture_output=True,
+            text=True,
+            timeout=90,
+            env=_git_env(root),
+        )
+    except subprocess.TimeoutExpired:
+        return _update_error("git pull Zeitüberschreitung")
+    except OSError as exc:
+        return _update_error(str(exc))
+    if proc.returncode != 0:
+        lines = [ln.strip() for ln in (proc.stderr or proc.stdout or "").splitlines() if ln.strip()]
+        return _update_error(lines[0] if lines else "git pull fehlgeschlagen")
+    new_local, err = read_local_sha(root)
+    if err:
+        return _update_error(err)
+    if new_local.lower() != remote.lower():
+        return _update_error("git pull hat den GitHub-Stand nicht übernommen")
+    _write_marker(root, new_local)
+    return {
+        "ok": True,
+        "status": "updated",
+        "message": "Update installiert.",
+        "local": new_local.lower(),
+        "remote": remote.lower(),
+        "badge": False,
+        "badge_text": "",
+        "restart_exe": False,
+    }
+
+
+def _apply_zip(root: Path, remote: str) -> dict:
+    blob = _download_zip(remote)
+    if len(blob) < 1000 or blob[:2] != b"PK":
+        return _update_error("ZIP von GitHub ist leer")
+    info = apply_repo_zip(root, blob)
+    if info["files"] <= 0:
+        return _update_error("ZIP ohne Programmdateien")
+    _write_marker(root, remote)
+    return {
+        "ok": True,
+        "status": "updated",
+        "message": "Update installiert.",
+        "local": remote.lower(),
+        "remote": remote.lower(),
+        "badge": False,
+        "badge_text": "",
+        "files": info["files"],
+        "restart_exe": info["restart_exe"],
+    }
+
+
+def github_update(root: Path, apply: bool = True, timeout: float = 20) -> dict:
+    root = Path(root)
+    if not root.is_dir():
+        return _update_error("Ordner nicht gefunden")
+    local, local_err = read_local_sha(root, timeout=timeout)
+    if local_err:
+        got = _update_error(local_err)
+        return got
+    remote, remote_err = fetch_remote_sha(timeout)
+    decision = describe_update(local, remote, remote_err)
+    if decision["status"] != "update" or not apply:
+        return decision
+    lock = _acquire_update_lock(root)
+    if lock is None:
+        return _update_error("Update läuft bereits")
+    try:
+        if (root / ".git").exists():
+            return _apply_git(root, remote)
+        return _apply_zip(root, remote)
+    except Exception as exc:
+        return _update_error(str(exc) or "Update fehlgeschlagen")
+    finally:
+        try:
+            lock.unlink()
+        except OSError:
+            pass
+
+
+def run_github_update_cli(apply: bool) -> int:
+    args = sys.argv[1:]
+    root = APP_ROOT
+    if "--root" in args:
+        idx = args.index("--root")
+        if idx + 1 >= len(args):
+            result = _update_error("--root fehlt")
+        else:
+            root = Path(args[idx + 1])
+            result = None
+    else:
+        result = None
+    if result is None:
+        timeout = 8 if not apply else 20
+        try:
+            result = github_update(root, apply=apply, timeout=timeout)
+        except Exception as exc:
+            result = _update_error(str(exc) or "Update fehlgeschlagen")
+    sys.stdout.write(json.dumps(result, ensure_ascii=False) + "\n")
+    sys.stdout.flush()
+    return 0 if result.get("status") != "error" else 1
+
+
+def _exit_soon() -> None:
+    time.sleep(0.5)
+    os._exit(0)
+
+
+def test_update_decisions() -> None:
+    """Stale → Update + Badge, gleich → aktuell ohne Badge, Netzfehler → Fehler ohne Badge."""
+    stale = describe_update("altcommit", "neucommit", "")
+    if stale["status"] != "update" or "Update verfügbar" not in stale["message"] or not stale["badge"]:
+        raise SystemExit(f"veraltet falsch: {stale}")
+    if stale["badge_text"] != BADGE_TEXT:
+        raise SystemExit(f"Badge-Text falsch: {stale}")
+    unknown = describe_update("", "deadbeef", "")
+    if unknown["status"] != "update" or not unknown["badge"]:
+        raise SystemExit(f"ohne lokalen Stand falsch: {unknown}")
+    same = describe_update("AbC", "abc", "")
+    if same["status"] != "current" or "aktuell" not in same["message"] or same["badge"] or same["badge_text"]:
+        raise SystemExit(f"aktuell falsch: {same}")
+    down = describe_update("abc", "", "keine Verbindung zu GitHub")
+    if down["status"] != "error" or down["badge"] or "aktuell" in down["message"].lower():
+        raise SystemExit(f"Netzwerkfehler als aktuell gewertet: {down}")
+    if not down["message"].startswith("Update-Fehler:"):
+        raise SystemExit(f"Fehlertext fehlt: {down}")
+
+    saved = GITHUB_API
+    try:
+        globals()["GITHUB_API"] = "http://127.0.0.1:1/nope"
+        sha, err = fetch_remote_sha(timeout=3)
+    finally:
+        globals()["GITHUB_API"] = saved
+    if sha or not err:
+        raise SystemExit(f"lokaler Verbindungsfehler nicht gemeldet: {sha!r} {err!r}")
+    live_down = describe_update("abc", sha, err)
+    if live_down["status"] != "error" or live_down["badge"] or "aktuell" in live_down["message"].lower():
+        raise SystemExit(f"Verbindungsfehler zeigt Badge oder aktuell: {live_down}")
+
+    tmp = Path(tempfile_mkdtemp())
+    sibling = tmp.parent / (tmp.name + "-user")
+    try:
+        (tmp / "server.py").write_text("OLD", encoding="utf-8")
+        (tmp / "config.local.json").write_text('{"port": 9999}\n', encoding="utf-8")
+        (tmp / "state.json").write_text('{"active":"mine"}\n', encoding="utf-8")
+        local = tmp / "dashboards" / "local"
+        local.mkdir(parents=True)
+        (local / "my.json").write_text('{"id":"my"}\n', encoding="utf-8")
+        (local / "state.json").write_text('{"active":"local"}\n', encoding="utf-8")
+        sibling.mkdir()
+        (sibling / "config.local.json").write_text("USER\n", encoding="utf-8")
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w") as zf:
+            zf.writestr("Star-Citizen-Cockpit-main/server.py", "NEW")
+            zf.writestr("Star-Citizen-Cockpit-main/installer/qrcode/qr.go", "package qrcode\n")
+            zf.writestr("Star-Citizen-Cockpit-main/config.local.json", "NUKE\n")
+            zf.writestr("Star-Citizen-Cockpit-main/state.json", "NUKE\n")
+            zf.writestr("Star-Citizen-Cockpit-main/dashboards/local/my.json", "NUKE\n")
+            zf.writestr("Star-Citizen-Cockpit-main/../../evil.txt", "NUKE\n")
+        info = apply_repo_zip(tmp, buf.getvalue())
+        if (tmp / "server.py").read_text(encoding="utf-8") != "NEW":
+            raise SystemExit("Programmdatei nicht ersetzt")
+        if (tmp / "installer" / "qrcode" / "qr.go").read_text(encoding="utf-8") != "package qrcode\n":
+            raise SystemExit("neue Datei fehlt")
+        if (tmp / "config.local.json").read_text(encoding="utf-8") != '{"port": 9999}\n':
+            raise SystemExit("config.local.json verändert")
+        if (tmp / "state.json").read_text(encoding="utf-8") != '{"active":"mine"}\n':
+            raise SystemExit("state.json verändert")
+        if (local / "my.json").read_text(encoding="utf-8") != '{"id":"my"}\n':
+            raise SystemExit("dashboards/local verändert")
+        if (local / "state.json").read_text(encoding="utf-8") != '{"active":"local"}\n':
+            raise SystemExit("lokale state.json verändert")
+        if (sibling / "config.local.json").read_text(encoding="utf-8") != "USER\n":
+            raise SystemExit("Benutzerordner verändert")
+        if (tmp.parent / "evil.txt").exists() or (tmp.parent.parent / "evil.txt").exists():
+            raise SystemExit("Zip-Slip")
+        if info["files"] < 2:
+            raise SystemExit(f"zu wenige Dateien: {info}")
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+        shutil.rmtree(sibling, ignore_errors=True)
+
+    fake = Path(tempfile_mkdtemp())
+    try:
+        (fake / ".git").mkdir()
+        (fake / "config.local.json").write_text("KEEP", encoding="utf-8")
+        broken = github_update(fake, apply=True, timeout=3)
+        if broken["status"] != "error" or broken["badge"] or "aktuell" in broken["message"].lower():
+            raise SystemExit(f"git-Fehler als aktuell gewertet: {broken}")
+        if (fake / "config.local.json").read_text(encoding="utf-8") != "KEEP":
+            raise SystemExit("git-Fehler hat config.local.json verändert")
+    finally:
+        shutil.rmtree(fake, ignore_errors=True)
+
+
+def tempfile_mkdtemp() -> str:
+    import tempfile
+    return tempfile.mkdtemp(prefix="sc-upd-")
 
 
 def normalize_key(name: str) -> str:
@@ -1289,29 +1760,17 @@ class Handler(BaseHTTPRequestHandler):
             self._json(200, {"ok": True, "id": dash_id, "favorite": dash_id in favs, "favorites": favs})
             return
         if path == "/api/git-pull":
-            updated = []
-            try:
-                import subprocess
-                import urllib.request
-                if (APP_ROOT / ".git").is_dir():
-                    subprocess.run(["git", "pull", "--ff-only"], cwd=str(APP_ROOT), timeout=8, check=False)
-                raw_base = "https://raw.githubusercontent.com/MOON-132/Star-Citizen-Cockpit/main/"
-                for rel in ("index.html", "sc_ships.py", "server.py", "dashboards/standard.json", "dashboards/mining.json", "dashboards/salvage.json", "dashboards/hauler.json"):
-                    try:
-                        with urllib.request.urlopen(raw_base + rel, timeout=5) as res:
-                            if res.status == 200:
-                                data_bytes = res.read()
-                                target = APP_ROOT / rel
-                                target.parent.mkdir(parents=True, exist_ok=True)
-                                if not target.is_file() or target.read_bytes() != data_bytes:
-                                    target.write_bytes(data_bytes)
-                                    updated.append(rel)
-                    except Exception:
-                        pass
-            except Exception as exc:
-                self._json(500, {"error": str(exc)})
-                return
-            self._json(200, {"ok": True, "updated": updated})
+            result = github_update(APP_ROOT, apply=True)
+            if result.get("status") == "updated" and os.environ.get("SC_COCKPIT_LAUNCHER") == "1":
+                try:
+                    (APP_ROOT / ".sc-cockpit-restart").write_text("1", encoding="utf-8")
+                    threading.Thread(target=_exit_soon, daemon=True).start()
+                except OSError:
+                    pass
+            elif result.get("status") == "updated":
+                result = dict(result)
+                result["message"] = "Update installiert. Bitte Server neu starten."
+            self._json(200, result)
             return
         if path == "/api/telemetry":
             try:
@@ -1527,6 +1986,7 @@ def self_test() -> int:
         server.server_close()
         os.environ.pop("SC_COCKPIT_HOME", None)
         shutil.rmtree(tmp, ignore_errors=True)
+    test_update_decisions()
     log(f"self-test ok ({len(items)} dashboards, dry_run={DRY_RUN})")
     return 0
 
@@ -1536,6 +1996,8 @@ def main() -> None:
         sys.stdout.reconfigure(encoding="utf-8")
     except Exception:
         pass
+    if "--github-update" in sys.argv or "--github-check" in sys.argv:
+        raise SystemExit(run_github_update_cli(apply="--github-check" not in sys.argv))
     if "--self-test" in sys.argv:
         raise SystemExit(self_test())
     if "--help" in sys.argv:

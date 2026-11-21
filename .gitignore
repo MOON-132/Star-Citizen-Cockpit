@@ -14,4 +14,9 @@ venv/
 *.log
 installer/payload.zip
 installer/rsrc_windows_amd64.syso
+.sc-cockpit-commit
+.sc-cockpit-update.lock
+.sc-cockpit-restart
+*.exe.old
+*.exe.new
 

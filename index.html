@@ -2911,19 +2911,15 @@ document.getElementById("full").addEventListener("click", () => {
 });
 
 document.getElementById("git-pull-btn").addEventListener("click", async () => {
-  toast("Ziehe neueste Version von GitHub (Auto-Pull)...");
+  toast("Prüfe GitHub…");
   try {
     const res = await api("/api/git-pull", { method: "POST", headers: headers(), body: "{}" });
     const id = await refreshList();
     await openBoard(id);
-    if (res.updated && res.updated.length) {
-      toast("GitHub-Update geladen! Seite wird aktualisiert...");
-      setTimeout(() => location.reload(), 600);
-    } else {
-      toast("Bereits auf dem neuesten GitHub-Stand!");
-    }
+    toast(res.message || "Update-Fehler.");
+    if (res.status === "updated") setTimeout(() => location.reload(), 1500);
   } catch (err) {
-    toast("Update-Fehler: " + err.message);
+    toast(err.message && err.message.indexOf("Update-Fehler") === 0 ? err.message : ("Update-Fehler: " + err.message));
   }
 });
 
