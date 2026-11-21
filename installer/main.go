@@ -263,6 +263,7 @@ const (
 	CtrlLiveArmToggle
 	CtrlLiveAlwaysOnTop
 	CtrlLiveGitPull
+	CtrlUpdateBadge
 	CtrlLiveOpenEditor
 	CtrlLiveOpenHangar
 
@@ -394,12 +395,13 @@ type AppState struct {
 	IsAdmin      bool
 
 	// Server Process & Network
-	ServerRunning bool
-	ServerCmd     *os.Process
-	Port          int
-	LanIPs        []string
-	ServerLogs    []string
-	ToastMsg      string
+	ServerRunning   bool
+	ServerCmd       *os.Process
+	Port            int
+	LanIPs          []string
+	ServerLogs      []string
+	ToastMsg        string
+	UpdateAvailable bool
 
 	// Dashboards, Hangar Search & In-App Live Cockpit Deck State
 	Dashboards      []DashboardInfo
@@ -579,6 +581,18 @@ func drawQR(hdc uintptr, r RECT, text string) {
 			}, black)
 		}
 	}
+}
+
+func drawUpdateBadge(hdc uintptr, r RECT) {
+	app.Regions = append(app.Regions, HotRegion{ID: CtrlUpdateBadge, Rect: r})
+	fill := colAmberBg
+	textCol := colAmber
+	if app.HoverID == CtrlUpdateBadge || app.PressID == CtrlUpdateBadge {
+		fill = colAmber
+		textCol = colBg
+	}
+	drawShardBox(hdc, r, 6, fill, colAmber)
+	drawText(hdc, "Neue Version verfügbar", r, app.FontSmall, textCol, DT_CENTER|DT_VCENTER|DT_SINGLELINE)
 }
 
 func drawButton(hdc uintptr, id int, r RECT, label string, style string) {
@@ -993,6 +1007,13 @@ func paintLauncherMode(hdc uintptr, w, h int32) {
 	drawText(hdc, "SC COCKPIT", RECT{sc(58), sc(17), sideW - sc(10), sc(36)}, app.FontTitle, colText, DT_LEFT|DT_SINGLELINE)
 	drawText(hdc, "GAMEGLASS SHARD HUB", RECT{sc(58), sc(36), sideW - sc(10), sc(51)}, app.FontSmall, colCyan, DT_LEFT|DT_SINGLELINE)
 
+	ny := sc(70)
+	if app.UpdateAvailable {
+		badge := RECT{sc(12), sc(54), sideW - sc(12), sc(76)}
+		drawUpdateBadge(hdc, badge)
+		ny = sc(84)
+	}
+
 	favCount := 0
 	for _, d := range app.Dashboards {
 		if d.Favorite {
@@ -1012,7 +1033,6 @@ func paintLauncherMode(hdc uintptr, w, h int32) {
 		{CtrlNavSettings, TabSettings, "EINSTELLUNGEN", "SYS"},
 	}
 
-	ny := sc(70)
 	for _, item := range navItems {
 		r := RECT{sc(12), ny, sideW - sc(12), ny + sc(44)}
 		app.Regions = append(app.Regions, HotRegion{ID: item.id, Rect: r})
@@ -2044,8 +2064,8 @@ func handleControlClick(id int) {
 		}
 	case CtrlLiveAlwaysOnTop:
 		toggleAlwaysOnTop()
-	case CtrlLiveGitPull:
-		app.ToastMsg = "Lade neueste Version direkt von GitHub (Auto-Pull)..."
+	case CtrlLiveGitPull, CtrlUpdateBadge:
+		app.ToastMsg = "Prüfe GitHub…"
 		go runGitHubLivePull(true)
 	case CtrlLiveOpenEditor:
 		if !serverBusy() {
@@ -2104,7 +2124,7 @@ func handleControlClick(id int) {
 		_ = os.MkdirAll(app.UserDashDir, 0755)
 		pShellExecuteW.Call(0, u16ptr("open"), u16ptr(app.UserDashDir), 0, 0, SW_SHOWNORMAL)
 	case CtrlBtnReloadDash:
-		app.ToastMsg = "Lade neueste Version & Schiffe von GitHub..."
+		app.ToastMsg = "Prüfe GitHub…"
 		go runGitHubLivePull(true)
 
 	// Settings Controls
@@ -2491,7 +2511,7 @@ func main() {
 	if app.Mode == ModeLauncher {
 		reloadDashboards()
 		startServer()
-		go runGitHubLivePull(false)
+		go runGitHubStartupCheck()
 	}
 
 	pShowWindow.Call(hwnd, SW_SHOWNORMAL)

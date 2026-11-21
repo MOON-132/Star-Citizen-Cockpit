@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bufio"
 	"bytes"
+	"context"
 	_ "embed"
 	"encoding/json"
 	"fmt"
@@ -15,6 +16,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 )
@@ -70,6 +72,8 @@ func initEnvironment() {
 			forceLauncher = true
 		} else if lower == "--install" {
 			forceInstaller = true
+		} else if lower == "--updated" {
+			app.ToastMsg = "Update installiert."
 		}
 	}
 
@@ -129,6 +133,7 @@ func initEnvironment() {
 
 	app.LanIPs = detectLANIPs()
 	loadConfigPort()
+	removePreviousExe()
 }
 
 func extractEmbeddedPayloadSilent(targetDir string) {
@@ -139,7 +144,7 @@ func extractEmbeddedPayloadSilent(targetDir string) {
 	}
 	for _, f := range zr.File {
 		relPath := filepath.FromSlash(f.Name)
-		if strings.Contains(relPath, "..") {
+		if strings.Contains(relPath, "..") || isPreservedRel(relPath) {
 			continue
 		}
 		targetPath := filepath.Join(targetDir, relPath)
@@ -178,8 +183,13 @@ func enablePortableOrInstalledMode() {
 			}
 		}
 	}
-	// Case 2: Running standalone .exe (e.g. from Downloads) or installed app -> silently unpack latest embedded files into AppDir so it works immediately!
+	// Case 2: installed copy. A GitHub update writes .sc-cockpit-commit and
+	// owns the program files; unpacking the embedded payload again would
+	// roll them back to this exe.
 	_ = os.MkdirAll(app.UserDashDir, 0755)
+	if _, err := os.Stat(filepath.Join(app.AppDir, ".sc-cockpit-commit")); err == nil {
+		return
+	}
 	extractEmbeddedPayloadSilent(app.AppDir)
 }
 
@@ -367,7 +377,7 @@ func startServer() {
 
 	cmd := exec.Command(pyExe, args...)
 	cmd.Dir = app.AppDir
-	cmd.Env = append(os.Environ(), "SC_COCKPIT_HOME="+app.UserDir, "PYTHONIOENCODING=utf-8", "PYTHONUNBUFFERED=1")
+	cmd.Env = append(os.Environ(), "SC_COCKPIT_HOME="+app.UserDir, "PYTHONIOENCODING=utf-8", "PYTHONUNBUFFERED=1", "SC_COCKPIT_LAUNCHER=1")
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 
 	stdout, err := cmd.StdoutPipe()
@@ -404,6 +414,16 @@ func startServer() {
 			appendServerLog(text)
 		}
 		_ = c.Wait()
+		if consumeRestartRequest() {
+			app.mu.Lock()
+			if app.ServerCmd != nil && c.Process != nil && app.ServerCmd.Pid == c.Process.Pid {
+				app.ServerRunning = false
+				app.ServerCmd = nil
+			}
+			app.mu.Unlock()
+			go finishExternalUpdate()
+			return
+		}
 		app.mu.Lock()
 		same := app.ServerCmd != nil && c.Process != nil && app.ServerCmd.Pid == c.Process.Pid
 		wasUp := app.ServerRunning
@@ -1044,71 +1064,364 @@ func addSubsystemToActiveShip(subKind string) {
 	app.ToastMsg = fmt.Sprintf("Unterpunkt '%s' wurde zum Schiff '%s' hinzugefügt!", newPage["label"], cur.Ship)
 }
 
-func runGitHubLivePull(userInitiated bool) {
-	updatedCount := 0
+type updateResult struct {
+	OK         bool   `json:"ok"`
+	Status     string `json:"status"`
+	Message    string `json:"message"`
+	Badge      bool   `json:"badge"`
+	RestartExe bool   `json:"restart_exe"`
+}
 
-	gitDir := filepath.Join(app.AppDir, ".git")
-	if _, err := os.Stat(gitDir); err == nil {
-		if gitExe, err2 := exec.LookPath("git"); err2 == nil && gitExe != "" {
-			cmd := exec.Command(gitExe, "pull", "--ff-only")
-			cmd.Dir = app.AppDir
-			cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-			if out, err3 := cmd.CombinedOutput(); err3 == nil {
-				outStr := strings.TrimSpace(string(out))
-				if !strings.Contains(outStr, "Already up to date") && !strings.Contains(outStr, "Bereits aktuell") {
-					updatedCount++
-				}
-			}
-		}
-	}
+var (
+	applyMu     sync.Mutex
+	applyBusy   bool
+	updateEpoch int
+)
 
-	rawBase := "https://raw.githubusercontent.com/MOON-132/Star-Citizen-Cockpit/main/"
-	filesToSync := []string{
-		"server.py",
-		"sc_ships.py",
-		"index.html",
-		"dashboards/standard.json",
-		"dashboards/mining.json",
-		"dashboards/salvage.json",
-		"dashboards/hauler.json",
+func isPreservedRel(rel string) bool {
+	rel = filepath.ToSlash(rel)
+	base := filepath.Base(rel)
+	if base == "config.local.json" || base == "state.json" || base == ".sc-cockpit-commit" {
+		return true
 	}
-	client := &http.Client{Timeout: 5 * time.Second}
-	for _, rel := range filesToSync {
-		resp, err := client.Get(rawBase + rel)
-		if err != nil || resp == nil {
-			continue
-		}
-		if resp.StatusCode == 200 {
-			body, err := io.ReadAll(resp.Body)
-			resp.Body.Close()
-			if err == nil && len(body) > 32 {
-				targetPath := filepath.Join(app.AppDir, filepath.FromSlash(rel))
-				_ = os.MkdirAll(filepath.Dir(targetPath), 0755)
-				existing, _ := os.ReadFile(targetPath)
-				if !bytes.Equal(existing, body) {
-					if os.WriteFile(targetPath, body, 0644) == nil {
-						updatedCount++
-					}
-				}
-			}
-		} else {
-			resp.Body.Close()
-		}
-	}
+	return rel == "dashboards/local" || strings.HasPrefix(rel, "dashboards/local/")
+}
 
-	reloadDashboards()
-	if updatedCount > 0 {
-		if serverBusy() {
-			stopServer()
-			startServer()
-		}
-		app.ToastMsg = "AUTO-UPDATE ERFOLGREICH: Neueste Version & Schiffe wurden von GitHub geladen!"
-	} else if userInitiated {
-		app.ToastMsg = "SC Cockpit ist bereits auf dem allerneuesten GitHub-Stand."
-	}
+func postRefresh() {
 	if app.Hwnd != 0 {
 		pPostMessageW.Call(app.Hwnd, WM_APP_REFRESH, 0, 0)
 	}
+}
+
+func oneLine(s string) string {
+	s = strings.Join(strings.Fields(s), " ")
+	if len(s) > 160 {
+		return s[:159] + "…"
+	}
+	return s
+}
+
+func tryBeginUpdate() bool {
+	applyMu.Lock()
+	defer applyMu.Unlock()
+	if applyBusy {
+		return false
+	}
+	applyBusy = true
+	return true
+}
+
+func endUpdate() {
+	applyMu.Lock()
+	applyBusy = false
+	applyMu.Unlock()
+}
+
+func bumpUpdateEpoch() {
+	app.mu.Lock()
+	updateEpoch++
+	app.UpdateAvailable = false
+	app.mu.Unlock()
+}
+
+func removePreviousExe() {
+	self, err := os.Executable()
+	if err == nil && self != "" {
+		_ = os.Remove(self + ".old")
+	}
+	for _, name := range []string{"SC-Cockpit-Setup.exe.old", "SC-Cockpit.exe.old"} {
+		_ = os.Remove(filepath.Join(app.AppDir, name))
+	}
+}
+
+func consumeRestartRequest() bool {
+	flag := filepath.Join(app.AppDir, ".sc-cockpit-restart")
+	if _, err := os.Stat(flag); err != nil {
+		return false
+	}
+	_ = os.Remove(flag)
+	return true
+}
+
+func parseUpdateResult(out []byte) (updateResult, error) {
+	text := strings.TrimSpace(string(out))
+	lines := strings.Split(text, "\n")
+	for i := len(lines) - 1; i >= 0; i-- {
+		line := strings.TrimSpace(lines[i])
+		if !strings.HasPrefix(line, "{") {
+			continue
+		}
+		var res updateResult
+		if err := json.Unmarshal([]byte(line), &res); err != nil {
+			return updateResult{}, err
+		}
+		if res.Status == "" {
+			return updateResult{}, fmt.Errorf("Antwort ohne Status")
+		}
+		return res, nil
+	}
+	return updateResult{}, fmt.Errorf("keine Antwort")
+}
+
+func extractUpdater(dir string) error {
+	zr, err := zip.NewReader(bytes.NewReader(embeddedPayload), int64(len(embeddedPayload)))
+	if err != nil {
+		return err
+	}
+	need := map[string]bool{"server.py": true, "sc_ships.py": true}
+	for _, f := range zr.File {
+		if f.FileInfo().IsDir() || !need[f.Name] {
+			continue
+		}
+		rc, err := f.Open()
+		if err != nil {
+			return err
+		}
+		data, err := io.ReadAll(rc)
+		rc.Close()
+		if err != nil {
+			return err
+		}
+		if err := os.WriteFile(filepath.Join(dir, filepath.Base(f.Name)), data, 0644); err != nil {
+			return err
+		}
+		delete(need, f.Name)
+	}
+	if len(need) != 0 {
+		return fmt.Errorf("Updater unvollständig")
+	}
+	return nil
+}
+
+func runPythonGitHub(apply bool, wait time.Duration) (updateResult, error) {
+	scriptDir := app.AppDir
+	if tmp, err := os.MkdirTemp("", "sc-upd-"); err == nil {
+		if exErr := extractUpdater(tmp); exErr == nil {
+			scriptDir = tmp
+			defer os.RemoveAll(tmp)
+		} else {
+			_ = os.RemoveAll(tmp)
+		}
+	}
+	py := app.PythonCmd
+	if py == "" {
+		py = "python"
+	}
+	args := []string{}
+	if py == "py" {
+		args = append(args, "-3")
+	}
+	flag := "--github-update"
+	if !apply {
+		flag = "--github-check"
+	}
+	args = append(args, filepath.Join(scriptDir, "server.py"), flag, "--root", app.AppDir)
+	ctx, cancel := context.WithTimeout(context.Background(), wait)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, py, args...)
+	cmd.Dir = app.AppDir
+	cmd.Env = append(os.Environ(), "PYTHONIOENCODING=utf-8", "PYTHONUNBUFFERED=1")
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	out, runErr := cmd.CombinedOutput()
+	if ctx.Err() == context.DeadlineExceeded {
+		return updateResult{}, fmt.Errorf("Zeitüberschreitung")
+	}
+	res, parseErr := parseUpdateResult(out)
+	if parseErr == nil {
+		return res, nil
+	}
+	if runErr != nil {
+		msg := oneLine(string(out))
+		if msg == "" {
+			msg = oneLine(runErr.Error())
+		}
+		return updateResult{}, fmt.Errorf("%s", msg)
+	}
+	return updateResult{}, parseErr
+}
+
+func launchTarget() string {
+	self, _ := os.Executable()
+	if self != "" {
+		rel, err := filepath.Rel(app.AppDir, self)
+		if err == nil && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+			return self
+		}
+	}
+	for _, name := range []string{"SC-Cockpit-Setup.exe", "SC-Cockpit.exe"} {
+		p := filepath.Join(app.AppDir, name)
+		if st, err := os.Stat(p); err == nil && !st.IsDir() {
+			return p
+		}
+	}
+	if self != "" {
+		return self
+	}
+	return filepath.Join(app.AppDir, "SC-Cockpit-Setup.exe")
+}
+
+func installStagedExe(live string) error {
+	staged := live + ".new"
+	if st, err := os.Stat(staged); err != nil || st.IsDir() {
+		return nil
+	}
+	if _, err := os.Stat(live); os.IsNotExist(err) {
+		return os.Rename(staged, live)
+	}
+	old := live + ".old"
+	_ = os.Remove(old)
+	if err := os.Rename(live, old); err != nil {
+		_ = os.Remove(live)
+		return os.Rename(staged, live)
+	}
+	if err := os.Rename(staged, live); err != nil {
+		_ = os.Rename(old, live)
+		return err
+	}
+	return nil
+}
+
+func installStagedExes(running string) error {
+	seen := map[string]bool{}
+	var paths []string
+	if running != "" {
+		paths = append(paths, running)
+	}
+	for _, name := range []string{"SC-Cockpit-Setup.exe", "SC-Cockpit.exe"} {
+		paths = append(paths, filepath.Join(app.AppDir, name))
+	}
+	var first error
+	for _, p := range paths {
+		key := strings.ToLower(filepath.Clean(p))
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+		if err := installStagedExe(p); err != nil && first == nil {
+			first = err
+		}
+	}
+	return first
+}
+
+func relaunch(launch string) {
+	cmd := exec.Command(launch, "--launcher", "--updated")
+	cmd.Dir = app.AppDir
+	if err := cmd.Start(); err != nil {
+		app.ToastMsg = "Update-Fehler: Neustart fehlgeschlagen."
+		startServer()
+		postRefresh()
+		return
+	}
+	stopServer()
+	os.Exit(0)
+}
+
+func finishExternalUpdate() {
+	launch := launchTarget()
+	if err := installStagedExes(launch); err != nil {
+		app.ToastMsg = "Update-Fehler: " + oneLine(err.Error())
+		startServer()
+		postRefresh()
+		return
+	}
+	bumpUpdateEpoch()
+	app.ToastMsg = "Update installiert."
+	postRefresh()
+	relaunch(launch)
+}
+
+// runGitHubStartupCheck looks once, in the background. Network errors stay silent.
+// It never installs; the badge opens the normal UPDATE action.
+func runGitHubStartupCheck() {
+	app.mu.Lock()
+	epoch := updateEpoch
+	app.mu.Unlock()
+	res, err := runPythonGitHub(false, 12*time.Second)
+	if err != nil || res.Status != "update" || !res.Badge {
+		return
+	}
+	app.mu.Lock()
+	show := false
+	if epoch == updateEpoch {
+		app.UpdateAvailable = true
+		show = true
+	}
+	app.mu.Unlock()
+	if show {
+		postRefresh()
+	}
+}
+
+func runGitHubLivePull(userInitiated bool) {
+	if !tryBeginUpdate() {
+		if userInitiated {
+			app.ToastMsg = "Update läuft bereits."
+			postRefresh()
+		}
+		return
+	}
+	defer endUpdate()
+
+	res, err := runPythonGitHub(true, 3*time.Minute)
+	if err != nil {
+		if userInitiated {
+			msg := oneLine(err.Error())
+			if !strings.HasPrefix(msg, "Update-Fehler") {
+				msg = "Update-Fehler: " + msg
+			}
+			app.ToastMsg = msg
+			postRefresh()
+		}
+		return
+	}
+	if res.Status == "current" {
+		bumpUpdateEpoch()
+		if userInitiated {
+			app.ToastMsg = res.Message
+			postRefresh()
+		}
+		return
+	}
+	if res.Status == "error" {
+		if userInitiated {
+			app.ToastMsg = res.Message
+			if app.ToastMsg == "" {
+				app.ToastMsg = "Update-Fehler."
+			}
+			postRefresh()
+		}
+		return
+	}
+	if res.Status != "updated" {
+		if userInitiated {
+			app.ToastMsg = "Update-Fehler: unerwartete Antwort"
+			postRefresh()
+		}
+		return
+	}
+
+	stopServer()
+	launch := launchTarget()
+	if err := installStagedExes(launch); err != nil {
+		app.ToastMsg = "Update-Fehler: " + oneLine(err.Error())
+		startServer()
+		postRefresh()
+		return
+	}
+	bumpUpdateEpoch()
+	reloadDashboards()
+	if res.Message != "" {
+		app.ToastMsg = res.Message
+	} else {
+		app.ToastMsg = "Update installiert."
+	}
+	postRefresh()
+	if res.RestartExe {
+		relaunch(launch)
+		return
+	}
+	startServer()
 }
 
 func syncStarCitizenActionmaps() string {
