@@ -14,12 +14,10 @@ oder im Benutzerordner des Installers.
 
 from __future__ import annotations
 
-import ipaddress
 import json
 import os
 import re
 import socket
-import subprocess
 import sys
 import threading
 import time
@@ -819,195 +817,25 @@ def public_dashboard(item: dict) -> dict:
     return data
 
 
-# APIPA / link-local (169.254.0.0/16) is up on many idle adapters and is not
-# reachable from a phone. VPN and Hyper-V/WSL names are listed, but after real LAN.
-_VIRTUAL_ADAPTER = (
-    "vethernet", "hyper-v", "wsl", "virtualbox", "vmware", "vbox",
-    "docker", "tailscale", "nordlynx", "wireguard", "zerotier",
-    "hamachi", "bluetooth", "loopback", "isatap", "teredo",
-    "vpn", "openvpn", "npcap", "veth", "virbr", "tunnel", "virtual",
-)
-_ADAPTER_RE = re.compile(r"adapter\s+(.+):\s*$", re.IGNORECASE)
-_IPV4_RE = re.compile(r"IPv4[^:\n]*:\s*(\d+\.\d+\.\d+\.\d+)", re.IGNORECASE)
-
-
-def _plausible_lan_ip(ip: str) -> bool:
-    try:
-        addr = ipaddress.IPv4Address(ip)
-    except ValueError:
-        return False
-    if addr.is_loopback or addr.is_link_local or addr.is_multicast or addr.is_unspecified:
-        return False
-    if str(addr).startswith("169.254."):
-        return False
-    return True
-
-
-def _virtual_adapter(name: str) -> bool:
-    low = name.lower()
-    return any(mark in low for mark in _VIRTUAL_ADAPTER)
-
-
-def _lan_rank(ip: str, virtual: bool) -> tuple[int, int, str]:
-    band = 3
-    if ip.startswith("192.168."):
-        band = 0
-    elif ip.startswith("10."):
-        band = 1
-    elif ip.startswith("172."):
-        parts = ip.split(".")
-        if len(parts) > 1 and parts[1].isdigit() and 16 <= int(parts[1]) <= 31:
-            band = 2
-    return (1 if virtual else 0, band, ip)
-
-
-def _collect_lan(pairs: list[tuple[str, str]]) -> list[tuple[str, str, bool]]:
-    found: dict[str, tuple[str, str, bool]] = {}
-    for ip, name in pairs:
-        if not _plausible_lan_ip(ip):
-            continue
-        virt = _virtual_adapter(name)
-        prev = found.get(ip)
-        if prev is None or (prev[2] and not virt):
-            found[ip] = (ip, name, virt)
-    return sorted(found.values(), key=lambda item: _lan_rank(item[0], item[2]))
-
-
-def _parse_ipconfig(text: str) -> list[tuple[str, str]]:
-    pairs: list[tuple[str, str]] = []
-    adapter = ""
-    for raw in text.splitlines():
-        if raw[:1].isspace():
-            match = _IPV4_RE.search(raw)
-            if match:
-                pairs.append((match.group(1), adapter))
-            continue
-        match = _ADAPTER_RE.search(raw.strip())
-        if match:
-            adapter = match.group(1).strip()
-    return pairs
-
-
-def _windows_adapter_ipv4s() -> list[tuple[str, str]]:
-    flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
-    try:
-        out = subprocess.check_output(["ipconfig"], timeout=5, creationflags=flags)
-    except (OSError, subprocess.SubprocessError):
-        return []
-    text = out.decode("utf-8", errors="replace")
-    if "IPv4" not in text:
-        text = out.decode("cp850", errors="replace")
-    return _parse_ipconfig(text)
-
-
-def _posix_adapter_ipv4s() -> list[tuple[str, str]]:
-    import fcntl
-    import struct
-
-    sio_gifaddr = 0x8915
-    sio_gifflags = 0x8913
-    iff_up = 0x1
-    iff_loopback = 0x8
-    pairs: list[tuple[str, str]] = []
-    for _idx, name in socket.if_nameindex():
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        try:
-            raw_name = name.encode()[:15]
-            flags = fcntl.ioctl(sock.fileno(), sio_gifflags, struct.pack("256s", raw_name))
-            flag_bits = struct.unpack_from("H", flags, 16)[0]
-            if not (flag_bits & iff_up) or flag_bits & iff_loopback:
-                continue
-            addr = fcntl.ioctl(sock.fileno(), sio_gifaddr, struct.pack("256s", raw_name))
-            pairs.append((socket.inet_ntoa(addr[20:24]), name))
-        except OSError:
-            continue
-        finally:
-            sock.close()
-    return pairs
-
-
-def _default_route_ip() -> str:
+def lan_ips() -> list[str]:
+    ips: list[str] = []
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        sock.settimeout(0.4)
         sock.connect(("8.8.8.8", 80))
-        ip = sock.getsockname()[0]
+        primary = sock.getsockname()[0]
         sock.close()
-        return ip
+        if not primary.startswith(("127.", "169.254.")):
+            ips.append(primary)
     except OSError:
-        return ""
-
-
-def lan_endpoints() -> list[tuple[str, str, bool]]:
-    if sys.platform == "win32":
-        pairs = _windows_adapter_ipv4s()
-    else:
-        pairs = _posix_adapter_ipv4s()
-    seen = {ip for ip, _name in pairs}
-    route = _default_route_ip()
-    if route and route not in seen:
-        pairs.append((route, ""))
-        seen.add(route)
+        pass
     try:
         for info in socket.getaddrinfo(socket.gethostname(), None, socket.AF_INET):
             ip = info[4][0]
-            if ip not in seen:
-                pairs.append((ip, ""))
-                seen.add(ip)
+            if not ip.startswith(("127.", "169.254.")) and ip not in ips:
+                ips.append(ip)
     except OSError:
         pass
-    return _collect_lan(pairs)
-
-
-def lan_ips() -> list[str]:
-    ips = [ip for ip, _name, _virt in lan_endpoints()]
     return ips or ["127.0.0.1"]
-
-
-def _self_test_lan() -> str:
-    if _plausible_lan_ip("169.254.83.12") or _plausible_lan_ip("127.0.0.1"):
-        return "169.254 oder Loopback gilt fälschlich als LAN"
-    if not _plausible_lan_ip("192.168.178.58"):
-        return "192.168.178.58 sollte als LAN gelten"
-    if not _virtual_adapter("vEthernet (WSL)") or _virtual_adapter("WLAN") or _virtual_adapter("Wi-Fi"):
-        return "Adapter-Klasse falsch"
-    sample = """
-Wireless LAN adapter WLAN:
-
-   IPv4 Address. . . . . . . . . . . : 192.168.178.58
-
-Ethernet adapter vEthernet (WSL):
-
-   IPv4-Adresse  . . . . . . . . . . : 172.22.80.1
-
-Ethernet adapter Ethernet 2:
-
-   Autoconfiguration IPv4 Address. . : 169.254.83.12
-"""
-    parsed = _parse_ipconfig(sample)
-    if ("192.168.178.58", "WLAN") not in parsed or ("169.254.83.12", "Ethernet 2") not in parsed:
-        return f"ipconfig-Parser falsch: {parsed}"
-    ranked = _collect_lan([
-        ("10.8.0.2", "NordLynx"),
-        ("169.254.1.8", "Ethernet 3"),
-        ("192.168.178.58", "WLAN"),
-        ("172.22.80.1", "vEthernet (WSL)"),
-        ("127.0.0.1", "Loopback"),
-    ])
-    ips = [ip for ip, _name, _virt in ranked]
-    if ips != ["192.168.178.58", "10.8.0.2", "172.22.80.1"]:
-        return f"LAN-Reihenfolge falsch: {ranked}"
-    if ranked[0][2] or not ranked[1][2] or not ranked[2][2]:
-        return f"virtuell-Markierung falsch: {ranked}"
-    filtered = [ip for ip, _name, _virt in _collect_lan(parsed)]
-    if filtered != ["192.168.178.58", "172.22.80.1"] or "169.254.83.12" in filtered:
-        return f"169.254 nicht gefiltert: {filtered}"
-    for ip in lan_ips():
-        if ip in {"127.0.0.1"}:
-            continue
-        if ip.startswith("169.254.") or ip.startswith("127.") or not _plausible_lan_ip(ip):
-            return f"lan_ips liefert unbrauchbare Adresse {ip}"
-    return ""
 
 
 def is_admin() -> bool | None:
@@ -1566,9 +1394,8 @@ def serve(host: str = "0.0.0.0") -> None:
     except OSError as exc:
         log(f"Port {CONFIG['port']} ist belegt oder gesperrt ({exc}).")
         raise SystemExit(1) from exc
-    # Stable ASCII line. The Windows launcher treats this as "Server läuft".
     log(f"Server lauscht auf {host}:{CONFIG['port']}")
-    endpoints = lan_endpoints()
+    ips = lan_ips()
     log("")
     log(f"SC Cockpit {VERSION}")
     log("Dashboards: " + ", ".join(item["title"] for item in items))
@@ -1586,15 +1413,8 @@ def serve(host: str = "0.0.0.0") -> None:
     else:
         log("Kein Token. Nur im eigenen WLAN benutzen.")
     log("")
-    if not endpoints:
-        log(f"  Gerät:  http://127.0.0.1:{CONFIG['port']}/")
-        log("Keine LAN-Adresse gefunden.")
-    else:
-        for ip, _adapter, virtual in endpoints:
-            note = "  (VPN/virtuell)" if virtual else ""
-            log(f"  Gerät:  http://{ip}:{CONFIG['port']}/{note}")
-        if all(virtual for _ip, _adapter, virtual in endpoints):
-            log("Hinweis: nur VPN- oder virtuelle Adressen. WLAN-Adresse fehlt.")
+    for ip in ips:
+        log(f"  Gerät:  http://{ip}:{CONFIG['port']}/")
     log("")
     log("Dieses Fenster offen lassen, dann ins Spiel wechseln.")
     log("Strg+C beendet den Server.")
@@ -1622,9 +1442,6 @@ def self_test() -> int:
     schema = json.loads((APP_ROOT / "docs" / "dashboard.schema.json").read_text(encoding="utf-8"))
     if schema.get("properties", {}).get("pages", {}).get("maxItems") != 12:
         log("docs/dashboard.schema.json passt nicht zum Server")
-        return 1
-    if err := _self_test_lan():
-        log(err)
         return 1
 
     tmp = Path(tempfile.mkdtemp(prefix="sc-cockpit-"))

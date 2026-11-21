@@ -183,175 +183,88 @@ func enablePortableOrInstalledMode() {
 	extractEmbeddedPayloadSilent(app.AppDir)
 }
 
-// LanAddr is one IPv4 address a phone might open. Virtual is VPN, Hyper-V, WSL, …
-// 169.254.0.0/16 (APIPA) is never included.
-type LanAddr struct {
-	IP      string
-	Name    string
-	Virtual bool
-}
-
-func plausibleIPv4(ip net.IP) bool {
-	ip = ip.To4()
-	if ip == nil || ip.IsLoopback() || ip.IsMulticast() || ip.IsUnspecified() || ip.IsLinkLocalUnicast() {
-		return false
+// detectLANIPs lists up IPv4 addresses a phone can open.
+// Loopback and 169.254.0.0/16 (link-local) are dropped.
+func detectLANIPs() []string {
+	seen := map[string]struct{}{}
+	var out []string
+	add := func(ip net.IP) {
+		ip = ip.To4()
+		if ip == nil || ip.IsLoopback() || ip.IsLinkLocalUnicast() || ip.IsUnspecified() || ip.IsMulticast() {
+			return
+		}
+		if ip[0] == 169 && ip[1] == 254 {
+			return
+		}
+		s := ip.String()
+		if _, ok := seen[s]; ok {
+			return
+		}
+		seen[s] = struct{}{}
+		out = append(out, s)
 	}
-	// Explicit APIPA filter. Idle adapters often hold 169.254 and are not reachable.
-	if ip[0] == 169 && ip[1] == 254 {
-		return false
-	}
-	return true
-}
-
-func virtualAdapter(name string) bool {
-	low := strings.ToLower(name)
-	for _, mark := range []string{
-		"vethernet", "hyper-v", "wsl", "virtualbox", "vmware", "vbox",
-		"docker", "tailscale", "nordlynx", "wireguard", "zerotier",
-		"hamachi", "bluetooth", "loopback", "isatap", "teredo",
-		"vpn", "openvpn", "npcap", "veth", "virbr", "tunnel", "virtual",
-	} {
-		if strings.Contains(low, mark) {
-			return true
+	ifaces, err := net.Interfaces()
+	if err == nil {
+		for _, ifi := range ifaces {
+			if ifi.Flags&net.FlagUp == 0 {
+				continue
+			}
+			addrs, err := ifi.Addrs()
+			if err != nil {
+				continue
+			}
+			for _, a := range addrs {
+				if n, ok := a.(*net.IPNet); ok {
+					add(n.IP)
+				}
+			}
 		}
 	}
-	return false
+	sort.Slice(out, func(i, j int) bool {
+		if d := lanOrder(out[i]) - lanOrder(out[j]); d != 0 {
+			return d < 0
+		}
+		return out[i] < out[j]
+	})
+	if len(out) == 0 {
+		return []string{"127.0.0.1"}
+	}
+	return out
 }
 
-func ipv4Band(ip net.IP) int {
-	ip = ip.To4()
-	if ip == nil {
-		return 3
-	}
+func lanOrder(ip string) int {
 	switch {
-	case ip[0] == 192 && ip[1] == 168:
+	case strings.HasPrefix(ip, "192.168."):
 		return 0
-	case ip[0] == 10:
+	case strings.HasPrefix(ip, "10."):
 		return 1
-	case ip[0] == 172 && ip[1] >= 16 && ip[1] <= 31:
+	case strings.HasPrefix(ip, "172."):
 		return 2
 	default:
 		return 3
 	}
 }
 
-func lanRank(a LanAddr) int {
-	rank := ipv4Band(net.ParseIP(a.IP))
-	if a.Virtual {
-		rank += 10
+func primaryOf(ips []string) string {
+	if len(ips) == 0 {
+		return "127.0.0.1"
 	}
-	return rank
+	return ips[0]
 }
 
-func detectLANIPs() []LanAddr {
-	ifaces, err := net.Interfaces()
-	if err != nil {
-		return []LanAddr{{IP: "127.0.0.1", Name: "localhost"}}
-	}
-	seen := map[string]bool{}
-	var out []LanAddr
-	for _, ifi := range ifaces {
-		if ifi.Flags&net.FlagUp == 0 || ifi.Flags&net.FlagLoopback != 0 {
-			continue
-		}
-		addrs, err := ifi.Addrs()
-		if err != nil {
-			continue
-		}
-		virt := virtualAdapter(ifi.Name)
-		for _, a := range addrs {
-			ipnet, ok := a.(*net.IPNet)
-			if !ok || !plausibleIPv4(ipnet.IP) {
-				continue
-			}
-			ip := ipnet.IP.To4().String()
-			if seen[ip] {
-				continue
-			}
-			seen[ip] = true
-			out = append(out, LanAddr{IP: ip, Name: ifi.Name, Virtual: virt})
-		}
-	}
-	sort.Slice(out, func(i, j int) bool {
-		ri, rj := lanRank(out[i]), lanRank(out[j])
-		if ri != rj {
-			return ri < rj
-		}
-		return out[i].IP < out[j].IP
-	})
-	if len(out) == 0 {
-		return []LanAddr{{IP: "127.0.0.1", Name: "localhost"}}
-	}
-	return out
-}
-
-func refreshLANIPs() {
-	found := detectLANIPs()
-	app.mu.Lock()
-	app.LanIPs = found
-	app.mu.Unlock()
-	if app.Hwnd != 0 {
-		pPostMessageW.Call(app.Hwnd, WM_APP_REFRESH, 0, 0)
-	}
-}
-
-func snapshotLAN() (running bool, starting bool, ips []LanAddr) {
+func viewLAN() (running, starting bool, ips []string) {
 	app.mu.Lock()
 	defer app.mu.Unlock()
 	running = app.ServerRunning
-	starting = app.ServerStarting
-	ips = append([]LanAddr(nil), app.LanIPs...)
+	starting = app.ServerCmd != nil && !app.ServerRunning
+	ips = append([]string(nil), app.LanIPs...)
 	return
-}
-
-func isLoopbackIP(ip string) bool {
-	return ip == "127.0.0.1" || strings.HasPrefix(ip, "127.")
-}
-
-func primaryLan(ips []LanAddr) LanAddr {
-	for _, a := range ips {
-		if !a.Virtual && a.IP != "" && !isLoopbackIP(a.IP) {
-			return a
-		}
-	}
-	for _, a := range ips {
-		if a.IP != "" && !isLoopbackIP(a.IP) {
-			return a
-		}
-	}
-	if len(ips) > 0 && ips[0].IP != "" {
-		return ips[0]
-	}
-	return LanAddr{IP: "127.0.0.1", Name: "localhost"}
-}
-
-func formatLANLine(a LanAddr, port int) string {
-	line := fmt.Sprintf("http://%s:%d/", a.IP, port)
-	if a.Name != "" && !isLoopbackIP(a.IP) {
-		line += "   " + a.Name
-	}
-	if a.Virtual {
-		line += "   virtuell"
-	}
-	return line
 }
 
 func serverBusy() bool {
 	app.mu.Lock()
 	defer app.mu.Unlock()
-	return app.ServerRunning || app.ServerStarting
-}
-
-func serverIsUp() bool {
-	app.mu.Lock()
-	defer app.mu.Unlock()
-	return app.ServerRunning
-}
-
-func serverStillOurs(cmd *exec.Cmd) bool {
-	app.mu.Lock()
-	defer app.mu.Unlock()
-	return app.ServerCmd != nil && cmd != nil && cmd.Process != nil && app.ServerCmd.Pid == cmd.Process.Pid
+	return app.ServerCmd != nil
 }
 
 func portOpen(port int) bool {
@@ -414,33 +327,23 @@ func appendServerLog(line string) {
 	}
 }
 
-func markServerListening(port int) {
-	found := detectLANIPs()
+func markListening(port int) {
+	ips := detectLANIPs()
 	app.mu.Lock()
 	if app.ServerCmd == nil || app.ServerRunning {
 		app.mu.Unlock()
 		return
 	}
-	app.LanIPs = found
+	app.LanIPs = ips
 	app.ServerRunning = true
-	app.ServerStarting = false
-	ips := append([]LanAddr(nil), app.LanIPs...)
 	app.mu.Unlock()
 	appendServerLog(fmt.Sprintf("Server läuft auf Port %d.", port))
-	usable := false
-	for _, a := range ips {
-		if !isLoopbackIP(a.IP) {
-			usable = true
-		}
-		appendServerLog(formatLANLine(a, port))
-	}
-	if !usable {
-		appendServerLog("Keine LAN-Adresse gefunden. WLAN oder Kabel prüfen.")
+	for _, ip := range ips {
+		appendServerLog(fmt.Sprintf("http://%s:%d/", ip, port))
 	}
 }
 
-// startServer only reports "Server läuft" after server.py binds the port.
-// cmd.Start success is not enough: Python can exit at once (port in use).
+// startServer reports "Server läuft" only after the port accepts connections.
 func startServer() {
 	if serverBusy() {
 		return
@@ -474,7 +377,6 @@ func startServer() {
 	}
 	cmd.Stderr = cmd.Stdout
 
-	// If something else already holds the port, a later probe would look like success.
 	busyBefore := portOpen(app.Port)
 	if err := cmd.Start(); err != nil {
 		appendServerLog("Python-Server konnte nicht gestartet werden: " + err.Error())
@@ -483,25 +385,20 @@ func startServer() {
 
 	app.mu.Lock()
 	app.ServerCmd = cmd.Process
-	app.ServerStarting = true
 	app.ServerRunning = false
+	app.LanIPs = detectLANIPs()
 	port := app.Port
 	app.mu.Unlock()
-	refreshLANIPs()
-	appendServerLog("Python startet, warte auf den offenen Port...")
 
 	go func(r io.Reader, c *exec.Cmd, port int) {
-		scanner := bufio.NewScanner(r)
-		for scanner.Scan() {
-			text := strings.TrimSpace(scanner.Text())
-			if text == "" {
-				continue
-			}
+		sc := bufio.NewScanner(r)
+		for sc.Scan() {
+			text := strings.TrimSpace(sc.Text())
 			if strings.Contains(text, "Server lauscht auf ") {
-				markServerListening(port)
+				markListening(port)
 				continue
 			}
-			if strings.HasPrefix(text, "Dieses Fenster") || strings.HasPrefix(text, "Strg+C") || strings.Contains(text, "Gerät:") {
+			if text == "" || strings.HasPrefix(text, "Dieses Fenster") || strings.HasPrefix(text, "Strg+C") || strings.HasPrefix(text, "Gerät:") {
 				continue
 			}
 			appendServerLog(text)
@@ -512,7 +409,6 @@ func startServer() {
 		wasUp := app.ServerRunning
 		if same {
 			app.ServerRunning = false
-			app.ServerStarting = false
 			app.ServerCmd = nil
 		}
 		app.mu.Unlock()
@@ -522,7 +418,7 @@ func startServer() {
 		if wasUp {
 			appendServerLog("Server gestoppt.")
 		} else {
-			appendServerLog("Server lauscht nicht. Port belegt oder Python abgestürzt — Meldungen oben prüfen.")
+			appendServerLog("Server lauscht nicht.")
 		}
 	}(stdout, cmd, port)
 
@@ -532,17 +428,18 @@ func startServer() {
 	go func(c *exec.Cmd, port int) {
 		deadline := time.Now().Add(8 * time.Second)
 		for time.Now().Before(deadline) {
-			if serverIsUp() || !serverStillOurs(c) {
+			app.mu.Lock()
+			up := app.ServerRunning
+			ours := app.ServerCmd != nil && c.Process != nil && app.ServerCmd.Pid == c.Process.Pid
+			app.mu.Unlock()
+			if up || !ours {
 				return
 			}
-			if portOpen(port) && serverStillOurs(c) {
-				markServerListening(port)
+			if portOpen(port) {
+				markListening(port)
 				return
 			}
 			time.Sleep(200 * time.Millisecond)
-		}
-		if !serverIsUp() && serverStillOurs(c) {
-			appendServerLog(fmt.Sprintf("Python antwortet nicht auf Port %d.", port))
 		}
 	}(cmd, port)
 }
@@ -552,7 +449,6 @@ func stopServer() {
 	proc := app.ServerCmd
 	app.ServerCmd = nil
 	app.ServerRunning = false
-	app.ServerStarting = false
 	app.mu.Unlock()
 
 	if proc != nil {
@@ -822,8 +718,21 @@ func triggerInAppButton(btn DashButton) {
 	}
 
 	go func(b DashButton) {
-		for i := 0; i < 40 && !serverIsUp(); i++ {
+		deadline := time.Now().Add(4 * time.Second)
+		for time.Now().Before(deadline) {
+			app.mu.Lock()
+			up := app.ServerRunning
+			app.mu.Unlock()
+			if up {
+				break
+			}
 			time.Sleep(100 * time.Millisecond)
+		}
+		app.mu.Lock()
+		up := app.ServerRunning
+		app.mu.Unlock()
+		if !up {
+			return
 		}
 		pFindWindowW := user32.NewProc("FindWindowW")
 		pSetForegroundWindow := user32.NewProc("SetForegroundWindow")

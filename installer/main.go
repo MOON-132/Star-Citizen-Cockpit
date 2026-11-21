@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"sccockpit-installer/qrcode"
 	"strings"
 	"sync"
 	"syscall"
@@ -393,13 +394,12 @@ type AppState struct {
 	IsAdmin      bool
 
 	// Server Process & Network
-	ServerRunning  bool
-	ServerStarting bool
-	ServerCmd      *os.Process
-	Port           int
-	LanIPs         []LanAddr
-	ServerLogs     []string
-	ToastMsg       string
+	ServerRunning bool
+	ServerCmd     *os.Process
+	Port          int
+	LanIPs        []string
+	ServerLogs    []string
+	ToastMsg      string
 
 	// Dashboards, Hangar Search & In-App Live Cockpit Deck State
 	Dashboards      []DashboardInfo
@@ -546,6 +546,41 @@ func drawText(hdc uintptr, text string, r RECT, font uintptr, col uint32, flags 
 }
 
 // GameGlass Holographic Button
+func drawQR(hdc uintptr, r RECT, text string) {
+	mod := qrcode.Modules(text)
+	fillRect(hdc, r, rgb(0xff, 0xff, 0xff))
+	if mod == nil {
+		return
+	}
+	n := len(mod)
+	quiet := 4
+	span := n + quiet*2
+	side := int(r.Right - r.Left)
+	if h := int(r.Bottom - r.Top); h < side {
+		side = h
+	}
+	px := side / span
+	if px < 1 {
+		px = 1
+	}
+	ox := int(r.Left) + (int(r.Right-r.Left)-px*span)/2
+	oy := int(r.Top) + (int(r.Bottom-r.Top)-px*span)/2
+	black := rgb(0, 0, 0)
+	for y := 0; y < n; y++ {
+		for x := 0; x < n; x++ {
+			if !mod[y][x] {
+				continue
+			}
+			fillRect(hdc, RECT{
+				Left:   int32(ox + (x+quiet)*px),
+				Top:    int32(oy + (y+quiet)*px),
+				Right:  int32(ox + (x+quiet+1)*px),
+				Bottom: int32(oy + (y+quiet+1)*px),
+			}, black)
+		}
+	}
+}
+
 func drawButton(hdc uintptr, id int, r RECT, label string, style string) {
 	app.Regions = append(app.Regions, HotRegion{ID: id, Rect: r})
 	hov := app.HoverID == id
@@ -1025,25 +1060,20 @@ func paintLauncherMode(hdc uintptr, w, h int32) {
 	}
 
 	// Bottom Sidebar Status Pod
-	running, starting, lanIPs := snapshotLAN()
-	primary := primaryLan(lanIPs)
+	running, starting, lanIPs := viewLAN()
 	statusCard := RECT{sc(12), h - sc(108), sideW - sc(12), h - sc(14)}
-	urlCol := colCyan
-	if primary.Virtual || isLoopbackIP(primary.IP) {
-		urlCol = colAmber
-	}
 	if running {
 		drawShardBox(hdc, statusCard, 8, colGreenBg, colGreen)
 		fillRect(hdc, RECT{statusCard.Left, statusCard.Top + sc(6), statusCard.Left + sc(3), statusCard.Bottom - sc(8)}, colGreen)
 		drawText(hdc, "●  SERVER LÄUFT", RECT{statusCard.Left + sc(12), statusCard.Top + sc(8), statusCard.Right - sc(8), statusCard.Top + sc(26)}, app.FontBold, colGreen, DT_LEFT|DT_SINGLELINE)
 	} else if starting {
 		drawShardBox(hdc, statusCard, 8, colAmberBg, colAmber)
-		drawText(hdc, "○  SERVER STARTET ...", RECT{statusCard.Left + sc(12), statusCard.Top + sc(8), statusCard.Right - sc(8), statusCard.Top + sc(26)}, app.FontBold, colAmber, DT_LEFT|DT_SINGLELINE)
+		drawText(hdc, "○  SERVER STARTET", RECT{statusCard.Left + sc(12), statusCard.Top + sc(8), statusCard.Right - sc(8), statusCard.Top + sc(26)}, app.FontBold, colAmber, DT_LEFT|DT_SINGLELINE)
 	} else {
 		drawShardBox(hdc, statusCard, 8, colPanel, colLine)
 		drawText(hdc, "○  WLAN SERVER AUS", RECT{statusCard.Left + sc(12), statusCard.Top + sc(8), statusCard.Right - sc(8), statusCard.Top + sc(26)}, app.FontBold, colMuted, DT_LEFT|DT_SINGLELINE)
 	}
-	drawText(hdc, fmt.Sprintf("http://%s:%d/", primary.IP, app.Port), RECT{statusCard.Left + sc(12), statusCard.Top + sc(28), statusCard.Right - sc(8), statusCard.Top + sc(46)}, app.FontMono, urlCol, DT_LEFT|DT_SINGLELINE)
+	drawText(hdc, fmt.Sprintf("http://%s:%d/", primaryOf(lanIPs), app.Port), RECT{statusCard.Left + sc(12), statusCard.Top + sc(28), statusCard.Right - sc(8), statusCard.Top + sc(46)}, app.FontMono, colCyan, DT_LEFT|DT_SINGLELINE)
 	lastAct := app.LastActionTxt
 	if lastAct == "" {
 		lastAct = "Bereit für Eingaben"
@@ -1659,96 +1689,70 @@ func paintTabShards(hdc uintptr, cx, cw, h int32) {
 // TAB 3: TABLET / WLAN SERVER HOST LINK
 // ============================================================================
 func paintTabHostLink(hdc uintptr, cx, cw, h int32) {
-	running, starting, lanIPs := snapshotLAN()
-	drawText(hdc, "TABLET & WLAN SHARD SERVER", RECT{cx, sc(22), cx + cw - sc(115), sc(48)}, app.FontHero, colText, DT_LEFT|DT_SINGLELINE)
+	drawText(hdc, "TABLET & WLAN SHARD SERVER", RECT{cx, sc(22), cx + cw - sc(115), sc(50)}, app.FontHero, colText, DT_LEFT|DT_SINGLELINE)
+	drawText(hdc, "Verbinde dein Tablet, Smartphone oder einen Zweitbildschirm im WLAN mit deinem Star Citizen PC.",
+		RECT{cx, sc(52), cx + cw, sc(74)}, app.FontBody, colMuted, DT_LEFT|DT_SINGLELINE)
 
-	hintCol := colMuted
-	usable := 0
-	for _, a := range lanIPs {
-		if !a.Virtual && !isLoopbackIP(a.IP) {
-			usable++
-		}
-	}
-	if usable == 0 {
-		hintCol = colAmber
-	}
-	drawText(hdc, "Handy und PC im selben WLAN, nicht im Gastnetz. Adresse aus der Liste, nicht localhost und nicht 169.254. Lädt nichts: Client-Isolation am Router aus, Firewall für den Port erlauben.",
-		RECT{cx, sc(50), cx + cw, sc(88)}, app.FontSmall, hintCol, DT_LEFT|DT_WORDBREAK)
+	running, starting, lanIPs := viewLAN()
+	url := fmt.Sprintf("http://%s:%d/", primaryOf(lanIPs), app.Port)
 
-	shown := lanIPs
-	if len(shown) > 5 {
-		shown = shown[:5]
-	}
-	n := len(shown)
-	if n < 1 {
-		n = 1
-	}
-	rowH := sc(22)
-	if n == 1 {
-		rowH = sc(34)
-	}
-	extra := int32(0)
-	if len(lanIPs) > len(shown) {
-		extra = sc(18)
-	}
-	heroTop := sc(96)
-	heroH := sc(108) + int32(n)*rowH + extra
-	heroCard := RECT{cx, heroTop, cx + cw, heroTop + heroH}
+	heroCard := RECT{cx, sc(88), cx + cw, sc(292)}
 	drawShardBox(hdc, heroCard, 12, colPanel, colLineHi)
 	fillRect(hdc, RECT{heroCard.Left, heroCard.Top, heroCard.Left + sc(90), heroCard.Top + sc(2)}, colCyan)
 
-	status := "○  SERVER GESTOPPT"
+	qrBox := RECT{heroCard.Right - sc(184), heroCard.Top + sc(16), heroCard.Right - sc(16), heroCard.Top + sc(184)}
+	drawQR(hdc, qrBox, url)
+
+	status := "○  HOST SERVER IST GESTOPPT"
 	statusCol := colAmber
 	if running {
 		status = "●  SERVER LÄUFT"
 		statusCol = colGreen
 	} else if starting {
-		status = "○  SERVER STARTET ..."
+		status = "○  SERVER STARTET"
 		statusCol = colAmber
 	}
-	drawText(hdc, status, RECT{heroCard.Left + sc(22), heroCard.Top + sc(12), heroCard.Right - sc(210), heroCard.Top + sc(32)}, app.FontBold, statusCol, DT_LEFT|DT_SINGLELINE)
-	drawText(hdc, "ADRESSEN IM WLAN (virtuell = VPN / Hyper-V / WSL, oft nicht erreichbar):",
-		RECT{heroCard.Left + sc(22), heroCard.Top + sc(34), heroCard.Right - sc(210), heroCard.Top + sc(52)}, app.FontSmall, colMuted, DT_LEFT|DT_SINGLELINE)
+	textRight := qrBox.Left - sc(12)
+	drawText(hdc, status, RECT{heroCard.Left + sc(22), heroCard.Top + sc(14), textRight, heroCard.Top + sc(34)}, app.FontBold, statusCol, DT_LEFT|DT_SINGLELINE)
+	drawText(hdc, "ADRESSE IM WLAN:", RECT{heroCard.Left + sc(22), heroCard.Top + sc(38), textRight, heroCard.Top + sc(56)}, app.FontSmall, colMuted, DT_LEFT|DT_SINGLELINE)
 
-	ipY := heroCard.Top + sc(54)
-	if len(shown) == 0 || (len(shown) == 1 && isLoopbackIP(shown[0].IP)) {
-		drawText(hdc, "Keine LAN-Adresse. WLAN oder Kabel prüfen.",
-			RECT{heroCard.Left + sc(22), ipY, heroCard.Right - sc(210), ipY + rowH}, app.FontBold, colAmber, DT_LEFT|DT_VCENTER|DT_SINGLELINE)
-	} else {
-		font := app.FontBold
-		if len(shown) == 1 {
-			font = app.FontHero
-		}
-		for _, a := range shown {
-			colr := colCyan
-			if a.Virtual {
-				colr = colAmber
-			}
-			drawText(hdc, formatLANLine(a, app.Port), RECT{heroCard.Left + sc(22), ipY, heroCard.Right - sc(210), ipY + rowH}, font, colr, DT_LEFT|DT_VCENTER|DT_SINGLELINE)
-			ipY += rowH
-		}
-		if len(lanIPs) > len(shown) {
-			drawText(hdc, fmt.Sprintf("+%d weitere", len(lanIPs)-len(shown)),
-				RECT{heroCard.Left + sc(22), ipY, heroCard.Right - sc(210), ipY + sc(18)}, app.FontSmall, colMuted, DT_LEFT|DT_SINGLELINE)
-		}
+	ipY := heroCard.Top + sc(58)
+	shown := lanIPs
+	if len(shown) > 4 {
+		shown = shown[:4]
+	}
+	if len(shown) == 0 {
+		shown = []string{primaryOf(nil)}
+	}
+	urlFont := app.FontHero
+	rowH := sc(34)
+	if len(shown) > 1 {
+		urlFont = app.FontBold
+		rowH = sc(22)
+	}
+	for _, ip := range shown {
+		drawText(hdc, fmt.Sprintf("http://%s:%d/", ip, app.Port), RECT{heroCard.Left + sc(22), ipY, textRight, ipY + rowH}, urlFont, colCyan, DT_LEFT|DT_VCENTER|DT_SINGLELINE)
+		ipY += rowH
 	}
 
-	btnCopy := RECT{heroCard.Left + sc(22), heroCard.Bottom - sc(46), heroCard.Left + sc(172), heroCard.Bottom - sc(12)}
-	btnOpen := RECT{btnCopy.Right + sc(10), heroCard.Bottom - sc(46), btnCopy.Right + sc(185), heroCard.Bottom - sc(12)}
-	btnEdit := RECT{btnOpen.Right + sc(10), heroCard.Bottom - sc(46), btnOpen.Right + sc(185), heroCard.Bottom - sc(12)}
+	btnCopy := RECT{heroCard.Left + sc(22), heroCard.Bottom - sc(46), heroCard.Left + sc(156), heroCard.Bottom - sc(12)}
+	btnOpen := RECT{btnCopy.Right + sc(8), heroCard.Bottom - sc(46), btnCopy.Right + sc(168), heroCard.Bottom - sc(12)}
+	btnEdit := RECT{btnOpen.Right + sc(8), heroCard.Bottom - sc(46), btnOpen.Right + sc(158), heroCard.Bottom - sc(12)}
+	powerBtn := RECT{btnEdit.Right + sc(8), heroCard.Bottom - sc(46), btnEdit.Right + sc(168), heroCard.Bottom - sc(12)}
+	if powerBtn.Right > textRight {
+		powerBtn.Right = textRight
+	}
 
 	drawButton(hdc, CtrlBtnCopyURL, btnCopy, "URL KOPIEREN", "secondary")
-	drawButton(hdc, CtrlBtnOpenBrowser, btnOpen, "WEB-SHARD ÖFFNEN", "cyan")
-	drawButton(hdc, CtrlBtnOpenEditor, btnEdit, "BAUKASTEN ÖFFNEN", "secondary")
-
-	powerBtn := RECT{heroCard.Right - sc(190), heroCard.Top + sc(16), heroCard.Right - sc(16), heroCard.Bottom - sc(16)}
+	drawButton(hdc, CtrlBtnOpenBrowser, btnOpen, "WEB-SHARD", "cyan")
+	drawButton(hdc, CtrlBtnOpenEditor, btnEdit, "BAUKASTEN", "secondary")
 	if running || starting {
-		drawButton(hdc, CtrlBtnToggleServer, powerBtn, "SERVER STOPPEN", "danger")
+		drawButton(hdc, CtrlBtnToggleServer, powerBtn, "STOPPEN", "danger")
 	} else {
-		drawButton(hdc, CtrlBtnToggleServer, powerBtn, "SERVER STARTEN", "amber")
+		drawButton(hdc, CtrlBtnToggleServer, powerBtn, "STARTEN", "amber")
 	}
 
-	adminCard := RECT{cx, heroCard.Bottom + sc(12), cx + cw, heroCard.Bottom + sc(76)}
+	adminCard := RECT{cx, sc(304), cx + cw, sc(368)}
 	drawShardBox(hdc, adminCard, 8, colPanel, colLine)
 	if app.IsAdmin {
 		drawText(hdc, "●  ADMINISTRATOR-BERECHTIGUNG AKTIV (Sendet Tasten auch an Star Citizen im Admin-Modus)",
@@ -1760,7 +1764,7 @@ func paintTabHostLink(hdc uintptr, cx, cw, h int32) {
 		drawButton(hdc, CtrlBtnRestartAdmin, adminBtn, "ALS ADMIN STARTEN", "secondary")
 	}
 
-	logCard := RECT{cx, adminCard.Bottom + sc(12), cx + cw, h - sc(50)}
+	logCard := RECT{cx, sc(380), cx + cw, h - sc(50)}
 	drawShardBox(hdc, logCard, 10, rgb(0x04, 0x06, 0x0a), colLine)
 	drawText(hdc, "LIVE TELEMETRIE- & TASTEN-PROTOKOLL", RECT{logCard.Left + sc(18), logCard.Top + sc(10), logCard.Right - sc(18), logCard.Top + sc(28)}, app.FontSmall, colDim, DT_LEFT|DT_SINGLELINE)
 
@@ -1981,7 +1985,9 @@ func handleControlClick(id int) {
 	case CtrlNavHostLink:
 		app.Tab = TabHostLink
 		app.ConfirmUninst = false
-		refreshLANIPs()
+		app.mu.Lock()
+		app.LanIPs = detectLANIPs()
+		app.mu.Unlock()
 	case CtrlNavSettings:
 		app.Tab = TabSettings
 		app.ConfirmUninst = false
@@ -2068,17 +2074,10 @@ func handleControlClick(id int) {
 			startServer()
 		}
 	case CtrlBtnCopyURL:
-		_, _, ips := snapshotLAN()
-		picked := primaryLan(ips)
-		url := fmt.Sprintf("http://%s:%d/", picked.IP, app.Port)
+		_, _, ips := viewLAN()
+		url := fmt.Sprintf("http://%s:%d/", primaryOf(ips), app.Port)
 		copyToClipboard(url)
-		if isLoopbackIP(picked.IP) {
-			app.ToastMsg = "Keine LAN-Adresse. Nur dieser PC: " + url
-		} else if picked.Virtual {
-			app.ToastMsg = "Kopiert, aber virtuell — Handy im WLAN erreicht das oft nicht: " + url
-		} else {
-			app.ToastMsg = "Adresse kopiert: " + url
-		}
+		app.ToastMsg = "Adresse kopiert: " + url
 	case CtrlBtnOpenBrowser, CtrlBtnOpenEditor:
 		if !serverBusy() {
 			startServer()
