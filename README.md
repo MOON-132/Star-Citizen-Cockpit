@@ -57,12 +57,13 @@ Du kannst **SC Cockpit** jederzeit sofort live starten, ohne einen Installations
    - **Favorisieren (`★ HANGAR` / `☆ MERKEN`)**: Markiere deine Schiffe mit einem Klick als Favorit — sie landen sofort in deinem **Hangar**, wo du sie mit **`► ÖFFNEN`** direkt ins Cockpit lädst oder mit **`⚙ ANPASSEN`** im Baukasten individualisierst.
    - **1-Klick Unterpunkt zum aktiven Schiff hinzufügen**: Über die Leiste **`+ MINING`**, **`+ SALVAGE`**, **`+ KAMPF`**, **`+ FRACHT`**, **`+ ENERGIE`** erweiterst du jedes Schiff sofort um zusätzliche Subsystem-Seiten.
 3. **TABLET / SERVER**:
-   - **Server an- und ausschalten**: Großer Button **SERVER STARTEN** / **SERVER STOPPEN** für externe Tablets & Smartphones im WLAN.
-   - Zeigt die echte WLAN-Adresse (z. B. `http://192.168.1.180:8765/`), den **ALS ADMIN STARTEN**-Button und das Live-Tastenprotokoll.
+   - **Server an- und ausschalten**: Großer Button **SERVER STARTEN** / **SERVER STOPPEN**. **Server läuft** steht erst, wenn der Port wirklich offen ist — nicht schon beim Klick.
+   - Zeigt **jede** brauchbare LAN-Adresse (z. B. `http://192.168.1.180:8765/`). Adressen **169.254** sind ausgeblendet. Einträge mit **virtuell** (VPN, Hyper-V, WSL) erreicht das Handy im WLAN meist nicht.
+   - Darunter der **ALS ADMIN STARTEN**-Button und das Live-Tastenprotokoll.
 4. **EINSTELLUNGEN**:
    - Server-Port (`8765`) per `—` / `+` anpassen, Ordner öffnen, Verknüpfungen reparieren und **SC Cockpit direkt in der GUI deinstallieren**.
 
-Wenn Windows beim ersten Serverstart nach der Firewall fragt: Zugriff im privaten Netzwerk erlauben.
+Handy und PC müssen im **selben WLAN** sein, nicht im Gastnetz. Die Adresse aus der Liste nehmen, nicht `localhost` und nicht `169.254…`. Wenn Windows nach der Firewall fragt, den Zugriff erlauben. Fragt es nicht und die Seite lädt trotzdem nicht: am Router Client-Isolation ausschalten und in der Windows-Firewall eine eingehende TCP-Regel für den Port prüfen — auch wenn das Netzwerk als **Öffentlich** gilt.
 
 ## Bedienen: Live Cockpit, Hangar & Schiffs-Suche im Browser / Tablet
 
@@ -123,7 +124,7 @@ Den Port ändern, dann Server neu starten und die neue Adresse verwenden. Ein re
 
 | Symptom | Was tun |
 | --- | --- |
-| Das andere Gerät lädt die Seite nicht | Dieselbe private WLAN-Verbindung, nicht Gastnetz. Die Adresse aus dem Fenster nehmen, nicht `localhost`. Firewall-Frage für das private Netzwerk mit Ja beantworten. |
+| Das andere Gerät lädt die Seite nicht | Im Fenster muss **Server läuft** stehen, nicht nur „startet“. Gleiches WLAN, kein Gastnetz, nicht `localhost`, keine `169.254`-Adresse. Den Eintrag **ohne** „virtuell“ nehmen. Am Router Client-Isolation / AP-Isolation aus. Firewall: eingehend TCP auf den Port erlauben, auch bei Profil Öffentlich. |
 | Seite lädt, Tasten tun nichts | Star Citizen anklicken, damit es vorn ist. Läuft das Spiel als Administrator, SC Cockpit auch so starten. Im Serverfenster muss die Taste geloggt werden, sonst kommt der Klick nicht an. |
 | Falsche Taste im Spiel | `keys` an die eigene Belegung anpassen. `y` ist die Taste Y deines Layouts. Modifier heißen `lalt`, `ralt`, `lctrl`, `lshift`, nicht „Alt“. |
 | Dashboard fehlt in der Liste | Dateiname `<id>.json`, `id` nur Kleinbuchstaben, Ziffern, Bindestrich. Kein Kommafehler im JSON. Richtiger Ordner, siehe oben. Seite neu laden. |
