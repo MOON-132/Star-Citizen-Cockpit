@@ -96,8 +96,35 @@ def build_ico(path: Path) -> None:
 
 
 def build_payload_zip(ico_path: Path, zip_path: Path) -> None:
+    import json
+    import sys
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    import sc_ships
+
+    # Generate embedded ships_catalog.json for the Go native desktop app (all 100+ Star Citizen ships!)
+    catalog_list = []
+    for entry in sc_ships.SC_SHIPS_DB:
+        d = sc_ships.generate_ship_dashboard(entry)
+        # Keep pages, hull_type, subsystems, ship, manufacturer, role, title, id
+        catalog_list.append({
+            "id": d["id"],
+            "title": d["title"],
+            "ship": d["ship"],
+            "manufacturer": d["manufacturer"],
+            "role": d["role"],
+            "hull_type": d["hull_type"],
+            "subsystems": d["subsystems"],
+            "pages": d["pages"],
+        })
+    (INSTALLER_DIR / "ships_catalog.json").write_text(
+        json.dumps(catalog_list, ensure_ascii=False, separators=(",", ":")),
+        encoding="utf-8",
+    )
+
     top_files = [
         "server.py",
+        "sc_ships.py",
         "index.html",
         "LICENSE",
         "README.md",

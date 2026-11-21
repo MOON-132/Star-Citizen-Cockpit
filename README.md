@@ -41,20 +41,21 @@ Du kannst **SC Cockpit** jederzeit sofort live starten, ohne einen Installations
    - Nur wenn noch gar nichts installiert ist und die `.exe` einzeln (z. B. aus `Downloads`) gestartet wird, zeigt sie den 1-Klick-Installer (oder lässt sich dort unten links über **PORTABEL TESTEN** ebenfalls ohne Installation direkt starten).
    - Möchtest du den Installer-Bildschirm einmal gezielt erzwingen: `SC-Cockpit-Setup.exe --install`.
 
-## Starten & GameGlass Shard Hub (In-App Live Cockpit & Flotten-Manager)
+## Starten & GameGlass Hangar & Shard Hub (In-App Live Cockpit & 100+ Schiffe)
 
-**SC Cockpit** auf dem Desktop oder im Startmenü starten (oder im Repo direkt `start.bat` doppelklicken). Es öffnet sich der **SC Cockpit // GameGlass Shard Hub** im holografischen GameGlass-MFD-Design (abgeschrägte Holo-Shards, Electric Cyan & Quantum Amber) mit vier Bereichen in der linken Seitenleiste:
+**SC Cockpit** auf dem Desktop oder im Startmenü starten (oder im Repo direkt `start.bat` bzw. `SC-Cockpit-Setup.exe` doppelklicken). Es öffnet sich der **SC Cockpit // GameGlass Hangar & Shard Hub** (mit **Maximieren-Button `□` / `❐`**, Doppelklick auf die Titelleiste zum Maximieren und frei skalierbaren Fensterrändern) mit vier Bereichen in der linken Seitenleiste:
 
-1. **LIVE COCKPIT (Dashboards & Schiffe direkt in der App nutzen!)**:
-   - **1-Klick Schiffsflotten-Leiste (Quick Ship Switcher)**: Oben unter der Titelleiste siehst du alle deine Schiffe nebeneinander (z. B. **Aegis Gladius**, **MISC Prospector**, **Drake Vulture**, **Crusader C2** sowie deine eigenen Schiffe) und wechselst mit **einem Klick** das aktive Schiff.
-   - **Unterpunkte / Subsystem-Tabs je Schiff**: Darunter liegen die spezialisierten Unterpunkte des gewählten Schiffs (z. B. *Mining & Laser*, *Salvage & Scraper*, *Fracht & Hangar*, *Flug & Quantum*, *Energie & Schilde*, *Kampf*).
-   - **📌 OVERLAY (Immer im Vordergrund)**: Hält das In-App Live-Cockpit auf Wunsch im Vordergrund über Star Citizen (im Borderless-Window-Modus).
+1. **► LIVE COCKPIT (Dashboards & Schiffe direkt in der App nutzen!)**:
+   - **Fenster Maximieren & Dynamisches Grid**: Oben rechts neben Minimieren (`—`) und Schließen (`✕`) sitzt der **Maximieren-Button (`□` / `❐`)**. Im Vollbild-/Maximiert-Modus passt sich das Kachel-Raster automatisch auf bis zu 6 Spalten an.
+   - **1-Klick Hangar-Schnellleiste (`★ MEIN HANGAR`)**: Oben unter der Titelleiste erscheinen übersichtlich **nur deine favorisierten Hangar-Schiffe (`★`)** für den 1-Klick-Wechsel im Flug.
+   - **Schiffs-Silhouette & Subsystem-Tabs**: Jedes Schiff zeigt seine eigene **Schiffs-Blaupause (Silhouette)** sowie seine spezialisierten Unterpunkte (z. B. *Mining & Laser*, *Salvage & Scraper*, *Fracht & Hangar*, *MedBay & Rettung*, *Scan & Expedition*, *EMP & QED*, *Dropship & Türme*, *Kampf & Waffen*, *Energie & Schilde*, *Quantum & Nav*, *Flug & Systeme*).
+   - **📌 OVERLAY (Immer im Vordergrund)**: Hält das In-App Live-Cockpit auf Wunsch im Vordergrund über Star Citizen (Borderless Window).
    - **Direktes Senden an Star Citizen**: Ein Klick auf eine Holo-Kachel im Programm fokussiert automatisch das laufende Star-Citizen-Fenster und sendet den Keybind direkt ins Spiel.
-   - **Waffen SAFE / ARMED**: Gesicherte Tasten (Waffen, Laser, Abwerfen) werden über den Schalter **WAFFEN SAFE / ARMED** oben rechts scharfgeschaltet.
-2. **SHARDS & DECKS (Flotte, Schiffe & Unterpunkte verwalten)**:
-   - Übersicht deiner gesamten Schiffsflotte inklusive Hersteller-Badge (`[AEGIS]`, `[MISC]`, `[DRAKE]`, `[CRUSADER]`), Rolle und aller vorhandenen Unterpunkte.
-   - **1-Klick Unterpunkt zum aktiven Schiff hinzufügen**: Über die Leiste **UNTERPUNKT ZUM AKTIVEN SCHIFF (+)** kannst du jedem Schiff sofort per Klick auf **`+ MINING`**, **`+ SALVAGE`**, **`+ KAMPF`**, **`+ FRACHT`** oder **`+ ENERGIE`** einen komplett bestückten neuen Unterpunkt (Seite) hinzufügen!
-   - Per Klick: **SCHIFF WÄHLEN**, **BAUKASTEN**, **KOPIE**, **LÖSCHEN**, **+ NEUES SCHIFF** sowie **SC-TASTEN LESEN** (liest deine `actionmaps.xml` aus Star Citizen).
+2. **★ HANGAR & SCHIFFE (Über 100 Star Citizen Schiffe suchen & favorisieren)**:
+   - **Personalisierte Dashboards für jedes Schiff im Spiel**: Über 100 fliegbare Star Citizen Schiffe aller Hersteller (**AEGIS**, **ANVIL**, **RSI**, **DRAKE**, **MISC**, **CRUSADER**, **ORIGIN**, **ARGO**, **CNOU**, **MIRAI**, **GATAC**, **BANU**, **ESPERIA**, **AOPOA**) sind mit ihren echten Rollen, Subsystem-Seiten und einer eigenen **Schiffs-Blaupause (abgebildetes Schiff im Hintergrund)** integriert.
+   - **Echtzeit-Suche & Rollen-Filter**: Suche direkt per Tastatur nach Schiffsname (z. B. *Vulture*, *Prospector*, *Carrack*, *Gladius*, *Polaris*, *F8C*, *Cutlass*, *Hercules*), Hersteller oder Rolle (*★ Mein Hangar*, *Alle Schiffe*, *Kampf*, *Mining*, *Salvage*, *Fracht*, *Exploration*).
+   - **Favorisieren (`★ HANGAR` / `☆ MERKEN`)**: Markiere deine Schiffe mit einem Klick als Favorit — sie landen sofort in deinem **Hangar**, wo du sie mit **`► ÖFFNEN`** direkt ins Cockpit lädst oder mit **`⚙ ANPASSEN`** im Baukasten individualisierst.
+   - **1-Klick Unterpunkt zum aktiven Schiff hinzufügen**: Über die Leiste **`+ MINING`**, **`+ SALVAGE`**, **`+ KAMPF`**, **`+ FRACHT`**, **`+ ENERGIE`** erweiterst du jedes Schiff sofort um zusätzliche Subsystem-Seiten.
 3. **TABLET / SERVER**:
    - **Server an- und ausschalten**: Großer Button **SERVER STARTEN** / **SERVER STOPPEN** für externe Tablets & Smartphones im WLAN.
    - Zeigt die echte WLAN-Adresse (z. B. `http://192.168.1.180:8765/`), den **ALS ADMIN STARTEN**-Button und das Live-Tastenprotokoll.
@@ -63,35 +64,18 @@ Du kannst **SC Cockpit** jederzeit sofort live starten, ohne einen Installations
 
 Wenn Windows beim ersten Serverstart nach der Firewall fragt: Zugriff im privaten Netzwerk erlauben.
 
-## Bedienen, Flotten-Wechsel & Live-Telemetrie
+## Bedienen: Live Cockpit, Hangar & Schiffs-Suche im Browser / Tablet
 
-Sowohl im Browser (Tablet/Smartphone) als auch in der Windows-App hast du sofortigen Zugriff auf deine gesamte Flotte:
-- **1-Tap Schiffsflotten-Leiste**: Oben im Web-Interface sitzen die **Schiffs-Chips** mit Hersteller-Badge, Schiffsname und Rolle. Ein Tipp wechselt sofort auf das jeweilige Schiff.
-- **Mitgelieferte Schiffe & Spezial-Shards**:
-  1. **Aegis Gladius // Allround & Kampf** (*Flug*, *Energie & Schilde*, *Quantum*, *Kampf*)
-  2. **MISC Prospector // Mining** (*Mining & Laser*, *Scan & Flug*, *Energie & Schilde*)
-  3. **Drake Vulture // Salvage** (*Salvage & Scraper*, *Flug & Landung*, *Energie & Schilde*)
-  4. **Crusader C2 // Cargo & Hauling** (*Fracht & Hangar*, *Flug & Quantum*, *Schilde & Abwehr*)
-- **Live-Telemetrie-Leiste**: Zeigt **Energie-Kondensator** (`Waffen / Antrieb / Schilde`), **Schild-Sektoren** (`Bug / Heck / Backbord / Steuerbord`), `Master Mode` (`SCM` / `NAV`) sowie Status-Pills für `PWR`, `GEAR`, `VTOL`, `LIGHT` und `DECOUPLED`.
-
-## Neues Schiff & Unterpunkte anlegen (Modularer Baukasten)
-
-1. **`+ Neues Schiff` (Schiffs- & Subsystem-Assistent)**:
-   - Klicke oben rechts auf **`+ Neues Schiff`**:
-   - Gib **Schiffsname** (z. B. *RSI Constellation* oder *Argo Mole*), **Hersteller**, **Rolle** und **Cockpit-Atmosphäre** ein.
-   - Hake einfach per Checkbox an, welche **Unterpunkte (Subsystem-Seiten)** das Schiff erhalten soll:
-     - ☑ **Flug & Start/Landung**
-     - ☑ **Energie & Schilde (Live)**
-     - ☑ **Quantum & Navigation**
-     - ☐ **Kampf & Abwehr**
-     - ☐ **Mining & Erzabbau**
-     - ☐ **Salvage & Bergung**
-     - ☐ **Fracht, Rampen & Hangar**
-   - Ein Klick auf **Schiff in Flotte anlegen ►** baut sofort das komplette Schiff mit allen gewählten Unterpunkten.
-2. **Bestehendem Schiff neue Unterpunkte hinzufügen (`+ Unterpunkt`)**:
-   - Links unter der Seiten-Navigation auf **`+ Unterpunkt`** klicken (oder im Baukasten das Dropdown *„+ Fertigen Unterpunkt (Seite) zum Schiff hinzufügen...“* bzw. in der Windows-App **`+ MINING` / `+ SALVAGE` / `+ KAMPF` / `+ FRACHT`** wählen).
-3. **Einzelne Kacheln & Hintergrundbilder anpassen (`Baukasten`)**:
-   - Über 35 fertige Star-Citizen-Presets und interaktive Live-Widgets per 1-Klick einfügen, eigene Hintergrundbilder hochladen und mit **SC-Tasten lesen** deine persönliche `actionmaps.xml` synchronisieren.
+Auch auf dem Tablet oder im Browser ist die Oberfläche klar in **3 Modi** oben in der Kopfzeile gegliedert:
+1. **`► LIVE COCKPIT`**:
+   - Zeigt das aktive Schiff mit seinem **eigenen Schiffs-Hintergrundbild (abgebildete Schiffs-Silhouette & Hersteller-HUD)** hinter den abgeschrägten GameGlass-Kacheln.
+   - Oben in der Leiste **`★ MEIN HANGAR`** wechselst du mit 1 Tipp zwischen deinen favorisierten Hangar-Schiffen.
+   - Links in der Seitenleiste siehst du die Mini-Vorschau des aktuellen Schiffs sowie alle Unterpunkte (*Mining & Laser*, *Salvage & Scraper*, *Energie & Schilde* usw.).
+2. **`★ HANGAR & SCHIFFE`**:
+   - Öffnet den visuellen **Star Citizen Hangar** mit Suchfeld und Rollen-Filtern (*★ Mein Hangar*, *Alle Schiffe (100+)*, *Kampf & Fighter*, *Mining*, *Salvage*, *Fracht & Hauler*, *Exploration & Scan*, *MedBay & Rescue*, *EMP & QED*).
+   - Jede Schiffskarte zeigt das **abgebildete Schiff als technische Blaupause**, Hersteller-Badge, alle enthaltenen Subsystem-Tags sowie die Buttons **`★ IM HANGAR`**, **`► IM COCKPIT ÖFFNEN`** und **`⚙ ANPASSEN`**.
+3. **`⚙ BAUKASTEN`**:
+   - Über 35 fertige Star-Citizen-Presets und interaktive Live-Widgets (*Schild-Matrix*, *Energie-Kondensator*) per 1-Klick einfügen, neue Unterpunkte ergänzen, eigene Hintergrundbilder hochladen und mit **SC-Tasten lesen** deine lokale `actionmaps.xml` synchronisieren.
 
 ## Deinstallieren
 
@@ -109,15 +93,16 @@ SC-Cockpit-Setup.exe --uninstall -Purge
 ## Dateien
 
 ```text
-SC-Cockpit-Setup.exe      Eigenständiger Windows-GUI-Installer & Uninstaller (Star-Citizen-HUD)
+SC-Cockpit-Setup.exe      Eigenständige Windows-App (Live-Cockpit, Hangar mit 100+ Schiffen & Setup)
 installer/                Quellcode (Go/Win32) & Build-Skript (build_installer.py) für die .exe
 server.py                 Server, nur Python-Standardbibliothek
-index.html                Oberfläche, wird vom Server ausgeliefert
-start.bat                 Start ohne Installation
-install.bat               Startet SC-Cockpit-Setup.exe (Fallback auf install.ps1)
+sc_ships.py               Star Citizen Schiffs-Datenbank (100+ Schiffe, Rollen-Subsysteme & SVG-Blaupausen)
+index.html                GameGlass Web-Oberfläche (Live Cockpit, Hangar & Schiffs-Suche, Baukasten)
+start.bat                 Start ohne Installation (inkl. Auto-Git-Pull)
+install.bat               Startet SC-Cockpit-Setup.exe (inkl. Auto-Git-Pull)
 uninstall.bat             Startet den Deinstaller (Fallback auf uninstall.ps1)
-dashboards/*.json         mitgelieferte Dashboards
-dashboards/local/*.json   eigene Dashboards im Repo-Betrieb
+dashboards/*.json         mitgelieferte Basis-Dashboards
+dashboards/local/*.json   eigene/angepasste Schiffs-Dashboards & state.json (Favoriten)
 docs/DASHBOARD.md         Format, Tasten, API, Regeln für eine KI
 docs/dashboard.schema.json
 docs/beispiel.json

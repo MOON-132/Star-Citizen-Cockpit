@@ -33,6 +33,14 @@
       "type": "string",
       "maxLength": 20
     },
+    "hull_type": {
+      "type": "string",
+      "maxLength": 32
+    },
+    "subsystems": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
     "background": {
       "type": "string",
       "description": "Optionales Hintergrundbild (URL, data:image/... oder preset:aegis/crusader/drake/starmap)."

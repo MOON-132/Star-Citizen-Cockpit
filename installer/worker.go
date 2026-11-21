@@ -22,6 +22,20 @@ import (
 //go:embed payload.zip
 var embeddedPayload []byte
 
+//go:embed ships_catalog.json
+var embeddedShipsCatalog []byte
+
+var defaultHangarFavorites = []string{
+	"aegis-gladius",
+	"misc-prospector",
+	"drake-vulture",
+	"crusader-c2-hercules",
+	"drake-cutlass-black",
+	"anvil-carrack",
+	"rsi-constellation-andromeda",
+	"aegis-avenger-titan",
+}
+
 const uninstallRegKey = `Software\Microsoft\Windows\CurrentVersion\Uninstall\SCCockpit`
 
 func initEnvironment() {
@@ -322,11 +336,139 @@ func stopServer() {
 }
 
 // ============================================================================
-// DASHBOARD CATALOG & MANAGEMENT
+// DASHBOARD CATALOG, 100+ STAR CITIZEN SHIPS & HANGAR FAVORITES
 // ============================================================================
+type stateJSON struct {
+	Active    string   `json:"active"`
+	Favorites []string `json:"favorites"`
+}
+
+func loadStateJSON() stateJSON {
+	st := stateJSON{
+		Active:    "aegis-gladius",
+		Favorites: append([]string(nil), defaultHangarFavorites...),
+	}
+	stateFile := filepath.Join(app.UserDir, "state.json")
+	if data, err := os.ReadFile(stateFile); err == nil {
+		var raw map[string]interface{}
+		if json.Unmarshal(data, &raw) == nil {
+			if act, ok := raw["active"].(string); ok && act != "" {
+				st.Active = act
+			}
+			if favArr, ok := raw["favorites"].([]interface{}); ok {
+				var parsedFavs []string
+				for _, f := range favArr {
+					if fs, ok2 := f.(string); ok2 && fs != "" {
+						parsedFavs = append(parsedFavs, fs)
+					}
+				}
+				st.Favorites = parsedFavs
+			}
+		}
+	}
+	return st
+}
+
+func saveStateJSON(st stateJSON) {
+	_ = os.MkdirAll(app.UserDir, 0755)
+	stateFile := filepath.Join(app.UserDir, "state.json")
+	if out, err := json.MarshalIndent(st, "", "  "); err == nil {
+		_ = os.WriteFile(stateFile, append(out, '\n'), 0644)
+	}
+}
+
+func toggleDashboardFavorite(id string) bool {
+	st := loadStateJSON()
+	isFav := false
+	var next []string
+	found := false
+	for _, f := range st.Favorites {
+		if f == id {
+			found = true
+		} else {
+			next = append(next, f)
+		}
+	}
+	if !found {
+		next = append(next, id)
+		isFav = true
+	}
+	st.Favorites = next
+	saveStateJSON(st)
+	for i := range app.Dashboards {
+		if app.Dashboards[i].ID == id {
+			app.Dashboards[i].Favorite = isFav || app.Dashboards[i].Source == "local"
+		}
+	}
+	return isFav
+}
+
 func reloadDashboards() {
 	index := make(map[string]int)
 	var list []DashboardInfo
+
+	registerParsed := func(id, title, ship, mfg, role, hullType string, subs []string, pages []DashPage, source, fullPath string) {
+		if len(pages) == 0 || id == "" || id == "state" || id == "local" {
+			return
+		}
+		if title == "" {
+			title = id
+		}
+		if ship == "" {
+			ship = title
+		}
+		if mfg == "" {
+			mfg = "UEE"
+		}
+		if role == "" {
+			role = "Multi-Role"
+		}
+		if hullType == "" {
+			low := strings.ToLower(role + " " + id)
+			if strings.Contains(low, "mining") {
+				hullType = "mining_bubble"
+			} else if strings.Contains(low, "salvage") {
+				hullType = "twin_industrial"
+			} else if strings.Contains(low, "hauler") || strings.Contains(low, "fracht") || strings.Contains(low, "cargo") {
+				hullType = "crusader_wing"
+			} else {
+				hullType = "fighter_delta"
+			}
+		}
+		if len(subs) == 0 {
+			for _, p := range pages {
+				if p.ID != "" {
+					subs = append(subs, p.ID)
+				}
+			}
+		}
+		btnCount := 0
+		for _, p := range pages {
+			for _, g := range p.Groups {
+				btnCount += len(g.Buttons)
+			}
+		}
+		info := DashboardInfo{
+			ID:           id,
+			Title:        title,
+			Ship:         ship,
+			Manufacturer: mfg,
+			Role:         role,
+			HullType:     hullType,
+			Subsystems:   subs,
+			Source:       source,
+			Path:         fullPath,
+			PageCount:    len(pages),
+			ButtonCount:  btnCount,
+			Pages:        pages,
+		}
+		if existingIdx, ok := index[id]; ok {
+			list[existingIdx] = info
+		} else {
+			index[id] = len(list)
+			list = append(list, info)
+		}
+	}
 
 	readDir := func(dir, source string) {
 		entries, err := os.ReadDir(dir)
@@ -339,9 +481,6 @@ func reloadDashboards() {
 				continue
 			}
 			id := strings.TrimSuffix(e.Name(), filepath.Ext(e.Name()))
-			if id == "state" || id == "local" {
-				continue
-			}
 			fullPath := filepath.Join(dir, e.Name())
 			data, err := os.ReadFile(fullPath)
 			if err != nil {
@@ -353,6 +492,8 @@ func reloadDashboards() {
 				Ship         string     `json:"ship"`
 				Manufacturer string     `json:"manufacturer"`
 				Role         string     `json:"role"`
+				HullType     string     `json:"hull_type"`
+				Subsystems   []string   `json:"subsystems"`
 				Pages        []DashPage `json:"pages"`
 			}
 			if json.Unmarshal(data, &parsed) != nil || len(parsed.Pages) == 0 {
@@ -361,74 +502,41 @@ func reloadDashboards() {
 			if parsed.ID != "" {
 				id = parsed.ID
 			}
-			title := parsed.Title
-			if title == "" {
-				title = id
-			}
-			ship := parsed.Ship
-			if ship == "" {
-				ship = title
-			}
-			mfg := parsed.Manufacturer
-			if mfg == "" {
-				mfg = "UEE"
-			}
-			role := parsed.Role
-			if role == "" {
-				role = "Multi-Role"
-			}
-			btnCount := 0
-			for _, p := range parsed.Pages {
-				for _, g := range p.Groups {
-					btnCount += len(g.Buttons)
-				}
-			}
-			info := DashboardInfo{
-				ID:           id,
-				Title:        title,
-				Ship:         ship,
-				Manufacturer: mfg,
-				Role:         role,
-				Source:       source,
-				Path:         fullPath,
-				PageCount:    len(parsed.Pages),
-				ButtonCount:  btnCount,
-				Pages:        parsed.Pages,
-			}
-			if existingIdx, ok := index[id]; ok {
-				list[existingIdx] = info
-			} else {
-				index[id] = len(list)
-				list = append(list, info)
-			}
+			registerParsed(id, parsed.Title, parsed.Ship, parsed.Manufacturer, parsed.Role, parsed.HullType, parsed.Subsystems, parsed.Pages, source, fullPath)
 		}
 	}
 
-	appDash := filepath.Join(app.AppDir, "dashboards")
-	if _, err := os.Stat(appDash); err != nil {
-		if selfExe, err2 := os.Executable(); err2 == nil {
-			cand := filepath.Join(filepath.Dir(selfExe), "dashboards")
-			if _, err3 := os.Stat(cand); err3 == nil {
-				appDash = cand
-			}
+	// Load all 100+ personalized Star Citizen ship dashboards from embeddedShipsCatalog!
+	var embeddedShips []struct {
+		ID           string     `json:"id"`
+		Title        string     `json:"title"`
+		Ship         string     `json:"ship"`
+		Manufacturer string     `json:"manufacturer"`
+		Role         string     `json:"role"`
+		HullType     string     `json:"hull_type"`
+		Subsystems   []string   `json:"subsystems"`
+		Pages        []DashPage `json:"pages"`
+	}
+	if len(embeddedShipsCatalog) > 0 && json.Unmarshal(embeddedShipsCatalog, &embeddedShips) == nil {
+		for _, s := range embeddedShips {
+			registerParsed(s.ID, s.Title, s.Ship, s.Manufacturer, s.Role, s.HullType, s.Subsystems, s.Pages, "builtin", "")
 		}
 	}
-	readDir(appDash, "builtin")
+
 	readDir(app.UserDashDir, "local")
+
+	st := loadStateJSON()
+	favSet := make(map[string]bool)
+	for _, f := range st.Favorites {
+		favSet[f] = true
+	}
+	for i := range list {
+		list[i].Favorite = favSet[list[i].ID] || list[i].Source == "local"
+	}
 
 	app.Dashboards = list
 
-	// Read active dashboard from state.json
-	active := "standard"
-	stateFile := filepath.Join(app.UserDir, "state.json")
-	if data, err := os.ReadFile(stateFile); err == nil {
-		var st struct {
-			Active string `json:"active"`
-		}
-		if json.Unmarshal(data, &st) == nil && st.Active != "" {
-			active = st.Active
-		}
-	}
+	active := st.Active
 	found := false
 	for _, d := range list {
 		if d.ID == active {
@@ -443,10 +551,9 @@ func reloadDashboards() {
 }
 
 func setActiveDashboard(id string) {
-	_ = os.MkdirAll(app.UserDir, 0755)
-	stateFile := filepath.Join(app.UserDir, "state.json")
-	out, _ := json.MarshalIndent(map[string]string{"active": id}, "", "  ")
-	_ = os.WriteFile(stateFile, append(out, '\n'), 0644)
+	st := loadStateJSON()
+	st.Active = id
+	saveStateJSON(st)
 	app.ActiveDash = id
 }
 
@@ -454,15 +561,25 @@ func cycleActiveDashboard(dir int) {
 	if len(app.Dashboards) == 0 {
 		return
 	}
+	// Cycle primarily through the user's favorited Hangar ships!
+	var favList []DashboardInfo
+	for _, d := range app.Dashboards {
+		if d.Favorite || d.ID == app.ActiveDash {
+			favList = append(favList, d)
+		}
+	}
+	if len(favList) == 0 {
+		favList = app.Dashboards
+	}
 	curIdx := 0
-	for i, d := range app.Dashboards {
+	for i, d := range favList {
 		if d.ID == app.ActiveDash {
 			curIdx = i
 			break
 		}
 	}
-	nextIdx := (curIdx + dir + len(app.Dashboards)) % len(app.Dashboards)
-	setActiveDashboard(app.Dashboards[nextIdx].ID)
+	nextIdx := (curIdx + dir + len(favList)) % len(favList)
+	setActiveDashboard(favList[nextIdx].ID)
 	app.LivePageIdx = 0
 }
 
@@ -479,7 +596,6 @@ func triggerInAppButton(btn DashButton) {
 	}
 
 	go func(b DashButton) {
-		// Find Star Citizen window if running so keybind goes directly to the game even when clicking the desktop app!
 		pFindWindowW := user32.NewProc("FindWindowW")
 		pSetForegroundWindow := user32.NewProc("SetForegroundWindow")
 		for _, title := range []string{"Star Citizen", "StarCitizen"} {
@@ -508,30 +624,47 @@ func triggerInAppButton(btn DashButton) {
 	}(btn)
 }
 
+func marshalDashboardToMap(d DashboardInfo) map[string]interface{} {
+	if d.Path != "" {
+		if raw, err := os.ReadFile(d.Path); err == nil {
+			var m map[string]interface{}
+			if json.Unmarshal(raw, &m) == nil {
+				return m
+			}
+		}
+	}
+	pagesBytes, _ := json.Marshal(d.Pages)
+	var pagesGeneric []interface{}
+	_ = json.Unmarshal(pagesBytes, &pagesGeneric)
+	return map[string]interface{}{
+		"id":           d.ID,
+		"title":        d.Title,
+		"ship":         d.Ship,
+		"manufacturer": d.Manufacturer,
+		"role":         d.Role,
+		"hull_type":    d.HullType,
+		"subsystems":   d.Subsystems,
+		"pages":        pagesGeneric,
+	}
+}
+
 func duplicateDashboard(src DashboardInfo) (string, error) {
 	_ = os.MkdirAll(app.UserDashDir, 0755)
-	raw, err := os.ReadFile(src.Path)
-	if err != nil {
-		return "", err
-	}
-	var data map[string]interface{}
-	if err := json.Unmarshal(raw, &data); err != nil {
-		return "", err
-	}
+	data := marshalDashboardToMap(src)
 
-	newID := src.ID + "-eigen"
+	newID := src.ID + "-custom"
 	n := 2
 	for {
 		if _, err := os.Stat(filepath.Join(app.UserDashDir, newID+".json")); os.IsNotExist(err) {
 			break
 		}
-		newID = fmt.Sprintf("%s-eigen-%d", src.ID, n)
+		newID = fmt.Sprintf("%s-custom-%d", src.ID, n)
 		n++
 	}
 
 	data["id"] = newID
-	data["title"] = src.Title + " (Kopie)"
-	data["ship"] = src.Ship + " (Kopie)"
+	data["title"] = src.Title + " (Custom)"
+	data["ship"] = src.Ship + " (Custom)"
 	out, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		return "", err
@@ -563,8 +696,8 @@ func createNewDashboard() (string, error) {
 		"ship":         shipTitle,
 		"manufacturer": "RSI",
 		"role":         "Multi-Role // Custom",
-		"background":   "preset:aegis",
-		"bg_opacity":   0.40,
+		"hull_type":    "fighter_delta",
+		"bg_opacity":   0.48,
 		"pages": []map[string]interface{}{
 			{
 				"id":    "flug",
@@ -639,7 +772,6 @@ func createNewDashboard() (string, error) {
 func toggleAlwaysOnTop() {
 	app.AlwaysOnTop = !app.AlwaysOnTop
 	pSetWindowPos := user32.NewProc("SetWindowPos")
-	// HWND_TOPMOST = -1, HWND_NOTOPMOST = -2, SWP_NOMOVE|SWP_NOSIZE = 0x0003
 	var zOrder uintptr
 	if app.AlwaysOnTop {
 		zOrder = ^uintptr(0) // -1 (HWND_TOPMOST)
@@ -664,16 +796,7 @@ func addSubsystemToActiveShip(subKind string) {
 		return
 	}
 
-	raw, err := os.ReadFile(cur.Path)
-	if err != nil {
-		app.ToastMsg = "Lesefehler: " + err.Error()
-		return
-	}
-	var data map[string]interface{}
-	if err := json.Unmarshal(raw, &data); err != nil {
-		app.ToastMsg = "JSON-Fehler: " + err.Error()
-		return
-	}
+	data := marshalDashboardToMap(*cur)
 
 	var newPage map[string]interface{}
 	switch subKind {
@@ -786,7 +909,6 @@ func addSubsystemToActiveShip(subKind string) {
 func runGitHubLivePull(userInitiated bool) {
 	updatedCount := 0
 
-	// 1. If we are inside a Git repository, execute `git pull --ff-only` automatically!
 	gitDir := filepath.Join(app.AppDir, ".git")
 	if _, err := os.Stat(gitDir); err == nil {
 		if gitExe, err2 := exec.LookPath("git"); err2 == nil && gitExe != "" {
@@ -802,10 +924,10 @@ func runGitHubLivePull(userInitiated bool) {
 		}
 	}
 
-	// 2. Also fetch latest core files directly from GitHub raw main branch (works even without Git installed or in %LOCALAPPDATA%!)
 	rawBase := "https://raw.githubusercontent.com/MOON-132/Star-Citizen-Cockpit/main/"
 	filesToSync := []string{
 		"server.py",
+		"sc_ships.py",
 		"index.html",
 		"dashboards/standard.json",
 		"dashboards/mining.json",

@@ -50,25 +50,40 @@ const (
 	WS_POPUP        = 0x80000000
 	WS_VISIBLE      = 0x10000000
 	WS_SYSMENU      = 0x00080000
+	WS_THICKFRAME   = 0x00040000
 	WS_MINIMIZEBOX  = 0x00020000
+	WS_MAXIMIZEBOX  = 0x00010000
 	WS_CLIPCHILDREN = 0x02000000
 	WS_EX_APPWINDOW = 0x00040000
 
-	WM_DESTROY     = 0x0002
-	WM_PAINT       = 0x000F
-	WM_CLOSE       = 0x0010
-	WM_ERASEBKGND  = 0x0014
-	WM_SETCURSOR   = 0x0020
-	WM_NCHITTEST   = 0x0084
-	WM_KEYDOWN     = 0x0100
-	WM_MOUSEMOVE   = 0x0200
-	WM_LBUTTONDOWN = 0x0201
-	WM_LBUTTONUP   = 0x0202
-	WM_APP_REFRESH = 0x8001
-	WM_APP_DONE    = 0x8002
+	WM_DESTROY       = 0x0002
+	WM_SIZE          = 0x0005
+	WM_PAINT         = 0x000F
+	WM_CLOSE         = 0x0010
+	WM_ERASEBKGND    = 0x0014
+	WM_SETCURSOR     = 0x0020
+	WM_NCHITTEST     = 0x0084
+	WM_NCLBUTTONDBLCLK = 0x00A3
+	WM_KEYDOWN       = 0x0100
+	WM_CHAR          = 0x0102
+	WM_MOUSEMOVE     = 0x0200
+	WM_LBUTTONDOWN   = 0x0201
+	WM_LBUTTONUP     = 0x0202
+	WM_LBUTTONDBLCLK = 0x0203
+	WM_MOUSEWHEEL    = 0x020A
+	WM_APP_REFRESH   = 0x8001
+	WM_APP_DONE      = 0x8002
 
-	HTCLIENT  = 1
-	HTCAPTION = 2
+	HTCLIENT      = 1
+	HTCAPTION     = 2
+	HTLEFT        = 10
+	HTRIGHT       = 11
+	HTTOP         = 12
+	HTTOPLEFT     = 13
+	HTTOPRIGHT    = 14
+	HTBOTTOM      = 15
+	HTBOTTOMLEFT  = 16
+	HTBOTTOMRIGHT = 17
 
 	IDC_ARROW = 32512
 	IDC_HAND  = 32649
@@ -85,13 +100,21 @@ const (
 	PS_SOLID    = 0
 
 	SW_SHOWNORMAL = 1
+	SW_MAXIMIZE   = 3
 	SW_MINIMIZE   = 6
+	SW_RESTORE    = 9
 
 	CS_HREDRAW    = 0x0002
 	CS_VREDRAW    = 0x0001
+	CS_DBLCLKS    = 0x0008
 	CS_DROPSHADOW = 0x00020000
 
+	VK_BACK   = 0x08
 	VK_ESCAPE = 0x1B
+	VK_PRIOR  = 0x21
+	VK_NEXT   = 0x22
+	VK_UP     = 0x26
+	VK_DOWN   = 0x28
 
 	SRCCOPY           = 0x00CC0020
 	CLEARTYPE_QUALITY = 5
@@ -152,6 +175,7 @@ var (
 	pCreateWindowExW    = user32.NewProc("CreateWindowExW")
 	pDefWindowProcW     = user32.NewProc("DefWindowProcW")
 	pShowWindow         = user32.NewProc("ShowWindow")
+	pIsZoomed           = user32.NewProc("IsZoomed")
 	pUpdateWindow       = user32.NewProc("UpdateWindow")
 	pGetMessageW        = user32.NewProc("GetMessageW")
 	pTranslateMessage   = user32.NewProc("TranslateMessage")
@@ -207,7 +231,7 @@ const (
 // 4 Top-Level Tabs in the Graphical App
 const (
 	TabLiveCockpit = iota // 1. Use Dashboards LIVE inside the App!
-	TabShards             // 2. Manage Shards / Dashboards
+	TabShards             // 2. HANGAR & SCHIFFE (Search 100+ Ships, Favorites ★, Subsystems)
 	TabHostLink           // 3. Server Toggle & Tablet Wi-Fi Link
 	TabSettings           // 4. Settings & Uninstall
 )
@@ -223,6 +247,7 @@ const (
 const (
 	CtrlNone = iota
 	CtrlWinClose
+	CtrlWinMax
 	CtrlWinMin
 
 	// Sidebar Navigation
@@ -238,8 +263,9 @@ const (
 	CtrlLiveAlwaysOnTop
 	CtrlLiveGitPull
 	CtrlLiveOpenEditor
+	CtrlLiveOpenHangar
 
-	// Shards Manager Controls
+	// Hangar & Ship Search Controls
 	CtrlBtnNewDash
 	CtrlBtnSyncSCBindings
 	CtrlBtnOpenDashFolder
@@ -249,6 +275,17 @@ const (
 	CtrlAddSubCombat
 	CtrlAddSubCargo
 	CtrlAddSubPower
+	CtrlHangarSearchBox
+	CtrlHangarSearchClear
+	CtrlHangarFilterFav
+	CtrlHangarFilterAll
+	CtrlHangarFilterCombat
+	CtrlHangarFilterMining
+	CtrlHangarFilterSalvage
+	CtrlHangarFilterCargo
+	CtrlHangarFilterExplore
+	CtrlHangarPagePrev
+	CtrlHangarPageNext
 
 	// Host Link / Server Controls
 	CtrlBtnToggleServer
@@ -276,14 +313,15 @@ const (
 	CtrlInstSecondary
 	CtrlInstSwitchUninstall
 
-	// Dynamic Ranges
-	CtrlDashUseLiveBase  = 1000 // + index (Opens dashboard directly in Live Cockpit tab)
+	// Dynamic Ranges (must stay at end of const block!)
+	CtrlDashUseLiveBase  = 1000 // + index (Opens ship directly in Live Cockpit tab)
 	CtrlDashEditBase     = 2000 // + index
 	CtrlDashDupBase      = 3000 // + index
 	CtrlDashDelBase      = 4000 // + index
 	CtrlLivePageTabBase  = 5000 // + page index
 	CtrlLiveTileBtnBase  = 6000 // + flat button index in current page
-	CtrlLiveShipChipBase = 7000 // + ship index in fleet bar
+	CtrlLiveShipChipBase = 7000 // + ship index in Hangar quick bar
+	CtrlDashFavBase      = 8000 // + index (Toggles ★ Favorite in Hangar)
 )
 
 type HotRegion struct {
@@ -321,6 +359,9 @@ type DashboardInfo struct {
 	Ship         string
 	Manufacturer string
 	Role         string
+	HullType     string
+	Subsystems   []string
+	Favorite     bool
 	Source       string
 	Path         string
 	PageCount    int
@@ -359,15 +400,18 @@ type AppState struct {
 	ServerLogs    []string
 	ToastMsg      string
 
-	// Dashboards & In-App Live Cockpit Deck State
-	Dashboards    []DashboardInfo
-	ActiveDash    string
-	LivePageIdx   int
-	LiveArmed     bool
-	AlwaysOnTop   bool
-	LiveToggled   map[string]bool
-	LivePageBtns  []DashButton // Flattened buttons on current Live Cockpit page
-	LastActionTxt string
+	// Dashboards, Hangar Search & In-App Live Cockpit Deck State
+	Dashboards      []DashboardInfo
+	ActiveDash      string
+	LivePageIdx     int
+	LiveArmed       bool
+	AlwaysOnTop     bool
+	LiveToggled     map[string]bool
+	LivePageBtns    []DashButton // Flattened buttons on current Live Cockpit page
+	LastActionTxt   string
+	HangarFilter    string // "hangar", "all", "kampf", "mining", "salvage", "cargo", "exploration"
+	HangarSearch    string
+	HangarScrollIdx int
 
 	// Installer Options
 	OptDesktop    bool
@@ -402,6 +446,7 @@ var app = &AppState{
 	Port:         8765,
 	LanIP:        "127.0.0.1",
 	LiveToggled:  make(map[string]bool),
+	HangarFilter: "hangar",
 }
 
 func u16(s string) *uint16 {
@@ -602,6 +647,93 @@ func drawCheckboxRow(hdc uintptr, id int, r RECT, title, subtitle string, checke
 	drawText(hdc, subtitle, RECT{tx, r.Top + sc(30), r.Right - sc(16), r.Bottom - sc(8)}, app.FontSmall, colMuted, DT_LEFT|DT_SINGLELINE)
 }
 
+// Draw a stylized Star Citizen ship silhouette inside the given bounding rectangle (GDI Polygon)
+func drawShipSilhouette(hdc uintptr, r RECT, hullType string, strokeCol, fillCol uint32) {
+	cx := (r.Left + r.Right) / 2
+	cy := (r.Top + r.Bottom) / 2
+	hw := (r.Right - r.Left) / 2
+	hh := (r.Bottom - r.Top) / 2
+	if hw < 10 || hh < 8 {
+		return
+	}
+	pt := func(nx, ny float64) POINT {
+		return POINT{
+			X: cx + int32(nx*float64(hw)),
+			Y: cy + int32(ny*float64(hh)),
+		}
+	}
+
+	var poly []POINT
+	switch hullType {
+	case "twin_industrial": // Drake Vulture / Cutlass / Caterpillar twin-prong industrial
+		poly = []POINT{
+			pt(-0.35, -0.82), pt(-0.15, -0.82), pt(-0.12, -0.20), pt(0.12, -0.20),
+			pt(0.15, -0.82), pt(0.35, -0.82), pt(0.45, -0.10), pt(0.85, 0.15),
+			pt(0.88, 0.45), pt(0.50, 0.55), pt(0.42, 0.85), pt(-0.42, 0.85),
+			pt(-0.50, 0.55), pt(-0.88, 0.45), pt(-0.85, 0.15), pt(-0.45, -0.10),
+		}
+	case "mining_bubble": // MISC Prospector / Argo Mole
+		poly = []POINT{
+			pt(0.0, -0.85), pt(0.28, -0.70), pt(0.35, -0.30), pt(0.82, -0.05),
+			pt(0.88, 0.30), pt(0.60, 0.50), pt(0.48, 0.85), pt(-0.48, 0.85),
+			pt(-0.60, 0.50), pt(-0.88, 0.30), pt(-0.82, -0.05), pt(-0.35, -0.30),
+			pt(-0.28, -0.70),
+		}
+	case "crusader_wing": // Crusader C2 / Spirit / Mercury Star Runner
+		poly = []POINT{
+			pt(0.0, -0.85), pt(0.25, -0.45), pt(0.95, 0.15), pt(0.88, 0.45),
+			pt(0.45, 0.40), pt(0.32, 0.85), pt(-0.32, 0.85), pt(-0.45, 0.40),
+			pt(-0.88, 0.45), pt(-0.95, 0.15), pt(-0.25, -0.45),
+		}
+	case "carrack_expedition", "constellation_nacelle", "hauler_hull": // Carrack / Constellation / Hull
+		poly = []POINT{
+			pt(0.0, -0.88), pt(0.28, -0.52), pt(0.38, -0.10), pt(0.80, 0.10),
+			pt(0.75, 0.45), pt(0.38, 0.52), pt(0.32, 0.88), pt(-0.32, 0.88),
+			pt(-0.38, 0.52), pt(-0.75, 0.45), pt(-0.80, 0.10), pt(-0.38, -0.10),
+			pt(-0.28, -0.52),
+		}
+	default: // fighter_delta / fighter_anvil (Gladius / Sabre / Hornet / F8C)
+		poly = []POINT{
+			pt(0.0, -0.88), pt(0.18, -0.35), pt(0.92, 0.25), pt(0.92, 0.48),
+			pt(0.35, 0.45), pt(0.25, 0.85), pt(0.0, 0.72), pt(-0.25, 0.85),
+			pt(-0.35, 0.45), pt(-0.92, 0.48), pt(-0.92, 0.25), pt(-0.18, -0.35),
+		}
+	}
+
+	// HUD targeting crosshairs behind the ship
+	drawLine(hdc, r.Left+sc(4), cy, r.Right-sc(4), cy, colLine, 1)
+	drawLine(hdc, cx, r.Top+sc(4), cx, r.Bottom-sc(4), colLine, 1)
+
+	brush, _, _ := pCreateSolidBrush.Call(uintptr(fillCol))
+	pen, _, _ := pCreatePen.Call(PS_SOLID, uintptr(sc(1)), uintptr(strokeCol))
+	oldB, _, _ := pSelectObject.Call(hdc, brush)
+	oldP, _, _ := pSelectObject.Call(hdc, pen)
+	pPolygon.Call(hdc, uintptr(unsafe.Pointer(&poly[0])), uintptr(len(poly)))
+	pSelectObject.Call(hdc, oldB)
+	pSelectObject.Call(hdc, oldP)
+	pDeleteObject.Call(brush)
+	pDeleteObject.Call(pen)
+}
+
+func isWindowMaximized() bool {
+	if app.Hwnd == 0 {
+		return false
+	}
+	z, _, _ := pIsZoomed.Call(app.Hwnd)
+	return z != 0
+}
+
+func toggleMaximizeWindow() {
+	if app.Hwnd == 0 {
+		return
+	}
+	if isWindowMaximized() {
+		pShowWindow.Call(app.Hwnd, SW_RESTORE)
+	} else {
+		pShowWindow.Call(app.Hwnd, SW_MAXIMIZE)
+	}
+}
+
 func paintWindow(hdc uintptr, w, h int32) {
 	app.Regions = app.Regions[:0]
 	fillRect(hdc, RECT{0, 0, w, h}, colBg)
@@ -612,19 +744,32 @@ func paintWindow(hdc uintptr, w, h int32) {
 		paintLauncherMode(hdc, w, h)
 	}
 
-	// Top-Right Window Controls
-	btnW := sc(36)
+	// Top-Right Window Controls: Minimize (—), Maximize/Restore (□ / ❐), Close (✕)
+	btnW := sc(34)
 	btnH := sc(28)
-	closeRect := RECT{w - sc(14) - btnW, sc(12), w - sc(14), sc(12) + btnH}
-	minRect := RECT{closeRect.Left - sc(6) - btnW, sc(12), closeRect.Left - sc(6), sc(12) + btnH}
+	closeRect := RECT{w - sc(12) - btnW, sc(12), w - sc(12), sc(12) + btnH}
+	maxRect := RECT{closeRect.Left - sc(5) - btnW, sc(12), closeRect.Left - sc(5), sc(12) + btnH}
+	minRect := RECT{maxRect.Left - sc(5) - btnW, sc(12), maxRect.Left - sc(5), sc(12) + btnH}
 
 	app.Regions = append(app.Regions, HotRegion{ID: CtrlWinMin, Rect: minRect})
+	app.Regions = append(app.Regions, HotRegion{ID: CtrlWinMax, Rect: maxRect})
 	app.Regions = append(app.Regions, HotRegion{ID: CtrlWinClose, Rect: closeRect})
 
 	if app.HoverID == CtrlWinMin {
 		drawShardBox(hdc, minRect, 5, colPanelHov, colLine)
 	}
 	drawText(hdc, "—", minRect, app.FontBold, colMuted, DT_CENTER|DT_VCENTER|DT_SINGLELINE)
+
+	maxCol := colMuted
+	if app.HoverID == CtrlWinMax {
+		drawShardBox(hdc, maxRect, 5, colPanelHov, colCyan)
+		maxCol = colCyan
+	}
+	maxGlyph := "□"
+	if isWindowMaximized() {
+		maxGlyph = "❐"
+	}
+	drawText(hdc, maxGlyph, maxRect, app.FontBold, maxCol, DT_CENTER|DT_VCENTER|DT_SINGLELINE)
 
 	closeCol := colMuted
 	if app.HoverID == CtrlWinClose {
@@ -649,7 +794,6 @@ func paintInstallerMode(hdc uintptr, w, h int32) {
 	fillRect(hdc, RECT{0, 0, sideW, h}, colSidebar)
 	drawLine(hdc, sideW, 0, sideW, h, colLine, 1)
 
-	// GameGlass Hex Badge + Brand
 	hexRect := RECT{sc(24), sc(24), sc(56), sc(56)}
 	drawShardBox(hdc, hexRect, 8, colCyanBg, colCyan)
 	drawText(hdc, "SC", hexRect, app.FontBold, colCyan, DT_CENTER|DT_VCENTER|DT_SINGLELINE)
@@ -673,7 +817,7 @@ func paintInstallerMode(hdc uintptr, w, h int32) {
 		sy += sc(46)
 	}
 
-	drawText(hdc, fmt.Sprintf("BUILD %s\nIN-APP LIVE DECK & WI-FI\nKEIN ADMIN ERFORDERLICH", AppVersion),
+	drawText(hdc, fmt.Sprintf("BUILD %s\n100+ STAR CITIZEN SCHIFFE\nIN-APP LIVE DECK & WI-FI", AppVersion),
 		RECT{sc(24), h - sc(80), sideW - sc(16), h - sc(18)}, app.FontSmall, colDim, DT_LEFT|DT_WORDBREAK)
 
 	cx := sideW + sc(36)
@@ -682,12 +826,12 @@ func paintInstallerMode(hdc uintptr, w, h int32) {
 	switch app.InstPage {
 	case InstPageWelcome:
 		title := "SC COCKPIT // GAMEGLASS EDITION"
-		sub := "Installiert das interaktive Desktop- & Tablet-Shard-Deck für Star Citizen."
+		sub := "Installiert das interaktive Desktop- & Tablet-Shard-Deck für alle Star Citizen Schiffe."
 		if app.ExistingInst {
 			title = "SC COCKPIT // UPDATE & VERWALTUNG"
-			sub = "Bestehende Installation erkannt. Deine eigenen Shards & Dashboards bleiben erhalten."
+			sub = "Bestehende Installation erkannt. Deine eigenen Shards & Hangar-Favoriten bleiben erhalten."
 		}
-		drawText(hdc, title, RECT{cx, sc(30), cx + cw - sc(80), sc(58)}, app.FontHero, colText, DT_LEFT|DT_SINGLELINE)
+		drawText(hdc, title, RECT{cx, sc(30), cx + cw - sc(115), sc(58)}, app.FontHero, colText, DT_LEFT|DT_SINGLELINE)
 		drawText(hdc, sub, RECT{cx, sc(60), cx + cw, sc(84)}, app.FontBody, colMuted, DT_LEFT|DT_SINGLELINE)
 
 		sysCard := RECT{cx, sc(98), cx + cw, sc(168)}
@@ -740,7 +884,7 @@ func paintInstallerMode(hdc uintptr, w, h int32) {
 		drawButton(hdc, CtrlInstPrimary, btnPrimary, btnLabel, "amber")
 
 	case InstPageUninstall:
-		drawText(hdc, "SC COCKPIT ENTFERNEN", RECT{cx, sc(30), cx + cw - sc(80), sc(58)}, app.FontHero, colRed, DT_LEFT|DT_SINGLELINE)
+		drawText(hdc, "SC COCKPIT ENTFERNEN", RECT{cx, sc(30), cx + cw - sc(115), sc(58)}, app.FontHero, colRed, DT_LEFT|DT_SINGLELINE)
 		drawText(hdc, "Möchtest du SC Cockpit und alle Verknüpfungen von diesem PC entfernen?", RECT{cx, sc(60), cx + cw, sc(84)}, app.FontBody, colMuted, DT_LEFT|DT_SINGLELINE)
 
 		warnCard := RECT{cx, sc(104), cx + cw, sc(180)}
@@ -801,20 +945,25 @@ func paintInstallerMode(hdc uintptr, w, h int32) {
 }
 
 // ============================================================================
-// 2. GAMEGLASS IN-APP COCKPIT & CONTROL CENTER
+// 2. GAMEGLASS IN-APP COCKPIT & HANGAR CONTROL CENTER
 // ============================================================================
 func paintLauncherMode(hdc uintptr, w, h int32) {
-	// Left GameGlass Vertical Shard Rail
 	sideW := sc(225)
 	fillRect(hdc, RECT{0, 0, sideW, h}, colSidebar)
 	drawLine(hdc, sideW, 0, sideW, h, colLine, 1)
 
-	// Brand Header
 	hexRect := RECT{sc(18), sc(18), sc(48), sc(48)}
 	drawShardBox(hdc, hexRect, 7, colCyanBg, colCyan)
 	drawText(hdc, "SC", hexRect, app.FontBold, colCyan, DT_CENTER|DT_VCENTER|DT_SINGLELINE)
 	drawText(hdc, "SC COCKPIT", RECT{sc(58), sc(17), sideW - sc(10), sc(36)}, app.FontTitle, colText, DT_LEFT|DT_SINGLELINE)
 	drawText(hdc, "GAMEGLASS SHARD HUB", RECT{sc(58), sc(36), sideW - sc(10), sc(51)}, app.FontSmall, colCyan, DT_LEFT|DT_SINGLELINE)
+
+	favCount := 0
+	for _, d := range app.Dashboards {
+		if d.Favorite {
+			favCount++
+		}
+	}
 
 	navItems := []struct {
 		id    int
@@ -822,13 +971,13 @@ func paintLauncherMode(hdc uintptr, w, h int32) {
 		label string
 		tag   string
 	}{
-		{CtrlNavLiveCockpit, TabLiveCockpit, "LIVE COCKPIT", "IN-APP"},
-		{CtrlNavShards, TabShards, "SHARDS & DECKS", fmt.Sprintf("%d", len(app.Dashboards))},
+		{CtrlNavLiveCockpit, TabLiveCockpit, "► LIVE COCKPIT", "DECK"},
+		{CtrlNavShards, TabShards, "★ HANGAR & SCHIFFE", fmt.Sprintf("%d/%d", favCount, len(app.Dashboards))},
 		{CtrlNavHostLink, TabHostLink, "TABLET / SERVER", "WLAN"},
 		{CtrlNavSettings, TabSettings, "EINSTELLUNGEN", "SYS"},
 	}
 
-	ny := sc(74)
+	ny := sc(70)
 	for _, item := range navItems {
 		r := RECT{sc(12), ny, sideW - sc(12), ny + sc(44)}
 		app.Regions = append(app.Regions, HotRegion{ID: item.id, Rect: r})
@@ -852,9 +1001,27 @@ func paintLauncherMode(hdc uintptr, w, h int32) {
 		} else if hov {
 			col = colText
 		}
-		drawText(hdc, item.label, RECT{r.Left + sc(14), r.Top, r.Right - sc(48), r.Bottom}, app.FontBold, col, DT_LEFT|DT_VCENTER|DT_SINGLELINE)
-		drawText(hdc, item.tag, RECT{r.Right - sc(46), r.Top, r.Right - sc(10), r.Bottom}, app.FontMono, tagCol, DT_RIGHT|DT_VCENTER|DT_SINGLELINE)
-		ny += sc(52)
+		drawText(hdc, item.label, RECT{r.Left + sc(12), r.Top, r.Right - sc(50), r.Bottom}, app.FontBold, col, DT_LEFT|DT_VCENTER|DT_SINGLELINE)
+		drawText(hdc, item.tag, RECT{r.Right - sc(50), r.Top, r.Right - sc(8), r.Bottom}, app.FontMono, tagCol, DT_RIGHT|DT_VCENTER|DT_SINGLELINE)
+		ny += sc(50)
+	}
+
+	// Active Ship Blueprint Card inside Left Sidebar
+	var curDash *DashboardInfo
+	for i := range app.Dashboards {
+		if app.Dashboards[i].ID == app.ActiveDash {
+			curDash = &app.Dashboards[i]
+			break
+		}
+	}
+	if curDash != nil && h > sc(520) {
+		bpCard := RECT{sc(12), ny + sc(8), sideW - sc(12), ny + sc(124)}
+		app.Regions = append(app.Regions, HotRegion{ID: CtrlLiveOpenHangar, Rect: bpCard})
+		drawShardBox(hdc, bpCard, 8, rgb(0x07, 0x12, 0x1c), colLineHi)
+		drawText(hdc, curDash.Manufacturer+" // AKTIVES SCHIFF", RECT{bpCard.Left + sc(10), bpCard.Top + sc(6), bpCard.Right - sc(8), bpCard.Top + sc(20)}, app.FontSmall, colCyan, DT_LEFT|DT_SINGLELINE)
+		silRect := RECT{bpCard.Left + sc(16), bpCard.Top + sc(22), bpCard.Right - sc(16), bpCard.Bottom - sc(24)}
+		drawShipSilhouette(hdc, silRect, curDash.HullType, colCyan, rgb(0x0b, 0x28, 0x38))
+		drawText(hdc, strings.ToUpper(curDash.Ship), RECT{bpCard.Left + sc(10), bpCard.Bottom - sc(22), bpCard.Right - sc(8), bpCard.Bottom - sc(4)}, app.FontBold, colAmber, DT_CENTER|DT_SINGLELINE)
 	}
 
 	// Bottom Sidebar Status Pod
@@ -875,8 +1042,8 @@ func paintLauncherMode(hdc uintptr, w, h int32) {
 	drawText(hdc, "LETZTE: "+lastAct, RECT{statusCard.Left + sc(12), statusCard.Top + sc(50), statusCard.Right - sc(8), statusCard.Bottom - sc(8)}, app.FontSmall, colAmber, DT_LEFT|DT_SINGLELINE)
 
 	// Main Stage Area
-	cx := sideW + sc(24)
-	cw := w - cx - sc(24)
+	cx := sideW + sc(20)
+	cw := w - cx - sc(20)
 
 	switch app.Tab {
 	case TabLiveCockpit:
@@ -890,19 +1057,18 @@ func paintLauncherMode(hdc uintptr, w, h int32) {
 	}
 
 	if app.ToastMsg != "" {
-		toastRect := RECT{cx, h - sc(42), cx + cw, h - sc(12)}
+		toastRect := RECT{cx, h - sc(40), cx + cw, h - sc(10)}
 		drawShardBox(hdc, toastRect, 6, colCyanBg, colCyan)
 		drawText(hdc, app.ToastMsg, toastRect, app.FontBold, colCyan, DT_CENTER|DT_VCENTER|DT_SINGLELINE)
 	}
 }
 
 // ============================================================================
-// TAB 1: IN-APP INTERACTIVE LIVE COCKPIT (FLEET SWITCHER + SUBSYSTEMS + TILES)
+// TAB 1: IN-APP INTERACTIVE LIVE COCKPIT (HANGAR QUICK BAR + SUBSYSTEMS + TILES)
 // ============================================================================
 func paintTabLiveCockpit(hdc uintptr, cx, cw, h int32) {
 	app.LivePageBtns = app.LivePageBtns[:0]
 
-	// Find active dashboard
 	var curDash *DashboardInfo
 	for i := range app.Dashboards {
 		if app.Dashboards[i].ID == app.ActiveDash {
@@ -915,13 +1081,19 @@ func paintTabLiveCockpit(hdc uintptr, cx, cw, h int32) {
 		app.ActiveDash = curDash.ID
 	}
 
-	// 1. Top MFD Fleet Switcher & Action Bar
-	topBar := RECT{cx, sc(12), cx + cw - sc(84), sc(52)}
+	// 1. Top MFD Active Ship Banner (with mini ship silhouette!) & Action Bar
+	topBar := RECT{cx, sc(12), cx + cw - sc(118), sc(52)}
 	drawShardBox(hdc, topBar, 8, colPanel, colLineHi)
 	fillRect(hdc, RECT{topBar.Left, topBar.Top, topBar.Left + sc(65), topBar.Top + sc(2)}, colCyan)
 
-	btnPrev := RECT{topBar.Left + sc(8), topBar.Top + sc(6), topBar.Left + sc(36), topBar.Bottom - sc(6)}
+	btnPrev := RECT{topBar.Left + sc(6), topBar.Top + sc(6), topBar.Left + sc(32), topBar.Bottom - sc(6)}
 	drawButton(hdc, CtrlLivePrevBoard, btnPrev, "◄", "secondary")
+
+	// Mini Ship Blueprint Silhouette next to title
+	miniSil := RECT{btnPrev.Right + sc(6), topBar.Top + sc(5), btnPrev.Right + sc(54), topBar.Bottom - sc(5)}
+	if curDash != nil {
+		drawShipSilhouette(hdc, miniSil, curDash.HullType, colCyan, rgb(0x09, 0x22, 0x30))
+	}
 
 	dashTitle := "KEIN SCHIFF"
 	if curDash != nil {
@@ -931,61 +1103,73 @@ func paintTabLiveCockpit(hdc uintptr, cx, cw, h int32) {
 		}
 		dashTitle = strings.ToUpper(shipLbl)
 	}
-	drawText(hdc, dashTitle, RECT{btnPrev.Right + sc(6), topBar.Top, btnPrev.Right + sc(215), topBar.Bottom}, app.FontTitle, colAmber, DT_CENTER|DT_VCENTER|DT_SINGLELINE)
+	drawText(hdc, dashTitle, RECT{miniSil.Right + sc(6), topBar.Top, miniSil.Right + sc(200), topBar.Bottom}, app.FontTitle, colAmber, DT_LEFT|DT_VCENTER|DT_SINGLELINE)
 
-	btnNext := RECT{btnPrev.Right + sc(220), topBar.Top + sc(6), btnPrev.Right + sc(248), topBar.Bottom - sc(6)}
+	btnNext := RECT{miniSil.Right + sc(204), topBar.Top + sc(6), miniSil.Right + sc(230), topBar.Bottom - sc(6)}
 	drawButton(hdc, CtrlLiveNextBoard, btnNext, "►", "secondary")
 
-	btnEdit := RECT{topBar.Right - sc(108), topBar.Top + sc(6), topBar.Right - sc(8), topBar.Bottom - sc(6)}
+	btnEdit := RECT{topBar.Right - sc(102), topBar.Top + sc(6), topBar.Right - sc(6), topBar.Bottom - sc(6)}
 	drawButton(hdc, CtrlLiveOpenEditor, btnEdit, "BAUKASTEN", "cyan")
 
-	btnPull := RECT{btnEdit.Left - sc(102), topBar.Top + sc(6), btnEdit.Left - sc(6), topBar.Bottom - sc(6)}
+	btnHangar := RECT{btnEdit.Left - sc(108), topBar.Top + sc(6), btnEdit.Left - sc(6), topBar.Bottom - sc(6)}
+	drawButton(hdc, CtrlLiveOpenHangar, btnHangar, "★ HANGAR", "amber")
+
+	btnPull := RECT{btnHangar.Left - sc(94), topBar.Top + sc(6), btnHangar.Left - sc(6), topBar.Bottom - sc(6)}
 	drawButton(hdc, CtrlLiveGitPull, btnPull, "⟳ UPDATE", "secondary")
 
-	btnPin := RECT{btnPull.Left - sc(114), topBar.Top + sc(6), btnPull.Left - sc(6), topBar.Bottom - sc(6)}
+	btnPin := RECT{btnPull.Left - sc(102), topBar.Top + sc(6), btnPull.Left - sc(6), topBar.Bottom - sc(6)}
 	if app.AlwaysOnTop {
 		drawButton(hdc, CtrlLiveAlwaysOnTop, btnPin, "📌 OVERLAY AN", "amber")
 	} else {
 		drawButton(hdc, CtrlLiveAlwaysOnTop, btnPin, "📌 OVERLAY", "secondary")
 	}
 
-	btnArm := RECT{btnPin.Left - sc(126), topBar.Top + sc(6), btnPin.Left - sc(6), topBar.Bottom - sc(6)}
+	btnArm := RECT{btnPin.Left - sc(114), topBar.Top + sc(6), btnPin.Left - sc(6), topBar.Bottom - sc(6)}
 	if app.LiveArmed {
 		drawButton(hdc, CtrlLiveArmToggle, btnArm, "WAFFEN ARMED", "danger")
 	} else {
 		drawButton(hdc, CtrlLiveArmToggle, btnArm, "WAFFEN SAFE", "secondary")
 	}
 
-	// 2. 1-Tap Fleet Switcher Bar (Sliding window of up to 6 ships that always includes ActiveDash!)
+	// 2. 1-Tap Hangar Quick Bar (Shows ONLY the user's ★ Favorited Hangar ships!)
 	fleetY := sc(58)
 	fleetH := sc(34)
-	numShips := len(app.Dashboards)
-	if numShips > 0 {
-		maxChips := numShips
-		if maxChips > 6 {
-			maxChips = 6
+	var favIndices []int
+	for i, d := range app.Dashboards {
+		if d.Favorite || d.ID == app.ActiveDash {
+			favIndices = append(favIndices, i)
 		}
-		activeShipIdx := 0
-		for i, d := range app.Dashboards {
-			if d.ID == app.ActiveDash {
-				activeShipIdx = i
+	}
+	if len(favIndices) > 0 {
+		maxChips := int(cw / sc(145))
+		if maxChips < 4 {
+			maxChips = 4
+		}
+		if maxChips > len(favIndices) {
+			maxChips = len(favIndices)
+		}
+		activePos := 0
+		for pos, idx := range favIndices {
+			if app.Dashboards[idx].ID == app.ActiveDash {
+				activePos = pos
 				break
 			}
 		}
-		startIdx := 0
-		if activeShipIdx >= maxChips {
-			startIdx = activeShipIdx - maxChips + 1
+		startPos := 0
+		if activePos >= maxChips {
+			startPos = activePos - maxChips + 1
 		}
 		chipW := (cw - int32(maxChips-1)*sc(6)) / int32(maxChips)
-		if chipW > sc(175) {
-			chipW = sc(175)
+		if chipW > sc(185) {
+			chipW = sc(185)
 		}
 		sx := cx
 		for c := 0; c < maxChips; c++ {
-			si := startIdx + c
-			if si >= numShips {
+			pos := startPos + c
+			if pos >= len(favIndices) {
 				break
 			}
+			si := favIndices[pos]
 			ship := app.Dashboards[si]
 			sr := RECT{sx, fleetY, sx + chipW, fleetY + fleetH}
 			cid := CtrlLiveShipChipBase + si
@@ -997,16 +1181,17 @@ func paintTabLiveCockpit(hdc uintptr, cx, cw, h int32) {
 			if sName == "" {
 				sName = ship.Title
 			}
+			label := "★ " + strings.ToUpper(sName)
 			if isActShip {
 				drawShardBox(hdc, sr, 6, colAmberBg, colAmber)
 				fillRect(hdc, RECT{sr.Left, sr.Top + sc(4), sr.Left + sc(3), sr.Bottom - sc(6)}, colAmber)
-				drawText(hdc, strings.ToUpper(sName), RECT{sr.Left + sc(8), sr.Top, sr.Right - sc(6), sr.Bottom}, app.FontBold, colText, DT_CENTER|DT_VCENTER|DT_SINGLELINE)
+				drawText(hdc, label, RECT{sr.Left + sc(8), sr.Top, sr.Right - sc(6), sr.Bottom}, app.FontBold, colText, DT_CENTER|DT_VCENTER|DT_SINGLELINE)
 			} else if hov {
 				drawShardBox(hdc, sr, 6, colPanelHov, colCyan)
-				drawText(hdc, strings.ToUpper(sName), RECT{sr.Left + sc(8), sr.Top, sr.Right - sc(6), sr.Bottom}, app.FontBold, colCyan, DT_CENTER|DT_VCENTER|DT_SINGLELINE)
+				drawText(hdc, label, RECT{sr.Left + sc(8), sr.Top, sr.Right - sc(6), sr.Bottom}, app.FontBold, colCyan, DT_CENTER|DT_VCENTER|DT_SINGLELINE)
 			} else {
 				drawShardBox(hdc, sr, 6, colPanel, colLine)
-				drawText(hdc, strings.ToUpper(sName), RECT{sr.Left + sc(8), sr.Top, sr.Right - sc(6), sr.Bottom}, app.FontSmall, colMuted, DT_CENTER|DT_VCENTER|DT_SINGLELINE)
+				drawText(hdc, label, RECT{sr.Left + sc(8), sr.Top, sr.Right - sc(6), sr.Bottom}, app.FontSmall, colMuted, DT_CENTER|DT_VCENTER|DT_SINGLELINE)
 			}
 			sx += chipW + sc(6)
 		}
@@ -1052,12 +1237,21 @@ func paintTabLiveCockpit(hdc uintptr, cx, cw, h int32) {
 		tx += tabW + sc(8)
 	}
 
-	// 4. Render Active Subsystem Groups & Interactive GameGlass Holo-Shards!
+	// 4. Watermark Ship Silhouette in Cockpit Background + Responsive Grid of GameGlass Shards
+	stageRect := RECT{cx + cw/5, tabY + sc(45), cx + (cw*4)/5, h - sc(45)}
+	drawShipSilhouette(hdc, stageRect, curDash.HullType, rgb(0x13, 0x2d, 0x3d), rgb(0x07, 0x11, 0x1a))
+
 	activePage := curDash.Pages[app.LivePageIdx]
 	gy := tabY + tabH + sc(10)
 	maxBottom := h - sc(44)
 
+	// Responsive columns when maximized or resized wider!
 	cols := int32(4)
+	if cw >= sc(1150) {
+		cols = 6
+	} else if cw >= sc(920) {
+		cols = 5
+	}
 	gap := sc(9)
 
 	for _, grp := range activePage.Groups {
@@ -1065,14 +1259,16 @@ func paintTabLiveCockpit(hdc uintptr, cx, cw, h int32) {
 			break
 		}
 		drawText(hdc, "◆  "+strings.ToUpper(grp.Title), RECT{cx, gy, cx + cw, gy + sc(18)}, app.FontBold, colAmber, DT_LEFT|DT_SINGLELINE)
-		drawLine(hdc, cx+sc(210), gy+sc(9), cx+cw, gy+sc(9), colLine, 1)
+		drawLine(hdc, cx+sc(230), gy+sc(9), cx+cw, gy+sc(9), colLine, 1)
 		gy += sc(22)
 
 		cellW := (cw - (cols-1)*gap) / cols
 		cellH := sc(64)
+		if h >= sc(800) {
+			cellH = sc(74)
+		}
 		colIdx := int32(0)
 
-		// Expand special widgets (power/shield) into their individual actionable GameGlass sub-shards for desktop use
 		var expanded []DashButton
 		for _, b := range grp.Buttons {
 			if b.Kind == "power" {
@@ -1137,7 +1333,6 @@ func paintGameGlassShardTile(hdc uintptr, id int, r RECT, btn DashButton) {
 	press := app.PressID == id
 	isToggled := app.LiveToggled[btn.ID]
 
-	// Determine Shard Accent Color
 	var accent, fill, border uint32
 	switch btn.Color {
 	case "amber":
@@ -1181,11 +1376,8 @@ func paintGameGlassShardTile(hdc uintptr, id int, r RECT, btn DashButton) {
 	}
 
 	drawShardBox(hdc, r, 10, fill, border)
-
-	// Left laser glow bar
 	fillRect(hdc, RECT{r.Left, r.Top + sc(7), r.Left + sc(3), r.Bottom - sc(10)}, accent)
 
-	// Danger top warning stripe
 	if btn.Danger {
 		stripeCol := colRed
 		if !app.LiveArmed {
@@ -1194,7 +1386,6 @@ func paintGameGlassShardTile(hdc uintptr, id int, r RECT, btn DashButton) {
 		fillRect(hdc, RECT{r.Left + sc(6), r.Top, r.Right - sc(12), r.Top + sc(3)}, stripeCol)
 	}
 
-	// Top Row: Keybind Badge + Mode Tag
 	keyHint := btn.Hint
 	if keyHint == "" && len(btn.Keys) > 0 {
 		keyHint = strings.ToUpper(strings.Join(btn.Keys, " + "))
@@ -1216,7 +1407,6 @@ func paintGameGlassShardTile(hdc uintptr, id int, r RECT, btn DashButton) {
 	drawText(hdc, keyHint, RECT{r.Left + sc(12), r.Top + sc(7), r.Right - sc(55), r.Top + sc(22)}, app.FontMono, accent, DT_LEFT|DT_SINGLELINE)
 	drawText(hdc, modeTag, RECT{r.Right - sc(65), r.Top + sc(7), r.Right - sc(10), r.Top + sc(22)}, app.FontSmall, colMuted, DT_RIGHT|DT_SINGLELINE)
 
-	// Bottom Main Action Label
 	labelCol := colText
 	if btn.Danger && !app.LiveArmed {
 		labelCol = colMuted
@@ -1227,30 +1417,108 @@ func paintGameGlassShardTile(hdc uintptr, id int, r RECT, btn DashButton) {
 }
 
 // ============================================================================
-// TAB 2: SHARDS & FLEET MANAGER (ADD SHIPS & SUBSYSTEMS)
+// TAB 2: ★ HANGAR & STAR CITIZEN SHIP DATABASE (SEARCH 100+ SHIPS & FAVORITES)
 // ============================================================================
+func getFilteredHangarShips() []int {
+	var indices []int
+	q := strings.ToLower(strings.TrimSpace(app.HangarSearch))
+	for i, d := range app.Dashboards {
+		if app.HangarFilter == "hangar" && !d.Favorite {
+			continue
+		}
+		if app.HangarFilter != "all" && app.HangarFilter != "hangar" {
+			hasSub := false
+			for _, s := range d.Subsystems {
+				if strings.EqualFold(s, app.HangarFilter) {
+					hasSub = true
+					break
+				}
+			}
+			if !hasSub && !strings.Contains(strings.ToLower(d.Role), app.HangarFilter) {
+				continue
+			}
+		}
+		if q != "" {
+			hay := strings.ToLower(d.Ship + " " + d.Title + " " + d.Manufacturer + " " + d.Role + " " + strings.Join(d.Subsystems, " "))
+			if !strings.Contains(hay, q) {
+				continue
+			}
+		}
+		indices = append(indices, i)
+	}
+	return indices
+}
+
 func paintTabShards(hdc uintptr, cx, cw, h int32) {
-	drawText(hdc, "FLOTTE, SCHIFFE & UNTERPUNKTE", RECT{cx, sc(20), cx + cw - sc(100), sc(46)}, app.FontHero, colText, DT_LEFT|DT_SINGLELINE)
-	drawText(hdc, "Lege mehrere Schiffe an, wechsele mit 1 Klick oder füge dem aktiven Schiff direkt neue Unterpunkte (Mining, Salvage, Fracht…) hinzu.",
-		RECT{cx, sc(48), cx + cw, sc(70)}, app.FontBody, colMuted, DT_LEFT|DT_SINGLELINE)
+	drawText(hdc, "★ STAR CITIZEN HANGAR & SCHIFFS-DATENBANK", RECT{cx, sc(16), cx + cw - sc(120), sc(42)}, app.FontHero, colText, DT_LEFT|DT_SINGLELINE)
+	drawText(hdc, "Suche aus über 100 Star Citizen Schiffen, markiere Favoriten (★) für deinen Hangar oder passe Unterpunkte an.",
+		RECT{cx, sc(42), cx + cw, sc(62)}, app.FontBody, colMuted, DT_LEFT|DT_SINGLELINE)
 
-	btnNew := RECT{cx, sc(78), cx + sc(165), sc(112)}
-	btnSync := RECT{btnNew.Right + sc(8), sc(78), btnNew.Right + sc(200), sc(112)}
-	btnFolder := RECT{btnSync.Right + sc(8), sc(78), btnSync.Right + sc(170), sc(112)}
-	btnReload := RECT{btnFolder.Right + sc(8), sc(78), btnFolder.Right + sc(120), sc(112)}
+	// Row 1: Interactive Search Input + Quick Actions
+	searchBox := RECT{cx, sc(68), cx + sc(310), sc(100)}
+	app.Regions = append(app.Regions, HotRegion{ID: CtrlHangarSearchBox, Rect: searchBox})
+	drawShardBox(hdc, searchBox, 6, rgb(0x08, 0x13, 0x1f), colCyan)
+	searchTxt := "🔍 Tippe zum Suchen (z.B. Vulture, Gladius, Carrack)..."
+	searchCol := colMuted
+	if app.HangarSearch != "" {
+		searchTxt = "🔍 " + app.HangarSearch + "_"
+		searchCol = colCyan
+	}
+	drawText(hdc, searchTxt, RECT{searchBox.Left + sc(10), searchBox.Top, searchBox.Right - sc(30), searchBox.Bottom}, app.FontBold, searchCol, DT_LEFT|DT_VCENTER|DT_SINGLELINE)
+	if app.HangarSearch != "" {
+		clrRect := RECT{searchBox.Right - sc(28), searchBox.Top + sc(4), searchBox.Right - sc(4), searchBox.Bottom - sc(4)}
+		drawButton(hdc, CtrlHangarSearchClear, clrRect, "✕", "danger")
+	}
 
-	drawButton(hdc, CtrlBtnNewDash, btnNew, "+ NEUES SCHIFF", "amber")
+	btnNew := RECT{searchBox.Right + sc(8), sc(68), searchBox.Right + sc(150), sc(100)}
+	btnSync := RECT{btnNew.Right + sc(6), sc(68), btnNew.Right + sc(145), sc(100)}
+	btnReload := RECT{btnSync.Right + sc(6), sc(68), btnSync.Right + sc(105), sc(100)}
+	drawButton(hdc, CtrlBtnNewDash, btnNew, "+ EIGENES SCHIFF", "amber")
 	drawButton(hdc, CtrlBtnSyncSCBindings, btnSync, "SC-TASTEN LESEN", "cyan")
-	drawButton(hdc, CtrlBtnOpenDashFolder, btnFolder, "ORDNER ÖFFNEN", "secondary")
-	drawButton(hdc, CtrlBtnReloadDash, btnReload, "RELOAD", "secondary")
+	drawButton(hdc, CtrlBtnReloadDash, btnReload, "⟳ UPDATE", "secondary")
 
-	// Quick Subsystem Generator Strip for the currently active ship!
-	subStrip := RECT{cx, sc(120), cx + cw, sc(162)}
-	drawShardBox(hdc, subStrip, 8, colPanel, colLineHi)
-	drawText(hdc, "UNTERPUNKT ZUM AKTIVEN SCHIFF (+):", RECT{subStrip.Left + sc(14), subStrip.Top, subStrip.Left + sc(225), subStrip.Bottom}, app.FontSmall, colAmber, DT_LEFT|DT_VCENTER|DT_SINGLELINE)
+	// Row 2: Category Filter Tabs (★ MEIN HANGAR | ALLE SCHIFFE | KAMPF | MINING | SALVAGE | FRACHT | EXPLORATION)
+	fy := sc(106)
+	fh := sc(30)
+	filters := []struct {
+		id    int
+		key   string
+		label string
+	}{
+		{CtrlHangarFilterFav, "hangar", "★ MEIN HANGAR"},
+		{CtrlHangarFilterAll, "all", "ALLE SCHIFFE (100+)"},
+		{CtrlHangarFilterCombat, "kampf", "KAMPF"},
+		{CtrlHangarFilterMining, "mining", "MINING"},
+		{CtrlHangarFilterSalvage, "salvage", "SALVAGE"},
+		{CtrlHangarFilterCargo, "cargo", "FRACHT"},
+		{CtrlHangarFilterExplore, "exploration", "EXPLORATION"},
+	}
+	fx := cx
+	for _, f := range filters {
+		fw := sc(96)
+		if f.key == "all" {
+			fw = sc(142)
+		} else if f.key == "hangar" {
+			fw = sc(122)
+		}
+		style := "secondary"
+		if app.HangarFilter == f.key {
+			if f.key == "hangar" {
+				style = "amber"
+			} else {
+				style = "cyan"
+			}
+		}
+		drawButton(hdc, f.id, RECT{fx, fy, fx + fw, fy + fh}, f.label, style)
+		fx += fw + sc(6)
+	}
 
+	// Row 3: Quick Subsystem Adder for Active Ship
+	subStrip := RECT{cx, sc(142), cx + cw, sc(176)}
+	drawShardBox(hdc, subStrip, 6, colPanel, colLine)
+	drawText(hdc, "UNTERPUNKT ZUM AKTIVEN SCHIFF (+):", RECT{subStrip.Left + sc(12), subStrip.Top, subStrip.Left + sc(225), subStrip.Bottom}, app.FontSmall, colAmber, DT_LEFT|DT_VCENTER|DT_SINGLELINE)
 	sbX := subStrip.Left + sc(230)
-	sbW := sc(96)
+	sbW := sc(92)
 	subBtns := []struct {
 		id    int
 		label string
@@ -1262,16 +1530,52 @@ func paintTabShards(hdc uintptr, cx, cw, h int32) {
 		{CtrlAddSubPower, "+ ENERGIE"},
 	}
 	for _, sb := range subBtns {
-		drawButton(hdc, sb.id, RECT{sbX, subStrip.Top + sc(6), sbX + sbW, subStrip.Bottom - sc(6)}, sb.label, "cyan")
+		drawButton(hdc, sb.id, RECT{sbX, subStrip.Top + sc(4), sbX + sbW, subStrip.Bottom - sc(4)}, sb.label, "cyan")
 		sbX += sbW + sc(6)
 	}
 
-	y := sc(174)
-	rowH := sc(70)
-	for i, d := range app.Dashboards {
-		if y+rowH > h-sc(46) {
+	// Filtered Ship Cards List with Depicted Ship Silhouette & Pagination
+	filtered := getFilteredHangarShips()
+	y := sc(184)
+	rowH := sc(68)
+	availH := h - y - sc(44)
+	maxRows := int(availH / (rowH + sc(6)))
+	if maxRows < 1 {
+		maxRows = 1
+	}
+
+	if app.HangarScrollIdx >= len(filtered) {
+		app.HangarScrollIdx = 0
+	}
+	if app.HangarScrollIdx < 0 {
+		app.HangarScrollIdx = 0
+	}
+
+	// Pagination controls on right side of subStrip
+	totalPages := (len(filtered) + maxRows - 1) / maxRows
+	if totalPages < 1 {
+		totalPages = 1
+	}
+	curPage := (app.HangarScrollIdx / maxRows) + 1
+	pageInfoRect := RECT{subStrip.Right - sc(215), subStrip.Top, subStrip.Right - sc(82), subStrip.Bottom}
+	drawText(hdc, fmt.Sprintf("%d Schiffe (S. %d/%d)", len(filtered), curPage, totalPages), pageInfoRect, app.FontSmall, colCyan, DT_RIGHT|DT_VCENTER|DT_SINGLELINE)
+	drawButton(hdc, CtrlHangarPagePrev, RECT{subStrip.Right - sc(76), subStrip.Top + sc(4), subStrip.Right - sc(44), subStrip.Bottom - sc(4)}, "▲", "secondary")
+	drawButton(hdc, CtrlHangarPageNext, RECT{subStrip.Right - sc(38), subStrip.Top + sc(4), subStrip.Right - sc(6), subStrip.Bottom - sc(4)}, "▼", "secondary")
+
+	if len(filtered) == 0 {
+		drawText(hdc, "Keine passenden Schiffe gefunden. Klicke auf 'ALLE SCHIFFE (100+)' oder lösche den Suchbegriff.",
+			RECT{cx, y + sc(30), cx + cw, y + sc(70)}, app.FontBody, colMuted, DT_CENTER|DT_SINGLELINE)
+		return
+	}
+
+	for rIdx := 0; rIdx < maxRows; rIdx++ {
+		fPos := app.HangarScrollIdx + rIdx
+		if fPos >= len(filtered) {
 			break
 		}
+		i := filtered[fPos]
+		d := app.Dashboards[i]
+
 		card := RECT{cx, y, cx + cw, y + rowH}
 		isActive := d.ID == app.ActiveDash
 		border := colLine
@@ -1279,58 +1583,66 @@ func paintTabShards(hdc uintptr, cx, cw, h int32) {
 		if isActive {
 			border = colCyan
 			fill = colPanelAct
+		} else if d.Favorite {
+			border = rgb(0x6e, 0x4d, 0x12)
 		}
 		drawShardBox(hdc, card, 10, fill, border)
 		if isActive {
 			fillRect(hdc, RECT{card.Left, card.Top + sc(8), card.Left + sc(4), card.Bottom - sc(10)}, colCyan)
 		}
 
-		badge := d.Manufacturer
-		if badge == "" {
-			badge = "UEE"
+		// Left Ship Blueprint Silhouette Preview Box
+		artBox := RECT{card.Left + sc(10), card.Top + sc(7), card.Left + sc(96), card.Bottom - sc(7)}
+		drawShardBox(hdc, artBox, 6, rgb(0x06, 0x11, 0x1b), colLineHi)
+		silCol := colCyan
+		if d.Manufacturer == "DRAKE" || d.Manufacturer == "MISC" || d.Manufacturer == "ARGO" {
+			silCol = colAmber
 		}
-		badgeCol := colCyan
-		if d.Source == "local" {
-			badgeCol = colAmber
-		}
+		drawShipSilhouette(hdc, artBox, d.HullType, silCol, rgb(0x0c, 0x24, 0x34))
+
+		// Ship Title & Subsystem Tags
 		shipName := d.Ship
 		if shipName == "" {
 			shipName = d.Title
 		}
-		drawText(hdc, strings.ToUpper(shipName), RECT{card.Left + sc(18), card.Top + sc(10), card.Left + sc(310), card.Top + sc(34)}, app.FontTitle, colText, DT_LEFT|DT_SINGLELINE)
+		drawText(hdc, strings.ToUpper(shipName), RECT{artBox.Right + sc(12), card.Top + sc(8), card.Right - sc(380), card.Top + sc(32)}, app.FontTitle, colText, DT_LEFT|DT_SINGLELINE)
 
-		// Show actual subsystem page names in the subtitle!
 		var pageNames []string
 		for _, p := range d.Pages {
 			pageNames = append(pageNames, p.Label)
 		}
 		subList := strings.Join(pageNames, " · ")
-		meta := fmt.Sprintf("[%s]  %s   •   Unterpunkte (%d): %s", badge, d.Role, d.PageCount, subList)
-		drawText(hdc, meta, RECT{card.Left + sc(18), card.Top + sc(36), card.Right - sc(350), card.Bottom - sc(8)}, app.FontSmall, badgeCol, DT_LEFT|DT_SINGLELINE)
+		meta := fmt.Sprintf("[%s]  %s   •   Subsysteme (%d): %s", d.Manufacturer, d.Role, d.PageCount, subList)
+		drawText(hdc, meta, RECT{artBox.Right + sc(12), card.Top + sc(34), card.Right - sc(375), card.Bottom - sc(8)}, app.FontSmall, silCol, DT_LEFT|DT_SINGLELINE)
 
-		bx := card.Right - sc(14)
+		// Action Buttons on Right of Ship Card: ★ FAVORIT | ► ÖFFNEN | ⚙ BAUKASTEN | KOPIE
+		bx := card.Right - sc(12)
 		if d.Source == "local" {
-			btnDel := RECT{bx - sc(82), card.Top + sc(17), bx, card.Bottom - sc(17)}
-			drawButton(hdc, CtrlDashDelBase+i, btnDel, "LÖSCHEN", "danger")
+			btnDel := RECT{bx - sc(68), card.Top + sc(16), bx, card.Bottom - sc(16)}
+			drawButton(hdc, CtrlDashDelBase+i, btnDel, "RESET", "danger")
 			bx = btnDel.Left - sc(6)
 		}
 
-		btnDup := RECT{bx - sc(82), card.Top + sc(17), bx, card.Bottom - sc(17)}
-		drawButton(hdc, CtrlDashDupBase+i, btnDup, "KOPIE", "secondary")
-		bx = btnDup.Left - sc(6)
-
-		btnEdit := RECT{bx - sc(104), card.Top + sc(17), bx, card.Bottom - sc(17)}
-		drawButton(hdc, CtrlDashEditBase+i, btnEdit, "BAUKASTEN", "cyan")
+		btnEdit := RECT{bx - sc(98), card.Top + sc(16), bx, card.Bottom - sc(16)}
+		drawButton(hdc, CtrlDashEditBase+i, btnEdit, "⚙ ANPASSEN", "cyan")
 		bx = btnEdit.Left - sc(6)
 
-		btnUse := RECT{bx - sc(130), card.Top + sc(17), bx, card.Bottom - sc(17)}
+		btnUse := RECT{bx - sc(115), card.Top + sc(16), bx, card.Bottom - sc(16)}
 		if isActive {
-			drawButton(hdc, CtrlDashUseLiveBase+i, btnUse, "► AKTIVES SCHIFF", "amber")
+			drawButton(hdc, CtrlDashUseLiveBase+i, btnUse, "● IM COCKPIT", "green")
 		} else {
-			drawButton(hdc, CtrlDashUseLiveBase+i, btnUse, "SCHIFF WÄHLEN", "green")
+			drawButton(hdc, CtrlDashUseLiveBase+i, btnUse, "► ÖFFNEN", "cyan")
+		}
+		bx = btnUse.Left - sc(6)
+
+		btnFav := RECT{bx - sc(94), card.Top + sc(16), bx, card.Bottom - sc(16)}
+		if d.Favorite {
+			drawButton(hdc, CtrlDashFavBase+i, btnFav, "★ HANGAR", "amber")
+		} else {
+			drawButton(hdc, CtrlDashFavBase+i, btnFav, "☆ MERKEN", "secondary")
 		}
 
-		y += rowH + sc(8)
+		y += rowH + sc(6)
 	}
 }
 
@@ -1338,7 +1650,7 @@ func paintTabShards(hdc uintptr, cx, cw, h int32) {
 // TAB 3: TABLET / WLAN SERVER HOST LINK
 // ============================================================================
 func paintTabHostLink(hdc uintptr, cx, cw, h int32) {
-	drawText(hdc, "TABLET & WLAN SHARD SERVER", RECT{cx, sc(22), cx + cw - sc(90), sc(50)}, app.FontHero, colText, DT_LEFT|DT_SINGLELINE)
+	drawText(hdc, "TABLET & WLAN SHARD SERVER", RECT{cx, sc(22), cx + cw - sc(115), sc(50)}, app.FontHero, colText, DT_LEFT|DT_SINGLELINE)
 	drawText(hdc, "Verbinde dein Tablet, Smartphone oder einen Zweitbildschirm im WLAN mit deinem Star Citizen PC.",
 		RECT{cx, sc(52), cx + cw, sc(74)}, app.FontBody, colMuted, DT_LEFT|DT_SINGLELINE)
 
@@ -1372,7 +1684,6 @@ func paintTabHostLink(hdc uintptr, cx, cw, h int32) {
 		drawButton(hdc, CtrlBtnToggleServer, powerBtn, "SERVER STARTEN", "amber")
 	}
 
-	// Admin & Telemetry Log
 	adminCard := RECT{cx, sc(240), cx + cw, sc(304)}
 	drawShardBox(hdc, adminCard, 8, colPanel, colLine)
 	if app.IsAdmin {
@@ -1417,7 +1728,7 @@ func paintTabHostLink(hdc uintptr, cx, cw, h int32) {
 // TAB 4: SETTINGS & UNINSTALL
 // ============================================================================
 func paintTabSettings(hdc uintptr, cx, cw, h int32) {
-	drawText(hdc, "SYSTEM & EINSTELLUNGEN", RECT{cx, sc(22), cx + cw - sc(90), sc(50)}, app.FontHero, colText, DT_LEFT|DT_SINGLELINE)
+	drawText(hdc, "SYSTEM & EINSTELLUNGEN", RECT{cx, sc(22), cx + cw - sc(115), sc(50)}, app.FontHero, colText, DT_LEFT|DT_SINGLELINE)
 	drawText(hdc, "Netzwerk-Port anpassen, Verzeichnisse öffnen oder SC Cockpit deinstallieren.",
 		RECT{cx, sc(52), cx + cw, sc(74)}, app.FontBody, colMuted, DT_LEFT|DT_SINGLELINE)
 
@@ -1475,8 +1786,8 @@ func paintTabSettings(hdc uintptr, cx, cw, h int32) {
 func handleControlClick(id int) {
 	app.ToastMsg = ""
 
-	// 0. 1-Tap Fleet Bar Ship Switcher Chip Click
-	if id >= CtrlLiveShipChipBase && id < CtrlLiveShipChipBase+100 {
+	// 0. 1-Tap Hangar Quick Bar Ship Switcher Chip Click
+	if id >= CtrlLiveShipChipBase && id < CtrlLiveShipChipBase+500 {
 		idx := id - CtrlLiveShipChipBase
 		if idx >= 0 && idx < len(app.Dashboards) {
 			setActiveDashboard(app.Dashboards[idx].ID)
@@ -1512,19 +1823,34 @@ func handleControlClick(id int) {
 		return
 	}
 
-	// 3. Shards Manager List Actions
-	if id >= CtrlDashUseLiveBase && id < CtrlDashUseLiveBase+100 {
+	// 3. Hangar Favorite Toggle (★)
+	if id >= CtrlDashFavBase && id < CtrlDashFavBase+500 {
+		idx := id - CtrlDashFavBase
+		if idx >= 0 && idx < len(app.Dashboards) {
+			isFav := toggleDashboardFavorite(app.Dashboards[idx].ID)
+			if isFav {
+				app.ToastMsg = fmt.Sprintf("★ '%s' wurde zu deinem Hangar hinzugefügt!", app.Dashboards[idx].Ship)
+			} else {
+				app.ToastMsg = fmt.Sprintf("'%s' aus dem Hangar entfernt.", app.Dashboards[idx].Ship)
+			}
+		}
+		pInvalidateRect.Call(app.Hwnd, 0, 0)
+		return
+	}
+
+	// 4. Hangar Ship List Actions (Open / Customize / Copy / Delete)
+	if id >= CtrlDashUseLiveBase && id < CtrlDashUseLiveBase+500 {
 		idx := id - CtrlDashUseLiveBase
 		if idx < len(app.Dashboards) {
 			setActiveDashboard(app.Dashboards[idx].ID)
 			app.LivePageIdx = 0
 			app.Tab = TabLiveCockpit
-			app.ToastMsg = fmt.Sprintf("Schiff '%s' im Live-Cockpit aktiviert.", app.Dashboards[idx].Title)
+			app.ToastMsg = fmt.Sprintf("Schiff '%s' im Live-Cockpit geöffnet.", app.Dashboards[idx].Ship)
 		}
 		pInvalidateRect.Call(app.Hwnd, 0, 0)
 		return
 	}
-	if id >= CtrlDashEditBase && id < CtrlDashEditBase+100 {
+	if id >= CtrlDashEditBase && id < CtrlDashEditBase+500 {
 		idx := id - CtrlDashEditBase
 		if idx < len(app.Dashboards) {
 			setActiveDashboard(app.Dashboards[idx].ID)
@@ -1537,27 +1863,27 @@ func handleControlClick(id int) {
 		pInvalidateRect.Call(app.Hwnd, 0, 0)
 		return
 	}
-	if id >= CtrlDashDupBase && id < CtrlDashDupBase+100 {
+	if id >= CtrlDashDupBase && id < CtrlDashDupBase+500 {
 		idx := id - CtrlDashDupBase
 		if idx < len(app.Dashboards) {
 			newID, err := duplicateDashboard(app.Dashboards[idx])
 			if err != nil {
 				app.ToastMsg = "Fehler: " + err.Error()
 			} else {
-				app.ToastMsg = fmt.Sprintf("Schiff-Kopie '%s.json' erstellt.", newID)
+				app.ToastMsg = fmt.Sprintf("Schiff-Kopie '%s.json' im Hangar erstellt.", newID)
 			}
 		}
 		pInvalidateRect.Call(app.Hwnd, 0, 0)
 		return
 	}
-	if id >= CtrlDashDelBase && id < CtrlDashDelBase+100 {
+	if id >= CtrlDashDelBase && id < CtrlDashDelBase+500 {
 		idx := id - CtrlDashDelBase
 		if idx < len(app.Dashboards) {
 			d := app.Dashboards[idx]
-			if d.Source == "local" {
+			if d.Source == "local" && d.Path != "" {
 				_ = os.Remove(d.Path)
 				reloadDashboards()
-				app.ToastMsg = fmt.Sprintf("Eigenes Schiff '%s' gelöscht.", d.Title)
+				app.ToastMsg = fmt.Sprintf("Eigene Anpassung für '%s' zurückgesetzt.", d.Ship)
 			}
 		}
 		pInvalidateRect.Call(app.Hwnd, 0, 0)
@@ -1568,22 +1894,23 @@ func handleControlClick(id int) {
 	case CtrlWinClose:
 		stopServer()
 		pPostQuitMessage.Call(0)
+	case CtrlWinMax:
+		toggleMaximizeWindow()
+	case CtrlWinMin:
+		pShowWindow.Call(app.Hwnd, SW_MINIMIZE)
 	case CtrlInstSecondary:
-		// Switch directly into the Live Cockpit without installing/reinstalling!
 		enablePortableOrInstalledMode()
 		app.Mode = ModeLauncher
 		app.Tab = TabLiveCockpit
 		reloadDashboards()
 		startServer()
-	case CtrlWinMin:
-		pShowWindow.Call(app.Hwnd, SW_MINIMIZE)
 
 	// Navigation Tabs
 	case CtrlNavLiveCockpit:
 		reloadDashboards()
 		app.Tab = TabLiveCockpit
 		app.ConfirmUninst = false
-	case CtrlNavShards:
+	case CtrlNavShards, CtrlLiveOpenHangar:
 		reloadDashboards()
 		app.Tab = TabShards
 		app.ConfirmUninst = false
@@ -1593,6 +1920,44 @@ func handleControlClick(id int) {
 	case CtrlNavSettings:
 		app.Tab = TabSettings
 		app.ConfirmUninst = false
+
+	// Hangar Filter & Search Controls
+	case CtrlHangarSearchBox:
+		app.ToastMsg = "Tippe einfach auf deiner Tastatur, um nach Schiffen, Herstellern oder Rollen zu suchen (Backspace löscht)."
+	case CtrlHangarSearchClear:
+		app.HangarSearch = ""
+		app.HangarScrollIdx = 0
+	case CtrlHangarFilterFav:
+		app.HangarFilter = "hangar"
+		app.HangarScrollIdx = 0
+	case CtrlHangarFilterAll:
+		app.HangarFilter = "all"
+		app.HangarScrollIdx = 0
+	case CtrlHangarFilterCombat:
+		app.HangarFilter = "kampf"
+		app.HangarScrollIdx = 0
+	case CtrlHangarFilterMining:
+		app.HangarFilter = "mining"
+		app.HangarScrollIdx = 0
+	case CtrlHangarFilterSalvage:
+		app.HangarFilter = "salvage"
+		app.HangarScrollIdx = 0
+	case CtrlHangarFilterCargo:
+		app.HangarFilter = "cargo"
+		app.HangarScrollIdx = 0
+	case CtrlHangarFilterExplore:
+		app.HangarFilter = "exploration"
+		app.HangarScrollIdx = 0
+	case CtrlHangarPagePrev:
+		app.HangarScrollIdx -= 5
+		if app.HangarScrollIdx < 0 {
+			app.HangarScrollIdx = 0
+		}
+	case CtrlHangarPageNext:
+		filtered := getFilteredHangarShips()
+		if app.HangarScrollIdx+5 < len(filtered) {
+			app.HangarScrollIdx += 5
+		}
 
 	// Live Cockpit Top Bar Controls
 	case CtrlLivePrevBoard:
@@ -1653,13 +2018,13 @@ func handleControlClick(id int) {
 		pShellExecuteW.Call(0, u16ptr("runas"), u16ptr(selfExe), u16ptr("--launcher"), u16ptr(app.AppDir), SW_SHOWNORMAL)
 		pPostQuitMessage.Call(0)
 
-	// Shards Manager Controls
+	// Hangar Manager Controls
 	case CtrlBtnNewDash:
 		newID, err := createNewDashboard()
 		if err != nil {
 			app.ToastMsg = "Fehler: " + err.Error()
 		} else {
-			app.ToastMsg = fmt.Sprintf("Neues Multi-Subsystem-Schiff '%s.json' angelegt.", newID)
+			app.ToastMsg = fmt.Sprintf("★ Neues Schiff '%s.json' im Hangar angelegt.", newID)
 		}
 	case CtrlBtnSyncSCBindings:
 		app.ToastMsg = syncStarCitizenActionmaps()
@@ -1746,6 +2111,10 @@ func wndProc(hwnd uintptr, msg uint32, wParam, lParam uintptr) uintptr {
 	case WM_ERASEBKGND:
 		return 1
 
+	case WM_SIZE:
+		pInvalidateRect.Call(hwnd, 0, 0)
+		return 0
+
 	case WM_PAINT:
 		var ps PAINTSTRUCT
 		hdc, _, _ := pBeginPaint.Call(hwnd, uintptr(unsafe.Pointer(&ps)))
@@ -1770,15 +2139,59 @@ func wndProc(hwnd uintptr, msg uint32, wParam, lParam uintptr) uintptr {
 	case WM_NCHITTEST:
 		pt := POINT{int32(int16(lParam & 0xFFFF)), int32(int16((lParam >> 16) & 0xFFFF))}
 		pScreenToClient.Call(hwnd, uintptr(unsafe.Pointer(&pt)))
+
+		// Support interactive edge/corner window resizing when not maximized!
+		if !isWindowMaximized() {
+			var rc RECT
+			pGetClientRect.Call(hwnd, uintptr(unsafe.Pointer(&rc)))
+			w := rc.Right - rc.Left
+			h := rc.Bottom - rc.Top
+			b := sc(6)
+			onLeft := pt.X < b
+			onRight := pt.X >= w-b
+			onTop := pt.Y < b
+			onBottom := pt.Y >= h-b
+			if onTop && onLeft {
+				return HTTOPLEFT
+			}
+			if onTop && onRight {
+				return HTTOPRIGHT
+			}
+			if onBottom && onLeft {
+				return HTBOTTOMLEFT
+			}
+			if onBottom && onRight {
+				return HTBOTTOMRIGHT
+			}
+			if onLeft {
+				return HTLEFT
+			}
+			if onRight {
+				return HTRIGHT
+			}
+			if onTop {
+				return HTTOP
+			}
+			if onBottom {
+				return HTBOTTOM
+			}
+		}
+
 		for _, reg := range app.Regions {
 			if ptInRect(pt.X, pt.Y, reg.Rect) {
 				return HTCLIENT
 			}
 		}
-		if pt.Y < sc(56) {
+		if pt.Y < sc(52) {
 			return HTCAPTION
 		}
 		return HTCLIENT
+
+	case WM_NCLBUTTONDBLCLK:
+		if wParam == HTCAPTION {
+			toggleMaximizeWindow()
+			return 0
+		}
 
 	case WM_SETCURSOR:
 		if (lParam & 0xFFFF) == HTCLIENT {
@@ -1803,6 +2216,25 @@ func wndProc(hwnd uintptr, msg uint32, wParam, lParam uintptr) uintptr {
 		if newHover != app.HoverID {
 			app.HoverID = newHover
 			pInvalidateRect.Call(hwnd, 0, 0)
+		}
+		return 0
+
+	case WM_MOUSEWHEEL:
+		if app.Mode == ModeLauncher && app.Tab == TabShards {
+			delta := int16((wParam >> 16) & 0xFFFF)
+			if delta < 0 {
+				filtered := getFilteredHangarShips()
+				if app.HangarScrollIdx+3 < len(filtered) {
+					app.HangarScrollIdx += 3
+					pInvalidateRect.Call(hwnd, 0, 0)
+				}
+			} else if delta > 0 {
+				app.HangarScrollIdx -= 3
+				if app.HangarScrollIdx < 0 {
+					app.HangarScrollIdx = 0
+				}
+				pInvalidateRect.Call(hwnd, 0, 0)
+			}
 		}
 		return 0
 
@@ -1836,10 +2268,51 @@ func wndProc(hwnd uintptr, msg uint32, wParam, lParam uintptr) uintptr {
 		}
 		return 0
 
+	case WM_CHAR:
+		if app.Mode == ModeLauncher && app.Tab == TabShards {
+			ch := rune(wParam)
+			if ch == '\b' {
+				if len(app.HangarSearch) > 0 {
+					runes := []rune(app.HangarSearch)
+					app.HangarSearch = string(runes[:len(runes)-1])
+					app.HangarScrollIdx = 0
+					pInvalidateRect.Call(hwnd, 0, 0)
+				}
+			} else if ch >= 32 && ch < 127 && len(app.HangarSearch) < 32 {
+				app.HangarSearch += string(ch)
+				if app.HangarFilter == "hangar" {
+					app.HangarFilter = "all"
+				}
+				app.HangarScrollIdx = 0
+				pInvalidateRect.Call(hwnd, 0, 0)
+			}
+			return 0
+		}
+
 	case WM_KEYDOWN:
 		if wParam == VK_ESCAPE {
+			if app.Mode == ModeLauncher && app.Tab == TabShards && app.HangarSearch != "" {
+				app.HangarSearch = ""
+				app.HangarScrollIdx = 0
+				pInvalidateRect.Call(hwnd, 0, 0)
+				return 0
+			}
 			stopServer()
 			pPostQuitMessage.Call(0)
+		} else if app.Mode == ModeLauncher && app.Tab == TabShards {
+			if wParam == VK_NEXT || wParam == VK_DOWN {
+				filtered := getFilteredHangarShips()
+				if app.HangarScrollIdx+4 < len(filtered) {
+					app.HangarScrollIdx += 4
+					pInvalidateRect.Call(hwnd, 0, 0)
+				}
+			} else if wParam == VK_PRIOR || wParam == VK_UP {
+				app.HangarScrollIdx -= 4
+				if app.HangarScrollIdx < 0 {
+					app.HangarScrollIdx = 0
+				}
+				pInvalidateRect.Call(hwnd, 0, 0)
+			}
 		}
 		return 0
 
@@ -1897,8 +2370,8 @@ func main() {
 	}
 	app.Scale = float64(dpi) / 96.0
 
-	app.Width = sc(1020)
-	app.Height = sc(640)
+	app.Width = sc(1080)
+	app.Height = sc(680)
 
 	app.CursorArrow, _, _ = pLoadCursorW.Call(0, IDC_ARROW)
 	app.CursorHand, _, _ = pLoadCursorW.Call(0, IDC_HAND)
@@ -1917,7 +2390,7 @@ func main() {
 
 	wc := WNDCLASSEXW{
 		Size:      uint32(unsafe.Sizeof(WNDCLASSEXW{})),
-		Style:     CS_HREDRAW | CS_VREDRAW | CS_DROPSHADOW,
+		Style:     CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS | CS_DROPSHADOW,
 		WndProc:   syscall.NewCallback(wndProc),
 		Instance:  hInst,
 		Icon:      hIcon,
@@ -1932,13 +2405,11 @@ func main() {
 	winX := (int32(screenW) - app.Width) / 2
 	winY := (int32(screenH) - app.Height) / 2
 
-	// WS_EX_NOACTIVATE (0x08000000) is NOT set on the main window so user can interact normally,
-	// and when clicking a Live Cockpit tile we automatically restore focus to Star Citizen!
 	hwnd, _, _ := pCreateWindowExW.Call(
 		WS_EX_APPWINDOW,
 		uintptr(unsafe.Pointer(className)),
-		uintptr(unsafe.Pointer(u16("SC Cockpit // GameGlass Shard Hub"))),
-		WS_POPUP|WS_VISIBLE|WS_SYSMENU|WS_MINIMIZEBOX|WS_CLIPCHILDREN,
+		uintptr(unsafe.Pointer(u16("SC Cockpit // GameGlass Hangar & Shard Hub"))),
+		WS_POPUP|WS_VISIBLE|WS_SYSMENU|WS_MINIMIZEBOX|WS_MAXIMIZEBOX|WS_CLIPCHILDREN,
 		uintptr(winX), uintptr(winY),
 		uintptr(app.Width), uintptr(app.Height),
 		0, 0, hInst, 0,

@@ -25,6 +25,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import unquote
 
+import sc_ships
+
 APP_ROOT = Path(__file__).resolve().parent
 VERSION = "0.2.0"
 ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,40}$")
@@ -493,15 +495,10 @@ def slug(text: str) -> str:
     return "".join(out).strip("-")[:40]
 
 
-def _read_dashboard(path: Path, source: str, items: list, index: dict) -> None:
-    try:
-        data = load_json(path)
-    except json.JSONDecodeError as exc:
-        log(f"{path.name}: {exc}")
-        return
+def _register_dashboard_data(data: dict, source: str, path: Path | None, items: list, index: dict) -> None:
     if not isinstance(data, dict) or not isinstance(data.get("pages"), list):
         return
-    dash_id = str(data.get("id") or path.stem)
+    dash_id = str(data.get("id") or (path.stem if path else ""))
     if dash_id in RESERVED_IDS or not ID_RE.fullmatch(dash_id):
         log(f"Dashboard-Id ungültig: {dash_id}")
         return
@@ -511,12 +508,38 @@ def _read_dashboard(path: Path, source: str, items: list, index: dict) -> None:
         for p in pages_list if isinstance(p, dict)
         for g in (p.get("groups") or []) if isinstance(g, dict)
     )
+    ship_name = str(data.get("ship") or data.get("title") or dash_id)[:40]
+    mfg = str(data.get("manufacturer") or "UEE")[:24]
+    role = str(data.get("role") or "Multi-Role")[:40]
+    hull_type = str(data.get("hull_type") or "")[:32]
+    if not hull_type:
+        low_r = (role + " " + dash_id).lower()
+        if "mining" in low_r:
+            hull_type = "mining_bubble"
+        elif "salvage" in low_r:
+            hull_type = "twin_industrial"
+        elif "hauler" in low_r or "fracht" in low_r or "cargo" in low_r:
+            hull_type = "crusader_wing"
+        else:
+            hull_type = "fighter_delta"
+    bg = str(data.get("background") or "").strip()
+    if not bg or bg.startswith("preset:"):
+        bg = sc_ships.make_ship_svg_data_uri(ship_name, mfg, role, hull_type)
+        data = dict(data)
+        data["background"] = bg
+        data.setdefault("bg_opacity", 0.48)
+    subsystems = data.get("subsystems")
+    if not isinstance(subsystems, list) or not subsystems:
+        subsystems = [str(p.get("id") or "") for p in pages_list if isinstance(p, dict) and p.get("id")]
     entry = {
         "id": dash_id,
         "title": str(data.get("title") or dash_id)[:40],
-        "ship": str(data.get("ship") or data.get("title") or dash_id)[:40],
-        "manufacturer": str(data.get("manufacturer") or "UEE")[:24],
-        "role": str(data.get("role") or "Multi-Role")[:40],
+        "ship": ship_name,
+        "manufacturer": mfg,
+        "role": role,
+        "hull_type": hull_type,
+        "subsystems": subsystems,
+        "background": bg,
         "icon": str(data.get("icon") or "combat")[:20],
         "page_count": len(pages_list),
         "button_count": btn_count,
@@ -531,49 +554,132 @@ def _read_dashboard(path: Path, source: str, items: list, index: dict) -> None:
         items.append(entry)
 
 
+def _read_dashboard(path: Path, source: str, items: list, index: dict) -> None:
+    try:
+        data = load_json(path)
+    except json.JSONDecodeError as exc:
+        log(f"{path.name}: {exc}")
+        return
+    if data:
+        _register_dashboard_data(data, source, path, items, index)
+
+
+DEFAULT_FAVORITES = [
+    "aegis-gladius",
+    "misc-prospector",
+    "drake-vulture",
+    "crusader-c2-hercules",
+    "drake-cutlass-black",
+    "anvil-carrack",
+    "rsi-constellation-andromeda",
+    "aegis-avenger-titan",
+]
+
+
+def _load_state() -> dict:
+    try:
+        raw = load_json(state_path())
+        if isinstance(raw, dict):
+            return raw
+    except (json.JSONDecodeError, OSError):
+        pass
+    return {}
+
+
+def _save_state(st: dict) -> None:
+    path = state_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(st, indent=2) + "\n", encoding="utf-8")
+
+
+def get_favorites() -> list[str]:
+    st = _load_state()
+    favs = st.get("favorites")
+    if isinstance(favs, list):
+        return [str(x) for x in favs if isinstance(x, str)]
+    return list(DEFAULT_FAVORITES)
+
+
+def toggle_favorite(dash_id: str, fav_state: bool | None = None) -> list[str]:
+    st = _load_state()
+    favs = get_favorites()
+    if fav_state is True:
+        if dash_id not in favs:
+            favs.append(dash_id)
+    elif fav_state is False:
+        favs = [x for x in favs if x != dash_id]
+    else:
+        if dash_id in favs:
+            favs = [x for x in favs if x != dash_id]
+        else:
+            favs.append(dash_id)
+    st["favorites"] = favs
+    _save_state(st)
+    return favs
+
+
 def catalog() -> list[dict]:
     items: list[dict] = []
     index: dict[str, int] = {}
+    # 1. All 100+ Star Citizen Ships with personalized dashboards & SVG ship blueprints
+    for ship_data in sc_ships.all_generated_ship_dashboards():
+        _register_dashboard_data(ship_data, "builtin", None, items, index)
+    # 2. Legacy/custom builtin dashboards (skip redundant legacy duplicates of Gladius/Prospector/Vulture/Hercules)
+    legacy_aliases = {"standard", "mining", "salvage", "hauler"}
     folder = builtin_dir()
     if folder.is_dir():
         for path in sorted(folder.glob("*.json")):
-            _read_dashboard(path, "builtin", items, index)
-    legacy = APP_ROOT / "layout.json"
-    if legacy.is_file():
-        _read_dashboard(legacy, "builtin", items, index)
+            if path.stem not in legacy_aliases:
+                _read_dashboard(path, "builtin", items, index)
     legacy_local = APP_ROOT / "layout.local.json"
     if legacy_local.is_file():
         _read_dashboard(legacy_local, "local", items, index)
     for path in sorted(local_dir().glob("*.json")):
         _read_dashboard(path, "local", items, index)
+    fav_set = set(get_favorites())
+    for item in items:
+        item["favorite"] = item["id"] in fav_set or item["source"] == "local"
     return items
 
 
 def active_id(items: list[dict] | None = None) -> str:
     items = catalog() if items is None else items
     ids = [item["id"] for item in items]
-    try:
-        raw = load_json(state_path())
-    except (json.JSONDecodeError, OSError):
-        raw = None
-    want = raw.get("active") if isinstance(raw, dict) else None
+    st = _load_state()
+    want = st.get("active")
     if want in ids:
         return str(want)
+    if "aegis-gladius" in ids:
+        return "aegis-gladius"
     if "standard" in ids:
         return "standard"
     return ids[0] if ids else ""
 
 
 def set_active(dash_id: str) -> None:
-    path = state_path()
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps({"active": dash_id}, indent=2) + "\n", encoding="utf-8")
+    st = _load_state()
+    st["active"] = dash_id
+    _save_state(st)
+
+
+LEGACY_ID_MAP = {
+    "standard": "aegis-gladius",
+    "mining": "misc-prospector",
+    "salvage": "drake-vulture",
+    "hauler": "crusader-c2-hercules",
+}
 
 
 def find_dashboard(dash_id: str) -> dict | None:
-    for item in catalog():
+    items = catalog()
+    for item in items:
         if item["id"] == dash_id:
             return item
+    mapped = LEGACY_ID_MAP.get(dash_id)
+    if mapped:
+        for item in items:
+            if item["id"] == mapped:
+                return item
     return None
 
 
@@ -666,10 +772,12 @@ def clean_dashboard(data: dict, dash_id: str) -> dict:
             "groups": groups,
         })
     result = {"id": dash_id, "title": str(data.get("title") or dash_id)[:40], "pages": pages}
-    for meta_key, max_len in (("ship", 40), ("manufacturer", 24), ("role", 40), ("icon", 20)):
+    for meta_key, max_len in (("ship", 40), ("manufacturer", 24), ("role", 40), ("icon", 20), ("hull_type", 32)):
         val = str(data.get(meta_key) or "").strip()
         if val:
             result[meta_key] = val[:max_len]
+    if isinstance(data.get("subsystems"), list):
+        result["subsystems"] = [str(s)[:24] for s in data["subsystems"][:12] if s]
     bg = str(data.get("background") or "").strip()
     if bg and len(bg) <= 250000:
         result["background"] = bg
@@ -1069,8 +1177,10 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path == "/api/dashboards":
             items = catalog()
+            favs = get_favorites()
             self._json(200, {
                 "active": active_id(items),
+                "favorites": favs,
                 "dashboards": [
                     {
                         "id": item["id"],
@@ -1078,6 +1188,10 @@ class Handler(BaseHTTPRequestHandler):
                         "ship": item.get("ship", item["title"]),
                         "manufacturer": item.get("manufacturer", "UEE"),
                         "role": item.get("role", "Multi-Role"),
+                        "hull_type": item.get("hull_type", "fighter_delta"),
+                        "subsystems": item.get("subsystems", []),
+                        "background": item.get("background", ""),
+                        "favorite": bool(item.get("favorite", False)),
                         "icon": item.get("icon", "combat"),
                         "page_count": item.get("page_count", len(item["data"].get("pages", []))),
                         "button_count": item.get("button_count", 0),
@@ -1086,6 +1200,9 @@ class Handler(BaseHTTPRequestHandler):
                     for item in items
                 ],
             })
+            return
+        if path == "/api/favorites":
+            self._json(200, {"favorites": get_favorites()})
             return
         if path == "/api/layout":
             items = catalog()
@@ -1136,6 +1253,8 @@ class Handler(BaseHTTPRequestHandler):
         try:
             data = self._read_json(600000)
             saved = save_dashboard(dash_id, data)
+            # Automatically add user-customized ships to Hangar favorites
+            toggle_favorite(dash_id, True)
             if data.get("activate", True):
                 set_active(dash_id)
         except (ValueError, TypeError, json.JSONDecodeError, OSError) as exc:
@@ -1153,6 +1272,22 @@ class Handler(BaseHTTPRequestHandler):
         if self._dash_id(path):
             self._save_dashboard()
             return
+        if path == "/api/favorites":
+            try:
+                data = self._read_json()
+                dash_id = str(data.get("id") or "").strip()
+                fav_state = data.get("favorite")
+                if not isinstance(fav_state, bool):
+                    fav_state = None
+            except (ValueError, TypeError, json.JSONDecodeError) as exc:
+                self._json(400, {"error": str(exc)})
+                return
+            if not dash_id or find_dashboard(dash_id) is None:
+                self._json(404, {"error": "Schiff nicht gefunden"})
+                return
+            favs = toggle_favorite(dash_id, fav_state)
+            self._json(200, {"ok": True, "id": dash_id, "favorite": dash_id in favs, "favorites": favs})
+            return
         if path == "/api/git-pull":
             updated = []
             try:
@@ -1161,7 +1296,7 @@ class Handler(BaseHTTPRequestHandler):
                 if (APP_ROOT / ".git").is_dir():
                     subprocess.run(["git", "pull", "--ff-only"], cwd=str(APP_ROOT), timeout=8, check=False)
                 raw_base = "https://raw.githubusercontent.com/MOON-132/Star-Citizen-Cockpit/main/"
-                for rel in ("index.html", "dashboards/standard.json", "dashboards/mining.json", "dashboards/salvage.json", "dashboards/hauler.json"):
+                for rel in ("index.html", "sc_ships.py", "server.py", "dashboards/standard.json", "dashboards/mining.json", "dashboards/salvage.json", "dashboards/hauler.json"):
                     try:
                         with urllib.request.urlopen(raw_base + rel, timeout=5) as res:
                             if res.status == 200:
@@ -1307,8 +1442,8 @@ def self_test() -> int:
     tmp = Path(tempfile.mkdtemp(prefix="sc-cockpit-"))
     os.environ["SC_COCKPIT_HOME"] = str(tmp)
     items = catalog()
-    if not any(item["id"] == "standard" for item in items):
-        log("standard-Dashboard fehlt")
+    if not any(item["id"] == "aegis-gladius" for item in items):
+        log("aegis-gladius Dashboard fehlt")
         return 1
     for item in items:
         errors = validate_layout(item["data"])
@@ -1345,8 +1480,11 @@ def self_test() -> int:
             raise SystemExit("health nicht ok")
         listed = call("GET", "/api/dashboards")
         ids = {item["id"] for item in listed["dashboards"]}
-        if "standard" not in ids or "mining" not in ids:
-            raise SystemExit(f"Dashboards unvollständig: {ids}")
+        if len(ids) < 95 or "aegis-gladius" not in ids or "drake-vulture" not in ids or "misc-prospector" not in ids:
+            raise SystemExit(f"Dashboards unvollständig ({len(ids)}): {ids}")
+        fav_res = call("POST", "/api/favorites", {"id": "aegis-eclipse", "favorite": True})
+        if not fav_res.get("favorite") or "aegis-eclipse" not in fav_res.get("favorites", []):
+            raise SystemExit(f"Favoriten-Speicherung fehlgeschlagen: {fav_res}")
         saved = call("PUT", "/api/dashboard/selftest", {
             "title": "Selftest",
             "pages": [{
@@ -1365,8 +1503,8 @@ def self_test() -> int:
         })
         if saved.get("_source") != "local" or saved.get("id") != "selftest":
             raise SystemExit(f"Speichern fehlgeschlagen: {saved}")
-        call("POST", "/api/active", {"id": "mining"})
-        if active_id() != "mining":
+        call("POST", "/api/active", {"id": "misc-prospector"})
+        if active_id() != "misc-prospector":
             raise SystemExit("aktives Dashboard nicht gesetzt")
         call("DELETE", "/api/dashboard/selftest")
         if find_dashboard("selftest") is not None:
