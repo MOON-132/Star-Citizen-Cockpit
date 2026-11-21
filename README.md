@@ -28,24 +28,18 @@ Ein neues Dashboard ist eine JSON-Datei. Das Format steht verbindlich in [docs/D
 
 Das Bedien-Gerät braucht nur einen aktuellen Browser. Eine App und ein Account sind nicht nötig. Windows auf dem Tablet ist keine Voraussetzung.
 
-## Installieren
+## Sofort Live Testen & Installieren (Kein Neu-Installieren nötig!)
 
-`SC-Cockpit-Setup.exe` (oder `install.bat`) doppelklicken. Es öffnet sich der grafische Installer im Star-Citizen-MFD-Design. Eine Administrator-Abfrage kommt dabei nicht. Der Installer ist komplett eigenständig (alle Programmdateien und Dashboards sind in der `.exe` eingebettet), prüft auf Wunsch Python 3 bzw. bietet die automatische Installation über `winget` an, kopiert das Programm nach `%LOCALAPPDATA%\SC Cockpit\app` und legt an:
+Du kannst **SC Cockpit** jederzeit sofort live starten, ohne einen Installations-Assistenten durchklicken zu müssen:
 
-| Was | Wo |
-| --- | --- |
-| Programm, Doku, mitgelieferte Dashboards, Uninstaller | `%LOCALAPPDATA%\SC Cockpit\app` |
-| Eigene Dashboards | `%LOCALAPPDATA%\SC Cockpit\user\dashboards` |
-| Startmenü | Ordner **SC Cockpit** |
-| Desktop | Verknüpfung **SC Cockpit** (mit SC-Cockpit-Icon) |
-| Windows „Installierte Apps“ | Eintrag **SC Cockpit** zur einfachen Deinstallation |
-
-Ein späterer Start von `SC-Cockpit-Setup.exe` erkennt die bestehende Installation automatisch und bietet ein Update (oder die Deinstallation) an. Eigene Dashboards und `config.local.json` im Ordner `user` bleiben beim Update erhalten.
-
-Ohne Installation, zum direkten lokalen Testen oder Weiterentwickeln im geklonten Git-Ordner (`git pull`):
-- Einfach **`start.bat` doppelklicken** (oder `SC-Cockpit-Setup.exe --launcher` starten) — das öffnet **sofort das grafische GameGlass Live-Cockpit im portablen Modus** direkt aus deinem Repo-Ordner heraus, ganz ohne Installieren oder Deinstallieren!
-- Alternativ gibt es auch im Installer-Fenster von `SC-Cockpit-Setup.exe` unten links den Button **PORTABEL TESTEN** bzw. **DIREKT ÖFFNEN**, mit dem du ohne Neuinstallation direkt ins Live-Cockpit springst.
-- Wenn du nur den reinen Python-Server im Konsolenfenster ohne die `.exe` testen möchtest: `start.bat --console` oder `py -3 server.py`.
+1. **Im geklonten Git-Ordner (nach `git pull`)**:
+   - Einfach **`SC-Cockpit-Setup.exe`** oder **`start.bat`** doppelklicken!
+   - Da `server.py` und `index.html` direkt daneben liegen, überspringt die `.exe` den Installer komplett und **öffnet sofort das fertige GameGlass Live-Cockpit** direkt aus deinem Ordner heraus.
+2. **Wenn SC Cockpit bereits auf dem PC installiert ist**:
+   - Auch wenn du eine neue `SC-Cockpit-Setup.exe` herunterlädst und doppelklickst, erkennt sie deine bestehende Installation, aktualisiert im Hintergrund automatisch die neuen Dateien & Schiffe (deine eigenen Schiffe im Ordner `user` bleiben unberührt!) und **startet sofort im Live-Cockpit**.
+3. **Erstinstallation auf einem neuen PC**:
+   - Nur wenn noch gar nichts installiert ist und die `.exe` einzeln (z. B. aus `Downloads`) gestartet wird, zeigt sie den 1-Klick-Installer (oder lässt sich dort unten links über **PORTABEL TESTEN** ebenfalls ohne Installation direkt starten).
+   - Möchtest du den Installer-Bildschirm einmal gezielt erzwingen: `SC-Cockpit-Setup.exe --install`.
 
 ## Starten & GameGlass Shard Hub (In-App Live Cockpit & Flotten-Manager)
 

@@ -64,11 +64,20 @@ func initEnvironment() {
 		if selfExe != "" {
 			exeDir = filepath.Dir(selfExe)
 		}
-		if forceLauncher {
+		hasLocalServer := false
+		if exeDir != "" {
+			if _, err := os.Stat(filepath.Join(exeDir, "server.py")); err == nil {
+				hasLocalServer = true
+			}
+		}
+
+		// Open directly in Live Cockpit (ModeLauncher) whenever:
+		// 1. Running from the git repo / folder where server.py is right next to the .exe
+		// 2. SC Cockpit is already installed in %LOCALAPPDATA%\SC Cockpit\app (auto-syncs latest embedded files!)
+		// 3. --launcher was passed explicitly
+		if forceLauncher || hasLocalServer || app.ExistingInst {
 			app.Mode = ModeLauncher
 			enablePortableOrInstalledMode()
-		} else if selfExe != "" && strings.EqualFold(filepath.Clean(exeDir), filepath.Clean(app.AppDir)) {
-			app.Mode = ModeLauncher
 		} else {
 			app.Mode = ModeInstaller
 		}
@@ -108,19 +117,56 @@ func initEnvironment() {
 	loadConfigPort()
 }
 
-func enablePortableOrInstalledMode() {
-	selfExe, err := os.Executable()
-	if err != nil || selfExe == "" {
+func extractEmbeddedPayloadSilent(targetDir string) {
+	_ = os.MkdirAll(targetDir, 0755)
+	zr, err := zip.NewReader(bytes.NewReader(embeddedPayload), int64(len(embeddedPayload)))
+	if err != nil {
 		return
 	}
-	exeDir := filepath.Dir(selfExe)
-	if !strings.EqualFold(filepath.Clean(exeDir), filepath.Clean(app.AppDir)) {
-		if _, err := os.Stat(filepath.Join(exeDir, "server.py")); err == nil {
-			app.AppDir = exeDir
-			app.UserDir = filepath.Join(exeDir, "dashboards", "local")
-			app.UserDashDir = filepath.Join(exeDir, "dashboards", "local")
+	for _, f := range zr.File {
+		relPath := filepath.FromSlash(f.Name)
+		if strings.Contains(relPath, "..") {
+			continue
+		}
+		targetPath := filepath.Join(targetDir, relPath)
+		if f.FileInfo().IsDir() {
+			_ = os.MkdirAll(targetPath, 0755)
+			continue
+		}
+		_ = os.MkdirAll(filepath.Dir(targetPath), 0755)
+		rc, err := f.Open()
+		if err != nil {
+			continue
+		}
+		outFile, err := os.OpenFile(targetPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+		if err != nil {
+			rc.Close()
+			continue
+		}
+		_, _ = io.Copy(outFile, rc)
+		outFile.Close()
+		rc.Close()
+	}
+}
+
+func enablePortableOrInstalledMode() {
+	selfExe, err := os.Executable()
+	if err == nil && selfExe != "" {
+		exeDir := filepath.Dir(selfExe)
+		// Case 1: Running directly inside the git repo / portable folder where server.py sits next to the exe
+		if !strings.EqualFold(filepath.Clean(exeDir), filepath.Clean(app.AppDir)) {
+			if _, err := os.Stat(filepath.Join(exeDir, "server.py")); err == nil {
+				app.AppDir = exeDir
+				app.UserDir = filepath.Join(exeDir, "dashboards", "local")
+				app.UserDashDir = filepath.Join(exeDir, "dashboards", "local")
+				_ = os.MkdirAll(app.UserDashDir, 0755)
+				return
+			}
 		}
 	}
+	// Case 2: Running standalone .exe (e.g. from Downloads) or installed app -> silently unpack latest embedded files into AppDir so it works immediately!
+	_ = os.MkdirAll(app.UserDashDir, 0755)
+	extractEmbeddedPayloadSilent(app.AppDir)
 }
 
 func detectPrimaryLANIP() string {
