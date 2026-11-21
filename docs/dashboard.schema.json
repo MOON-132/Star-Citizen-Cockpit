@@ -91,7 +91,7 @@
       "required": ["id", "label", "keys"],
       "properties": {
         "id": { "type": "string", "minLength": 1, "maxLength": 40 },
-        "kind": { "enum": ["button", "shield", "power", "telemetry", "pair", "guard"] },
+        "kind": { "enum": ["button", "telemetry", "pair", "guard"] },
         "sc": { "type": "string", "maxLength": 60 },
         "label": { "type": "string", "minLength": 1, "maxLength": 40 },
         "hint": { "type": "string", "maxLength": 60 },

@@ -953,6 +953,13 @@
 
   .key.wide, .key.span-2 { grid-column: span 2; }
   .key.span-3 { grid-column: span 3; }
+  .page.active.page-power { grid-template-columns: 1fr; }
+  .page-power .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .page-power .key { min-height: 108px; }
+  .page-power .key-mark b { font-size: 32px; line-height: 1; }
+  .page-power .key.wide,
+  .page-power .key.span-2,
+  .page-power .key.span-3 { grid-column: 1 / -1; }
 
   .key.on, .key.holding {
     border-color: var(--cyan);
@@ -972,97 +979,7 @@
   }
   .key.locked { opacity: 0.42; }
 
-  /* GameGlass Interactive MFD Widgets */
-  .widget-card {
-    grid-column: span 2;
-    position: relative;
-    background: linear-gradient(160deg, rgba(16, 26, 40, 0.90), rgba(9, 14, 22, 0.94));
-    border: 1px solid rgba(0, 229, 255, 0.42);
-    clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
-    padding: 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    box-shadow: inset 0 0 28px rgba(0, 229, 255, 0.06);
-  }
-  .widget-title {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: var(--cyan);
-  }
-  .gg-shield-matrix {
-    display: grid;
-    grid-template-columns: 1fr 1.25fr 1fr;
-    grid-template-rows: repeat(3, 48px);
-    gap: 7px;
-    align-items: stretch;
-  }
-  .sh-zone {
-    border: 1px solid rgba(0, 229, 255, 0.38);
-    background: rgba(11, 20, 32, 0.9);
-    color: var(--text);
-    font: inherit;
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 2px;
-    cursor: pointer;
-    clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
-    transition: all 0.14s ease;
-  }
-  .sh-zone:hover, .sh-zone:active {
-    border-color: var(--cyan);
-    background: rgba(0, 229, 255, 0.2);
-    box-shadow: 0 0 16px var(--cyan-glow);
-  }
-  .sh-zone span { font-size: 12px; color: var(--cyan); font-family: Consolas, monospace; }
-  .sh-zone.reset {
-    border-color: var(--amber);
-    color: var(--amber);
-    background: rgba(255, 171, 0, 0.12);
-  }
-  .sh-zone.reset span { color: var(--text); font-size: 10px; }
-
-  .gg-power-matrix {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-  }
-  .pwr-col {
-    border: 1px solid var(--line);
-    background: rgba(10, 16, 26, 0.92);
-    padding: 10px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 7px;
-    cursor: pointer;
-    clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
-    transition: all 0.15s ease;
-  }
-  .pwr-col:hover, .pwr-col:active {
-    border-color: var(--amber);
-    background: rgba(25, 36, 52, 0.95);
-  }
-  .pwr-meter {
-    width: 100%;
-    height: 10px;
-    background: #06090e;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    overflow: hidden;
-  }
-  .pwr-fill { height: 100%; transition: width 0.22s ease; }
-
-  body.editing .key.selected, body.editing .widget-card.selected {
+  body.editing .key.selected {
     outline: 2px solid var(--amber);
     box-shadow: 0 0 24px var(--amber-glow);
   }
@@ -1187,7 +1104,6 @@
   }
   .chip:hover { border-color: var(--cyan); color: var(--cyan); }
   .chip small { color: var(--amber); font-family: Consolas, monospace; }
-  .chip.widget { border-color: var(--cyan); color: var(--cyan); }
   .editor-actions { display: flex; gap: 6px; flex-wrap: wrap; }
 
   #toast {
@@ -1231,7 +1147,9 @@
     .tab { min-height: 38px; width: auto; white-space: nowrap; padding: 0 14px; }
     .page.active { grid-template-columns: 1fr; }
     .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .key.wide, .key.span-2, .key.span-3, .widget-card { grid-column: span 2; }
+    .key.wide, .key.span-2, .key.span-3 { grid-column: span 2; }
+    .page-power .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .page-power .key.wide, .page-power .key.span-2, .page-power .key.span-3 { grid-column: 1 / -1; }
   }
 </style>
 </head>
@@ -1268,19 +1186,10 @@
   <!-- Live Telemetry Pods -->
   <div class="gg-tele-strip">
     <div class="gg-tele-pod">
-      <span>PWR</span>
-      <b id="tele-pwr-txt">W:33 E:34 S:33</b>
-    </div>
-    <div class="gg-tele-pod">
-      <span>SHD</span>
-      <b id="tele-shd-txt">F:25 B:25 L:25 R:25</b>
-    </div>
-    <div class="gg-tele-pod">
       <span>MODE</span>
       <b id="tele-mode" style="color:var(--amber)">SCM</b>
     </div>
     <div style="display:flex;gap:4px">
-      <span id="pill-pwr" class="gg-sys-pill active">PWR</span>
       <span id="pill-gear" class="gg-sys-pill active">GEAR</span>
       <span id="pill-vtol" class="gg-sys-pill">VTOL</span>
       <span id="pill-light" class="gg-sys-pill">LIGHT</span>
@@ -1409,8 +1318,8 @@
         <label class="subsys-card">
           <input type="checkbox" value="energie" checked>
           <div>
-            <b style="color:var(--cyan);font-size:13px">Energie & Schilde (Live)</b>
-            <div style="color:var(--muted);font-size:11px">Interaktive Schild-Matrix & Energie-Kondensator</div>
+            <b style="color:var(--cyan);font-size:13px">Power Management</b>
+            <div style="color:var(--muted);font-size:11px">Waffen, Antrieb, Schilde, Reset, Strom</div>
           </div>
         </label>
         <label class="subsys-card">
@@ -1480,7 +1389,6 @@
       <div style="display:flex;gap:6px">
         <select id="preset-cat">
           <option value="all">Alle Kategorien</option>
-          <option value="widgets">★ Live-Widgets (Schilde / Energie)</option>
           <option value="start">Start, Strom & Landung</option>
           <option value="flug">Flug, Quantum & IFCS</option>
           <option value="kampf">Kampf, Schilde & Abwehr</option>
@@ -1496,7 +1404,7 @@
           <option value="salvage">Unterpunkt: Salvage & Bergung</option>
           <option value="kampf">Unterpunkt: Kampf & Waffen</option>
           <option value="cargo">Unterpunkt: Fracht & Rampen</option>
-          <option value="energie">Unterpunkt: Energie & Schilde (Live)</option>
+          <option value="energie">Unterpunkt: Power Management</option>
           <option value="quantum">Unterpunkt: Quantum & Navigation</option>
           <option value="custom">Eigener leerer Unterpunkt...</option>
         </select>
@@ -1643,7 +1551,7 @@ const SUBSYSTEM_LABELS = {
   exploration: "Scan & Expedition",
   ewar: "EMP & QED",
   dropship: "Dropship & Türme",
-  energie: "Energie & Schilde",
+  energie: "Power Management",
   quantum: "Quantum & Nav"
 };
 
@@ -1664,17 +1572,7 @@ const SUBSYSTEM_TEMPLATES = {
       ]
     }]
   }),
-  energie: () => ({
-    id: "energie",
-    label: "Energie & Schilde",
-    groups: [{
-      title: "Live Schiffs-Verteiler",
-      buttons: [
-        { id: "live-pwr-" + Date.now(), kind: "power", label: "Energie-Kondensator", hint: "F5 / F6 / F7 / F8", keys: ["f8"], mode: "tap", color: "amber", wide: true },
-        { id: "live-shd-" + Date.now(), kind: "shield", label: "Schild-Matrix", hint: "Sektoren", keys: ["num5"], mode: "tap", color: "cyan", wide: true }
-      ]
-    }]
-  }),
+  energie: () => powerManagementPage("energie"),
   quantum: () => ({
     id: "quantum",
     label: "Quantum & Nav",
@@ -1746,9 +1644,47 @@ const SUBSYSTEM_TEMPLATES = {
   })
 };
 
+function powerManagementPage(id) {
+  const pip = (bid, sc, label, hint, keys, color, wide) => ({
+    id: bid, sc, label, hint, keys, mode: "tap", color, wide: !!wide
+  });
+  return {
+    id: id,
+    label: "Power Management",
+    groups: [
+      { title: "Waffen", buttons: [
+        pip("pip-waffen-minus", "v_engineering_assignment_weapons_decrease", "−", "L-Alt + F5", ["lalt", "f5"], "red"),
+        pip("pip-waffen-plus", "v_engineering_assignment_weapons_increase", "+", "F5", ["f5"], "red")
+      ]},
+      { title: "Antrieb", buttons: [
+        pip("pip-antrieb-minus", "v_engineering_assignment_engine_decrease", "−", "L-Alt + F6", ["lalt", "f6"], "amber"),
+        pip("pip-antrieb-plus", "v_engineering_assignment_engine_increase", "+", "F6", ["f6"], "amber")
+      ]},
+      { title: "Schilde", buttons: [
+        pip("pip-schild-minus", "v_engineering_assignment_shields_decrease", "−", "L-Alt + F7", ["lalt", "f7"], "cyan"),
+        pip("pip-schild-plus", "v_engineering_assignment_shields_increase", "+", "F7", ["f7"], "cyan")
+      ]},
+      { title: "Reset", buttons: [
+        pip("pip-reset", "v_engineering_assignment_reset", "Reset (F8)", "F8", ["f8"], "slate", true)
+      ]},
+      { title: "Strom", buttons: [
+        { id: "power-all", sc: "v_power_toggle", label: "Hauptstrom", hint: "U", keys: ["u"], mode: "toggle", color: "green" },
+        { id: "power-thrusters", sc: "v_power_toggle_thrusters", label: "Triebwerke", hint: "I", keys: ["i"], mode: "toggle", color: "amber" },
+        { id: "power-shd", sc: "v_power_toggle_shields", label: "Schilde", hint: "O", keys: ["o"], mode: "toggle", color: "cyan" },
+        { id: "power-wep", sc: "v_power_toggle_weapons", label: "Waffen", hint: "P", keys: ["p"], mode: "toggle", color: "red" }
+      ]}
+    ]
+  };
+}
+
 const SC_PRESETS = [
-  { cat: "widgets", kind: "shield", label: "Schild-Matrix (GameGlass)", hint: "Vorn/Hinten/Links/Rechts/Reset", keys: ["num5"], color: "cyan", wide: true },
-  { cat: "widgets", kind: "power", label: "Energie-Verteiler (Live)", hint: "Waffen (F5) · Antrieb (F6) · Schilde (F7)", keys: ["f8"], color: "amber", wide: true },
+  { cat: "start", sc: "v_engineering_assignment_weapons_decrease", label: "Waffen −", hint: "L-Alt + F5", keys: ["lalt", "f5"], mode: "tap", color: "red" },
+  { cat: "start", sc: "v_engineering_assignment_weapons_increase", label: "Waffen +", hint: "F5", keys: ["f5"], mode: "tap", color: "red" },
+  { cat: "start", sc: "v_engineering_assignment_engine_decrease", label: "Antrieb −", hint: "L-Alt + F6", keys: ["lalt", "f6"], mode: "tap", color: "amber" },
+  { cat: "start", sc: "v_engineering_assignment_engine_increase", label: "Antrieb +", hint: "F6", keys: ["f6"], mode: "tap", color: "amber" },
+  { cat: "start", sc: "v_engineering_assignment_shields_decrease", label: "Schilde −", hint: "L-Alt + F7", keys: ["lalt", "f7"], mode: "tap", color: "cyan" },
+  { cat: "start", sc: "v_engineering_assignment_shields_increase", label: "Schilde +", hint: "F7", keys: ["f7"], mode: "tap", color: "cyan" },
+  { cat: "start", sc: "v_engineering_assignment_reset", label: "Reset (F8)", hint: "F8", keys: ["f8"], mode: "tap", color: "slate", wide: true },
   { cat: "start", sc: "v_flightready", label: "Flight Ready", hint: "R-Alt + R", keys: ["ralt", "r"], mode: "tap", color: "green", wide: true },
   { cat: "start", sc: "v_power_toggle", label: "Hauptstrom", hint: "U", keys: ["u"], mode: "toggle", color: "green" },
   { cat: "start", sc: "v_power_toggle_thrusters", label: "Triebwerke", hint: "I", keys: ["i"], mode: "toggle", color: "amber" },
@@ -1818,9 +1754,7 @@ let current = null;
 let selected = null;
 let fleetCatalog = [];
 let liveTelemetry = {
-  power: { weapons: 33, engines: 34, shields: 33 },
-  shields: { front: 25, back: 25, left: 25, right: 25 },
-  systems: { gear: true, power_all: true, vtol: false, lights: false, decoupled: false, master_mode: "SCM" },
+  systems: { gear: true, vtol: false, lights: false, decoupled: false, master_mode: "SCM" },
   sc_ship: "SC COCKPIT // FLEET SHARD"
 };
 
@@ -2069,15 +2003,9 @@ async function send(button, mode) {
 function updateTelemetryUI(t) {
   if (!t) return;
   liveTelemetry = t;
-  const p = t.power || { weapons: 33, engines: 34, shields: 33 };
-  const s = t.shields || { front: 25, back: 25, left: 25, right: 25 };
   const sys = t.systems || {};
 
-  document.getElementById("tele-pwr-txt").textContent = `W:${p.weapons} E:${p.engines} S:${p.shields}`;
-  document.getElementById("tele-shd-txt").textContent = `F:${s.front} B:${s.back} L:${s.left} R:${s.right}`;
   document.getElementById("tele-mode").textContent = sys.master_mode || "SCM";
-
-  document.getElementById("pill-pwr").classList.toggle("active", !!sys.power_all);
   document.getElementById("pill-gear").classList.toggle("active", !!sys.gear);
   document.getElementById("pill-vtol").classList.toggle("active", !!sys.vtol);
   document.getElementById("pill-light").classList.toggle("active", !!sys.lights);
@@ -2086,19 +2014,6 @@ function updateTelemetryUI(t) {
   if (t.last_action && t.last_action !== "-") {
     document.getElementById("last-act").textContent = t.last_action;
   }
-
-  document.querySelectorAll("[data-live-shd]").forEach((el) => {
-    const zone = el.getAttribute("data-live-shd");
-    if (s[zone] !== undefined) el.textContent = s[zone] + "%";
-  });
-  document.querySelectorAll("[data-live-pwr]").forEach((el) => {
-    const k = el.getAttribute("data-live-pwr");
-    if (p[k] !== undefined) {
-      el.style.width = p[k] + "%";
-      const lbl = el.parentElement?.parentElement?.querySelector(".pwr-pct");
-      if (lbl) lbl.textContent = p[k] + "%";
-    }
-  });
 }
 
 function applyBackground(data) {
@@ -2179,98 +2094,21 @@ function fillForm(button) {
 
 function selectButton(ref) {
   selected = ref;
-  document.querySelectorAll(".key, .widget-card").forEach((el) => {
+  document.querySelectorAll(".key").forEach((el) => {
     el.classList.toggle("selected", el.dataset.pi === String(ref.pi) && el.dataset.gi === String(ref.gi) && el.dataset.bi === String(ref.bi));
   });
   fillForm(buttonAt(ref));
 }
 
-function makeWidgetCard(button, ref) {
-  const card = document.createElement("div");
-  card.className = "widget-card";
-  card.dataset.pi = String(ref.pi);
-  card.dataset.gi = String(ref.gi);
-  card.dataset.bi = String(ref.bi);
-
-  card.addEventListener("click", (e) => {
-    if (editing) {
-      e.preventDefault();
-      selectButton(ref);
-    }
-  });
-
-  if (button.kind === "shield") {
-    const s = liveTelemetry.shields || { front: 25, back: 25, left: 25, right: 25 };
-    card.innerHTML = `
-      <div class="widget-title"><span>❖ ${button.label || "SCHILD-SEKTOR-MATRIX"}</span><small style="color:var(--muted)">GAMEGLASS SHARD</small></div>
-      <div class="gg-shield-matrix">
-        <div></div>
-        <button type="button" class="sh-zone" data-keys="num8">BUG / VORN<span data-live-shd="front">${s.front}%</span></button>
-        <div></div>
-        <button type="button" class="sh-zone" data-keys="num4">BACKBORD<span data-live-shd="left">${s.left}%</span></button>
-        <button type="button" class="sh-zone reset" data-keys="num5">BALANCE<span>RESET (NP5)</span></button>
-        <button type="button" class="sh-zone" data-keys="num6">STEUERBORD<span data-live-shd="right">${s.right}%</span></button>
-        <div></div>
-        <button type="button" class="sh-zone" data-keys="num2">HECK / HINTEN<span data-live-shd="back">${s.back}%</span></button>
-        <div></div>
-      </div>
-    `;
-    card.querySelectorAll(".sh-zone").forEach((btn) => {
-      btn.addEventListener("pointerup", (ev) => {
-        if (editing) return;
-        ev.stopPropagation();
-        const k = btn.getAttribute("data-keys").split("+");
-        sendKeys(button.id + "-" + k[0], k, "tap");
-      });
-    });
-  } else {
-    const p = liveTelemetry.power || { weapons: 33, engines: 34, shields: 33 };
-    card.innerHTML = `
-      <div class="widget-title" style="color:var(--amber)">
-        <span>⚡ ${button.label || "ENERGIE-KONDENSATOR"}</span>
-        <button type="button" class="gg-btn" style="height:26px;font-size:10px" data-pwr-key="f8">Ausgleich (F8)</button>
-      </div>
-      <div class="gg-power-matrix">
-        <button type="button" class="pwr-col" data-pwr-key="f5">
-          <strong style="color:var(--red);font-size:12px">WAFFEN</strong>
-          <span class="pwr-pct" style="font-family:Consolas,monospace;font-size:14px">${p.weapons}%</span>
-          <div class="pwr-meter"><div class="pwr-fill" data-live-pwr="weapons" style="width:${p.weapons}%;background:var(--red)"></div></div>
-          <small style="color:var(--muted);font-size:10px">BOOST [F5]</small>
-        </button>
-        <button type="button" class="pwr-col" data-pwr-key="f6">
-          <strong style="color:var(--amber);font-size:12px">ANTRIEB</strong>
-          <span class="pwr-pct" style="font-family:Consolas,monospace;font-size:14px">${p.engines}%</span>
-          <div class="pwr-meter"><div class="pwr-fill" data-live-pwr="engines" style="width:${p.engines}%;background:var(--amber)"></div></div>
-          <small style="color:var(--muted);font-size:10px">BOOST [F6]</small>
-        </button>
-        <button type="button" class="pwr-col" data-pwr-key="f7">
-          <strong style="color:var(--cyan);font-size:12px">SCHILDE</strong>
-          <span class="pwr-pct" style="font-family:Consolas,monospace;font-size:14px">${p.shields}%</span>
-          <div class="pwr-meter"><div class="pwr-fill" data-live-pwr="shields" style="width:${p.shields}%;background:var(--cyan)"></div></div>
-          <small style="color:var(--muted);font-size:10px">BOOST [F7]</small>
-        </button>
-      </div>
-    `;
-    card.querySelectorAll("[data-pwr-key]").forEach((btn) => {
-      btn.addEventListener("pointerup", (ev) => {
-        if (editing) return;
-        ev.stopPropagation();
-        const k = btn.getAttribute("data-pwr-key");
-        sendKeys("pwr-" + k, [k], "tap");
-      });
-    });
-  }
-  return card;
-}
-
 function makeButton(button, ref) {
-  if (button.kind && ["shield", "power", "telemetry"].includes(button.kind)) {
-    return makeWidgetCard(button, ref);
+  if (button.kind && button.kind !== "button" && !["telemetry", "pair", "guard"].includes(button.kind)) {
+    return null;
   }
   const el = document.createElement("button");
   el.type = "button";
   const span = button.span || (button.wide ? 2 : 1);
   el.className = "key " + (button.color || "slate") + (span > 1 ? ` span-${span}` : "");
+  if ((button.label || "").trim().length <= 2) el.classList.add("key-mark");
   if (button.danger) {
     el.classList.add("hazard-stripe");
     if (!armed) el.classList.add("locked");
@@ -2366,6 +2204,7 @@ function render(data, keepPageIndex) {
 
   (data.pages || []).forEach((page, pi) => {
     const isAct = pi === activeIdx;
+    const powerPage = page.id === "energie" || String(page.id).startsWith("energie-");
     const tab = document.createElement("button");
     tab.type = "button";
     tab.className = "tab";
@@ -2375,7 +2214,7 @@ function render(data, keepPageIndex) {
     tabsEl.appendChild(tab);
 
     const section = document.createElement("section");
-    section.className = "page" + (isAct ? " active" : "");
+    section.className = "page" + (isAct ? " active" : "") + (powerPage ? " page-power" : "");
     section.dataset.index = String(pi);
 
     (page.groups || []).forEach((group, gi) => {
@@ -2428,7 +2267,10 @@ function render(data, keepPageIndex) {
 
       const grid = document.createElement("div");
       grid.className = "grid";
-      (group.buttons || []).forEach((button, bi) => grid.appendChild(makeButton(button, { pi, gi, bi })));
+      (group.buttons || []).forEach((button, bi) => {
+        const el = makeButton(button, { pi, gi, bi });
+        if (el) grid.appendChild(el);
+      });
       wrap.append(hdr, grid);
       section.appendChild(wrap);
     });

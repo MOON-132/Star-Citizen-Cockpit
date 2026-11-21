@@ -835,6 +835,46 @@ func duplicateDashboard(src DashboardInfo) (string, error) {
 	return newID, nil
 }
 
+func powerManagementPage(id string) map[string]interface{} {
+	pip := func(bid, scName, label, hint, color string, keys []string, wide bool) map[string]interface{} {
+		b := map[string]interface{}{
+			"id": bid, "sc": scName, "label": label, "hint": hint,
+			"keys": keys, "mode": "tap", "color": color,
+		}
+		if wide {
+			b["wide"] = true
+		}
+		return b
+	}
+	return map[string]interface{}{
+		"id":    id,
+		"label": "Power Management",
+		"groups": []map[string]interface{}{
+			{"title": "Waffen", "buttons": []map[string]interface{}{
+				pip("pip-waffen-minus", "v_engineering_assignment_weapons_decrease", "−", "L-Alt + F5", "red", []string{"lalt", "f5"}, false),
+				pip("pip-waffen-plus", "v_engineering_assignment_weapons_increase", "+", "F5", "red", []string{"f5"}, false),
+			}},
+			{"title": "Antrieb", "buttons": []map[string]interface{}{
+				pip("pip-antrieb-minus", "v_engineering_assignment_engine_decrease", "−", "L-Alt + F6", "amber", []string{"lalt", "f6"}, false),
+				pip("pip-antrieb-plus", "v_engineering_assignment_engine_increase", "+", "F6", "amber", []string{"f6"}, false),
+			}},
+			{"title": "Schilde", "buttons": []map[string]interface{}{
+				pip("pip-schild-minus", "v_engineering_assignment_shields_decrease", "−", "L-Alt + F7", "cyan", []string{"lalt", "f7"}, false),
+				pip("pip-schild-plus", "v_engineering_assignment_shields_increase", "+", "F7", "cyan", []string{"f7"}, false),
+			}},
+			{"title": "Reset", "buttons": []map[string]interface{}{
+				pip("pip-reset", "v_engineering_assignment_reset", "Reset (F8)", "F8", "slate", []string{"f8"}, true),
+			}},
+			{"title": "Strom", "buttons": []map[string]interface{}{
+				{"id": "power-all", "sc": "v_power_toggle", "label": "Hauptstrom", "hint": "U", "keys": []string{"u"}, "mode": "toggle", "color": "green"},
+				{"id": "power-thrusters", "sc": "v_power_toggle_thrusters", "label": "Triebwerke", "hint": "I", "keys": []string{"i"}, "mode": "toggle", "color": "amber"},
+				{"id": "power-shd", "sc": "v_power_toggle_shields", "label": "Schilde", "hint": "O", "keys": []string{"o"}, "mode": "toggle", "color": "cyan"},
+				{"id": "power-wep", "sc": "v_power_toggle_weapons", "label": "Waffen", "hint": "P", "keys": []string{"p"}, "mode": "toggle", "color": "red"},
+			}},
+		},
+	}
+}
+
 func createNewDashboard() (string, error) {
 	_ = os.MkdirAll(app.UserDashDir, 0755)
 	newID := "eigenes-schiff"
@@ -892,30 +932,11 @@ func createNewDashboard() (string, error) {
 								"mode":  "toggle",
 								"color": "amber",
 							},
-							{
-								"id":    "live-pwr",
-								"kind":  "power",
-								"label": "Energie-Dreieck",
-								"hint":  "F5 / F6 / F7 / F8",
-								"keys":  []string{"f8"},
-								"mode":  "tap",
-								"color": "amber",
-								"wide":  true,
-							},
-							{
-								"id":    "live-shd",
-								"kind":  "shield",
-								"label": "Schild-Kompass",
-								"hint":  "Sektoren",
-								"keys":  []string{"num5"},
-								"mode":  "tap",
-								"color": "cyan",
-								"wide":  true,
-							},
 						},
 					},
 				},
 			},
+			powerManagementPage("energie"),
 		},
 	}
 	out, _ := json.MarshalIndent(template, "", "  ")
@@ -1027,21 +1048,7 @@ func addSubsystemToActiveShip(subKind string) {
 			},
 		}
 	default: // "energie"
-		newPage = map[string]interface{}{
-			"id":    fmt.Sprintf("energie-%d", cur.PageCount+1),
-			"label": "Energie & Schilde",
-			"groups": []map[string]interface{}{
-				{
-					"title": "Energie-Dreieck & Schilde",
-					"buttons": []map[string]interface{}{
-						{"id": "pwr-wep", "label": "Energie -> Waffen", "hint": "F5", "keys": []string{"f5"}, "mode": "tap", "color": "red"},
-						{"id": "pwr-eng", "label": "Energie -> Antrieb", "hint": "F6", "keys": []string{"f6"}, "mode": "tap", "color": "amber"},
-						{"id": "pwr-shd", "label": "Energie -> Schilde", "hint": "F7", "keys": []string{"f7"}, "mode": "tap", "color": "cyan"},
-						{"id": "pwr-rst", "label": "Energie Reset", "hint": "F8", "keys": []string{"f8"}, "mode": "tap", "color": "slate"},
-					},
-				},
-			},
-		}
+		newPage = powerManagementPage(fmt.Sprintf("energie-%d", cur.PageCount+1))
 	}
 
 	pagesArr, _ := data["pages"].([]interface{})

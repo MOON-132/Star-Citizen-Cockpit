@@ -48,14 +48,14 @@ Du kannst **SC Cockpit** jederzeit sofort live starten, ohne einen Installations
 1. **► LIVE COCKPIT (Dashboards & Schiffe direkt in der App nutzen!)**:
    - **Fenster Maximieren & Dynamisches Grid**: Oben rechts neben Minimieren (`—`) und Schließen (`✕`) sitzt der **Maximieren-Button (`□` / `❐`)**. Im Vollbild-/Maximiert-Modus passt sich das Kachel-Raster automatisch auf bis zu 6 Spalten an.
    - **1-Klick Hangar-Schnellleiste (`★ MEIN HANGAR`)**: Oben unter der Titelleiste erscheinen übersichtlich **nur deine favorisierten Hangar-Schiffe (`★`)** für den 1-Klick-Wechsel im Flug.
-   - **Schiffs-Silhouette & Subsystem-Tabs**: Jedes Schiff zeigt seine eigene **Schiffs-Blaupause (Silhouette)** sowie seine spezialisierten Unterpunkte (z. B. *Mining & Laser*, *Salvage & Scraper*, *Fracht & Hangar*, *MedBay & Rettung*, *Scan & Expedition*, *EMP & QED*, *Dropship & Türme*, *Kampf & Waffen*, *Energie & Schilde*, *Quantum & Nav*, *Flug & Systeme*).
+   - **Schiffs-Silhouette & Subsystem-Tabs**: Jedes Schiff zeigt seine eigene **Schiffs-Blaupause (Silhouette)** sowie seine spezialisierten Unterpunkte (z. B. *Mining & Laser*, *Salvage & Scraper*, *Fracht & Hangar*, *MedBay & Rettung*, *Scan & Expedition*, *EMP & QED*, *Dropship & Türme*, *Kampf & Waffen*, *Power Management*, *Quantum & Nav*, *Flug & Systeme*).
    - **📌 OVERLAY (Immer im Vordergrund)**: Hält das In-App Live-Cockpit auf Wunsch im Vordergrund über Star Citizen (Borderless Window).
    - **Direktes Senden an Star Citizen**: Ein Klick auf eine Holo-Kachel im Programm fokussiert automatisch das laufende Star-Citizen-Fenster und sendet den Keybind direkt ins Spiel.
 2. **★ HANGAR & SCHIFFE (Über 100 Star Citizen Schiffe suchen & favorisieren)**:
    - **Personalisierte Dashboards für jedes Schiff im Spiel**: Über 100 fliegbare Star Citizen Schiffe aller Hersteller (**AEGIS**, **ANVIL**, **RSI**, **DRAKE**, **MISC**, **CRUSADER**, **ORIGIN**, **ARGO**, **CNOU**, **MIRAI**, **GATAC**, **BANU**, **ESPERIA**, **AOPOA**) sind mit ihren echten Rollen, Subsystem-Seiten und einer eigenen **Schiffs-Blaupause (abgebildetes Schiff im Hintergrund)** integriert.
    - **Echtzeit-Suche & Rollen-Filter**: Suche direkt per Tastatur nach Schiffsname (z. B. *Vulture*, *Prospector*, *Carrack*, *Gladius*, *Polaris*, *F8C*, *Cutlass*, *Hercules*), Hersteller oder Rolle (*★ Mein Hangar*, *Alle Schiffe*, *Kampf*, *Mining*, *Salvage*, *Fracht*, *Exploration*).
    - **Favorisieren (`★ HANGAR` / `☆ MERKEN`)**: Markiere deine Schiffe mit einem Klick als Favorit — sie landen sofort in deinem **Hangar**, wo du sie mit **`► ÖFFNEN`** direkt ins Cockpit lädst oder mit **`⚙ ANPASSEN`** im Baukasten individualisierst.
-   - **1-Klick Unterpunkt zum aktiven Schiff hinzufügen**: Über die Leiste **`+ MINING`**, **`+ SALVAGE`**, **`+ KAMPF`**, **`+ FRACHT`**, **`+ ENERGIE`** erweiterst du jedes Schiff sofort um zusätzliche Subsystem-Seiten.
+   - **1-Klick Unterpunkt zum aktiven Schiff hinzufügen**: Über die Leiste **`+ MINING`**, **`+ SALVAGE`**, **`+ KAMPF`**, **`+ FRACHT`**, **`+ POWER`** erweiterst du jedes Schiff sofort um zusätzliche Subsystem-Seiten.
 3. **TABLET / SERVER**:
    - **Server an- und ausschalten**: Großer Button **SERVER STARTEN** / **SERVER STOPPEN** für externe Tablets & Smartphones im WLAN.
    - Zeigt die WLAN-Adresse (z. B. `http://192.168.1.180:8765/`) und einen QR-Code zum Scannen, den **ALS ADMIN STARTEN**-Button und das Live-Tastenprotokoll.
@@ -70,12 +70,12 @@ Auch auf dem Tablet oder im Browser ist die Oberfläche klar in **3 Modi** oben 
 1. **`► LIVE COCKPIT`**:
    - Zeigt das aktive Schiff mit seinem **eigenen Schiffs-Hintergrundbild (abgebildete Schiffs-Silhouette & Hersteller-HUD)** hinter den abgeschrägten GameGlass-Kacheln.
    - Oben in der Leiste **`★ MEIN HANGAR`** wechselst du mit 1 Tipp zwischen deinen favorisierten Hangar-Schiffen.
-   - Links in der Seitenleiste siehst du die Mini-Vorschau des aktuellen Schiffs sowie alle Unterpunkte (*Mining & Laser*, *Salvage & Scraper*, *Energie & Schilde* usw.).
+   - Links in der Seitenleiste siehst du die Mini-Vorschau des aktuellen Schiffs sowie alle Unterpunkte (*Mining & Laser*, *Salvage & Scraper*, *Power Management* usw.).
 2. **`★ HANGAR & SCHIFFE`**:
    - Öffnet den visuellen **Star Citizen Hangar** mit Suchfeld und Rollen-Filtern (*★ Mein Hangar*, *Alle Schiffe (100+)*, *Kampf & Fighter*, *Mining*, *Salvage*, *Fracht & Hauler*, *Exploration & Scan*, *MedBay & Rescue*, *EMP & QED*).
    - Jede Schiffskarte zeigt das **abgebildete Schiff als technische Blaupause**, Hersteller-Badge, alle enthaltenen Subsystem-Tags sowie die Buttons **`★ IM HANGAR`**, **`► IM COCKPIT ÖFFNEN`** und **`⚙ ANPASSEN`**.
 3. **`⚙ BAUKASTEN`**:
-   - Über 35 fertige Star-Citizen-Presets und interaktive Live-Widgets (*Schild-Matrix*, *Energie-Kondensator*) per 1-Klick einfügen, neue Unterpunkte ergänzen, eigene Hintergrundbilder hochladen und mit **SC-Tasten lesen** deine lokale `actionmaps.xml` synchronisieren.
+   - Fertige Star-Citizen-Presets per 1-Klick einfügen, den Unterpunkt **Power Management** ergänzen, eigene Hintergrundbilder hochladen und mit **SC-Tasten lesen** deine lokale `actionmaps.xml` synchronisieren.
 
 ## Deinstallieren
 

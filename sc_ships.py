@@ -399,23 +399,7 @@ def _build_page_for_tag(tag: str, ship_name: str, mfg: str) -> dict:
             ],
         }
     if tag == "energie":
-        return {
-            "id": "energie",
-            "label": "Energie & Schilde",
-            "groups": [
-                {
-                    "title": f"{ship_name} // Live Kondensator & Schild-Matrix",
-                    "buttons": [
-                        {"id": "live-pwr", "kind": "power", "label": "Energie-Kondensator", "hint": "F5 / F6 / F7 / F8", "keys": ["f8"], "mode": "tap", "color": "amber", "wide": True},
-                        {"id": "live-shd", "kind": "shield", "label": "Schild-Matrix", "hint": "Sektoren", "keys": ["num5"], "mode": "tap", "color": "cyan", "wide": True},
-                        {"id": "power-all", "sc": "v_power_toggle", "label": "Hauptstrom", "hint": "U", "keys": ["u"], "mode": "toggle", "color": "green"},
-                        {"id": "power-thrusters", "sc": "v_power_toggle_thrusters", "label": "Triebwerke", "hint": "I", "keys": ["i"], "mode": "toggle", "color": "amber"},
-                        {"id": "power-wep", "sc": "v_power_toggle_weapons", "label": "Waffen-Power", "hint": "P", "keys": ["p"], "mode": "toggle", "color": "red"},
-                        {"id": "power-shd", "sc": "v_power_toggle_shields", "label": "Schild-Power", "hint": "O", "keys": ["o"], "mode": "toggle", "color": "cyan"},
-                    ],
-                }
-            ],
-        }
+        return _power_management_page()
     if tag == "quantum":
         return {
             "id": "quantum",
@@ -450,6 +434,67 @@ def _build_page_for_tag(tag: str, ship_name: str, mfg: str) -> dict:
                     {"id": "atc", "sc": "v_atc_request", "label": "Landeerlaubnis (ATC)", "hint": "L-Alt + N", "keys": ["lalt", "n"], "mode": "tap", "color": "amber", "wide": True},
                 ],
             }
+        ],
+    }
+
+
+def _pip(bid: str, sc: str, label: str, hint: str, keys: list, color: str, wide: bool = False) -> dict:
+    button = {
+        "id": bid,
+        "sc": sc,
+        "label": label,
+        "hint": hint,
+        "keys": keys,
+        "mode": "tap",
+        "color": color,
+    }
+    if wide:
+        button["wide"] = True
+    return button
+
+
+def _power_management_page(page_id: str = "energie") -> dict:
+    """SC 4.10.2 defaultProfile: v_engineering_assignment_* (tap) and v_power_toggle_*."""
+    return {
+        "id": page_id,
+        "label": "Power Management",
+        "groups": [
+            {
+                "title": "Waffen",
+                "buttons": [
+                    _pip("pip-waffen-minus", "v_engineering_assignment_weapons_decrease", "−", "L-Alt + F5", ["lalt", "f5"], "red"),
+                    _pip("pip-waffen-plus", "v_engineering_assignment_weapons_increase", "+", "F5", ["f5"], "red"),
+                ],
+            },
+            {
+                "title": "Antrieb",
+                "buttons": [
+                    _pip("pip-antrieb-minus", "v_engineering_assignment_engine_decrease", "−", "L-Alt + F6", ["lalt", "f6"], "amber"),
+                    _pip("pip-antrieb-plus", "v_engineering_assignment_engine_increase", "+", "F6", ["f6"], "amber"),
+                ],
+            },
+            {
+                "title": "Schilde",
+                "buttons": [
+                    _pip("pip-schild-minus", "v_engineering_assignment_shields_decrease", "−", "L-Alt + F7", ["lalt", "f7"], "cyan"),
+                    _pip("pip-schild-plus", "v_engineering_assignment_shields_increase", "+", "F7", ["f7"], "cyan"),
+                ],
+            },
+            {
+                "title": "Reset",
+                "buttons": [
+                    _pip("pip-reset", "v_engineering_assignment_reset", "Reset (F8)", "F8", ["f8"], "slate", wide=True),
+                ],
+            },
+            {
+                "title": "Strom",
+                "buttons": [
+                    {"id": "power-all", "sc": "v_power_toggle", "label": "Hauptstrom", "hint": "U", "keys": ["u"], "mode": "toggle", "color": "green"},
+                    {"id": "power-thrusters", "sc": "v_power_toggle_thrusters", "label": "Triebwerke", "hint": "I", "keys": ["i"], "mode": "toggle", "color": "amber"},
+                    {"id": "power-shd", "sc": "v_power_toggle_shields", "label": "Schilde", "hint": "O", "keys": ["o"], "mode": "toggle", "color": "cyan"},
+                    {"id": "power-wep", "sc": "v_power_toggle_weapons", "label": "Waffen", "hint": "P", "keys": ["p"], "mode": "toggle", "color": "red"},
+                ],
+            },
         ],
     }
 

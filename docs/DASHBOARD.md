@@ -157,9 +157,12 @@ Das sind die häufig genannten Tastatur-Defaults um Alpha 4.10, nicht das Profil
 | Landeanfrage | `lalt`, `n` | tap | nein |
 | Ladebereich anfragen | `ralt`, `n` | tap | nein |
 | Port Lock | `ralt`, `k` | tap | nein |
-| Mehr Power Waffen | `f5` | tap | nein |
-| Mehr Power Antrieb | `f6` | tap | nein |
-| Mehr Power Schilde | `f7` | tap | nein |
+| Waffen-Pip − | `lalt`, `f5` | tap | nein |
+| Waffen-Pip + | `f5` | tap | nein |
+| Antrieb-Pip − | `lalt`, `f6` | tap | nein |
+| Antrieb-Pip + | `f6` | tap | nein |
+| Schild-Pip − | `lalt`, `f7` | tap | nein |
+| Schild-Pip + | `f7` | tap | nein |
 | Power zurücksetzen | `f8` | tap | nein |
 | Gesamt-Power | `u` | toggle | nein |
 | Triebwerke | `i` | toggle | nein |
@@ -239,7 +242,7 @@ Lies diese Datei, bevor du ein Dashboard erzeugst. Halte dich daran, auch wenn d
 5. Hat der Nutzer keine eigenen Keybinds genannt, nur die Tabelle oben verwenden und im `hint` und kurz im Begleittext sagen, dass es Defaults um Alpha 4.10 sind und er sie prüfen muss. Fehlende Binds nicht raten. Schildseiten weglassen, bis der Nutzer die Tasten nennt.
 6. Mining-Laser und Abwerfen: `mode` `hold` oder `tap` wie in der Tabelle, `danger` `true`, `color` `red`. Flight Ready, Power und Fahrwerk nicht als Gefahr markieren.
 7. Keine Selbstzerstörung, kein Schleudersitz, kein Makro, keine Mausbewegung, keine Folge aus mehreren Schritten auf einem Button.
-8. Lieber wenige große Buttons als jede Taste des Spiels. Eine Seite pro Aufgabe: Flug, Energie, Quantum, Kampf, Mining. Gruppen bündeln, was gleichzeitig gebraucht wird.
+8. Lieber wenige große Buttons als jede Taste des Spiels. Eine Seite pro Aufgabe: Flug, Power Management, Quantum, Kampf, Mining. Gruppen bündeln, was gleichzeitig gebraucht wird. Keine Live-Prozentanzeige und kein Energie-Dreieck: Power sind Pips, ein Button sendet nur die Taste.
 9. `wide: true` für die eine Hauptaktion der Seite. Maximal 12 Seiten.
 10. Nach dem Schreiben die Datei gegen das Schema halten: jede Seite hat Buttons, jede `keys`-Liste hat 1 bis 4 bekannte Namen, Modifier stehen vorn.
 

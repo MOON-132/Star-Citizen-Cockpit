@@ -1330,24 +1330,10 @@ func paintTabLiveCockpit(hdc uintptr, cx, cw, h int32) {
 
 		var expanded []DashButton
 		for _, b := range grp.Buttons {
-			if b.Kind == "power" {
-				expanded = append(expanded,
-					DashButton{ID: b.ID + "-wep", Label: "PWR ► WAFFEN", Hint: "F5", Keys: []string{"f5"}, Mode: "tap", Color: "red"},
-					DashButton{ID: b.ID + "-eng", Label: "PWR ► ANTRIEB", Hint: "F6", Keys: []string{"f6"}, Mode: "tap", Color: "amber"},
-					DashButton{ID: b.ID + "-shd", Label: "PWR ► SCHILDE", Hint: "F7", Keys: []string{"f7"}, Mode: "tap", Color: "cyan"},
-					DashButton{ID: b.ID + "-rst", Label: "PWR ► BALANCE", Hint: "F8", Keys: []string{"f8"}, Mode: "tap", Color: "slate"},
-				)
-			} else if b.Kind == "shield" {
-				expanded = append(expanded,
-					DashButton{ID: b.ID + "-f", Label: "SCHILD ► BUG", Hint: "NUM8", Keys: []string{"num8"}, Mode: "tap", Color: "cyan"},
-					DashButton{ID: b.ID + "-b", Label: "SCHILD ► HECK", Hint: "NUM2", Keys: []string{"num2"}, Mode: "tap", Color: "cyan"},
-					DashButton{ID: b.ID + "-l", Label: "SCHILD ► LINKS", Hint: "NUM4", Keys: []string{"num4"}, Mode: "tap", Color: "blue"},
-					DashButton{ID: b.ID + "-r", Label: "SCHILD ► RECHTS", Hint: "NUM6", Keys: []string{"num6"}, Mode: "tap", Color: "blue"},
-					DashButton{ID: b.ID + "-rst", Label: "SCHILD ► RESET", Hint: "NUM5", Keys: []string{"num5"}, Mode: "tap", Color: "amber", Wide: true},
-				)
-			} else {
-				expanded = append(expanded, b)
+			if b.Kind == "power" || b.Kind == "shield" {
+				continue
 			}
+			expanded = append(expanded, b)
 		}
 
 		for _, btn := range expanded {
@@ -1586,7 +1572,7 @@ func paintTabShards(hdc uintptr, cx, cw, h int32) {
 		{CtrlAddSubSalvage, "+ SALVAGE"},
 		{CtrlAddSubCombat, "+ KAMPF"},
 		{CtrlAddSubCargo, "+ FRACHT"},
-		{CtrlAddSubPower, "+ ENERGIE"},
+		{CtrlAddSubPower, "+ POWER"},
 	}
 	for _, sb := range subBtns {
 		drawButton(hdc, sb.id, RECT{sbX, subStrip.Top + sc(4), sbX + sbW, subStrip.Bottom - sc(4)}, sb.label, "cyan")
