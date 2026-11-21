@@ -1018,10 +1018,9 @@ func addSubsystemToActiveShip(subKind string) {
 			"label": "Fracht & Rampen",
 			"groups": []map[string]interface{}{
 				{
-					"title": "Hangar, Rampen & Frachtgitter",
+					"title": "Hangar & Rampen",
 					"buttons": []map[string]interface{}{
 						{"id": "crg-drs", "sc": "v_toggle_all_portlocks", "label": "Port Lock", "hint": "R-Alt + K", "keys": []string{"ralt", "k"}, "mode": "toggle", "color": "amber", "wide": true},
-						{"id": "crg-prt", "sc": "v_toggle_all_portlocks", "label": "Frachtgitter / Portlocks", "hint": "R-Alt + P", "keys": []string{"ralt", "p"}, "mode": "toggle", "color": "amber"},
 						{"id": "crg-atc", "sc": "v_atc_loading_area_request", "label": "Ladebereich anfragen", "hint": "R-Alt + N", "keys": []string{"ralt", "n"}, "mode": "tap", "color": "green", "wide": true},
 					},
 				},

@@ -143,7 +143,7 @@ Höchstens vier Einträge. Unbekannte Namen lehnt der Server ab.
 
 ## Standardbelegung, nur als Ausgangspunkt
 
-Das sind die häufig genannten Tastatur-Defaults um Alpha 4.10, nicht das Profil des Spielers. Steht im Spiel eine andere Taste, diese nehmen und in `hint` so hinschreiben, wie sie im Keybind-Menü steht. Schildseiten (vorne, hinten, links, rechts) haben hier keine Defaults, weil die Belegung oft leer oder geändert ist. Die nicht erfinden. Türen öffnen, schließen und verriegeln haben ebenfalls keinen Tastatur-Default. R-Alt+K ist nur Port Lock. R-Alt+L ist Lichtverstärkung. R-Alt+P für Frachtgitter steht in den veröffentlichten Defaults nicht und fehlt deshalb hier.
+Das sind die häufig genannten Tastatur-Defaults um Alpha 4.10, nicht das Profil des Spielers. Steht im Spiel eine andere Taste, diese nehmen und in `hint` so hinschreiben, wie sie im Keybind-Menü steht. Schildseiten (vorne, hinten, links, rechts) haben hier keine Defaults, weil die Belegung oft leer oder geändert ist. Die nicht erfinden. Türen öffnen, schließen und verriegeln haben ebenfalls keinen Tastatur-Default. R-Alt+K ist nur Port Lock. R-Alt+L ist Lichtverstärkung.
 
 | Aktion | keys | mode | danger |
 | --- | --- | --- | --- |

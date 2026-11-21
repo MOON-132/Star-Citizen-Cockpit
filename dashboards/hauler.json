@@ -46,15 +46,6 @@
               "wide": true
             },
             {
-              "id": "portlocks",
-              "sc": "v_toggle_all_portlocks",
-              "label": "Frachtgitter / Portlocks",
-              "hint": "R-Alt + P",
-              "keys": ["ralt", "p"],
-              "mode": "toggle",
-              "color": "amber"
-            },
-            {
               "id": "autoland",
               "sc": "v_autoland",
               "label": "Autolandung",

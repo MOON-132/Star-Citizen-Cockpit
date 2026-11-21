@@ -307,12 +307,11 @@ def _build_page_for_tag(tag: str, ship_name: str, mfg: str) -> dict:
             "label": "Fracht & Hangar",
             "groups": [
                 {
-                    "title": f"{ship_name} // Rampen, Frachtgitter & ATC",
+                    "title": f"{ship_name} // Rampen & ATC",
                     "buttons": [
                         {"id": "doors-all", "sc": "v_toggle_all_portlocks", "label": "Port Lock", "hint": "R-Alt + K", "keys": ["ralt", "k"], "mode": "toggle", "color": "amber", "wide": True},
                         {"id": "atc-req", "sc": "v_atc_request", "label": "Landeerlaubnis (ATC)", "hint": "L-Alt + N", "keys": ["lalt", "n"], "mode": "tap", "color": "green", "wide": True},
                         {"id": "cargo-atc", "sc": "v_atc_loading_area_request", "label": "Ladebereich anfragen", "hint": "R-Alt + N", "keys": ["ralt", "n"], "mode": "tap", "color": "cyan", "wide": True},
-                        {"id": "portlocks", "sc": "v_toggle_all_portlocks", "label": "Frachtgitter / Portlocks", "hint": "R-Alt + P", "keys": ["ralt", "p"], "mode": "toggle", "color": "amber"},
                         {"id": "tractor-mode", "label": "Traktorstrahl-Modus", "hint": "B / M", "keys": ["m"], "mode": "toggle", "color": "cyan"},
                     ],
                 }

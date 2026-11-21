@@ -1445,7 +1445,7 @@
           <input type="checkbox" value="cargo">
           <div>
             <b style="color:var(--green);font-size:13px">Fracht, Rampen & Hangar</b>
-            <div style="color:var(--muted);font-size:11px">Rampen, Verriegelung, Portlocks, Ladebereich ATC</div>
+            <div style="color:var(--muted);font-size:11px">Rampen, Port Lock, Ladebereich ATC</div>
           </div>
         </label>
       </div>
@@ -1737,10 +1737,9 @@ const SUBSYSTEM_TEMPLATES = {
     id: "cargo",
     label: "Fracht & Rampen",
     groups: [{
-      title: "Hangar, Rampen & Frachtgitter",
+      title: "Hangar & Rampen",
       buttons: [
         { id: "doors-all", sc: "v_toggle_all_portlocks", label: "Port Lock", hint: "R-Alt + K", keys: ["ralt", "k"], mode: "toggle", color: "amber", wide: true },
-        { id: "portlocks", sc: "v_toggle_all_portlocks", label: "Frachtgitter / Portlocks", hint: "R-Alt + P", keys: ["ralt", "p"], mode: "toggle", color: "amber" },
         { id: "cargo-atc", sc: "v_atc_loading_area_request", label: "Ladebereich anfragen", hint: "R-Alt + N", keys: ["ralt", "n"], mode: "tap", color: "green", wide: true }
       ]
     }]
