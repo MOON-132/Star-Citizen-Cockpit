@@ -58,7 +58,7 @@ Du kannst **SC Cockpit** jederzeit sofort live starten, ohne einen Installations
    - **1-Klick Unterpunkt zum aktiven Schiff hinzufügen**: Über die Leiste **`+ MINING`**, **`+ SALVAGE`**, **`+ KAMPF`**, **`+ FRACHT`**, **`+ ENERGIE`** erweiterst du jedes Schiff sofort um zusätzliche Subsystem-Seiten.
 3. **TABLET / SERVER**:
    - **Server an- und ausschalten**: Großer Button **SERVER STARTEN** / **SERVER STOPPEN** für externe Tablets & Smartphones im WLAN.
-   - Zeigt die echte WLAN-Adresse (z. B. `http://192.168.1.180:8765/`), den **ALS ADMIN STARTEN**-Button und das Live-Tastenprotokoll.
+   - Zeigt die WLAN-Adresse (z. B. `http://192.168.1.180:8765/`) und einen QR-Code zum Scannen, den **ALS ADMIN STARTEN**-Button und das Live-Tastenprotokoll.
 4. **EINSTELLUNGEN**:
    - Server-Port (`8765`) per `—` / `+` anpassen, Ordner öffnen, Verknüpfungen reparieren und **SC Cockpit direkt in der GUI deinstallieren**.
 

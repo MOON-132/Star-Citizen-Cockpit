@@ -127,7 +127,7 @@ func initEnvironment() {
 		}
 	}
 
-	app.LanIP = detectPrimaryLANIP()
+	app.LanIPs = detectLANIPs()
 	loadConfigPort()
 }
 
@@ -183,29 +183,97 @@ func enablePortableOrInstalledMode() {
 	extractEmbeddedPayloadSilent(app.AppDir)
 }
 
-func detectPrimaryLANIP() string {
-	conn, err := net.Dial("udp", "8.8.8.8:80")
-	if err == nil {
-		defer conn.Close()
-		if addr, ok := conn.LocalAddr().(*net.UDPAddr); ok {
-			ip := addr.IP.String()
-			if !strings.HasPrefix(ip, "127.") && !strings.HasPrefix(ip, "169.254.") {
-				return ip
-			}
+// detectLANIPs lists up IPv4 addresses a phone can open.
+// Loopback and 169.254.0.0/16 (link-local) are dropped.
+func detectLANIPs() []string {
+	seen := map[string]struct{}{}
+	var out []string
+	add := func(ip net.IP) {
+		ip = ip.To4()
+		if ip == nil || ip.IsLoopback() || ip.IsLinkLocalUnicast() || ip.IsUnspecified() || ip.IsMulticast() {
+			return
 		}
+		if ip[0] == 169 && ip[1] == 254 {
+			return
+		}
+		s := ip.String()
+		if _, ok := seen[s]; ok {
+			return
+		}
+		seen[s] = struct{}{}
+		out = append(out, s)
 	}
-	addrs, err := net.InterfaceAddrs()
+	ifaces, err := net.Interfaces()
 	if err == nil {
-		for _, a := range addrs {
-			if ipnet, ok := a.(*net.IPNet); ok && !ipnet.IP.IsLoopback() && ipnet.IP.To4() != nil {
-				ip := ipnet.IP.String()
-				if !strings.HasPrefix(ip, "169.254.") {
-					return ip
+		for _, ifi := range ifaces {
+			if ifi.Flags&net.FlagUp == 0 {
+				continue
+			}
+			addrs, err := ifi.Addrs()
+			if err != nil {
+				continue
+			}
+			for _, a := range addrs {
+				if n, ok := a.(*net.IPNet); ok {
+					add(n.IP)
 				}
 			}
 		}
 	}
-	return "127.0.0.1"
+	sort.Slice(out, func(i, j int) bool {
+		if d := lanOrder(out[i]) - lanOrder(out[j]); d != 0 {
+			return d < 0
+		}
+		return out[i] < out[j]
+	})
+	if len(out) == 0 {
+		return []string{"127.0.0.1"}
+	}
+	return out
+}
+
+func lanOrder(ip string) int {
+	switch {
+	case strings.HasPrefix(ip, "192.168."):
+		return 0
+	case strings.HasPrefix(ip, "10."):
+		return 1
+	case strings.HasPrefix(ip, "172."):
+		return 2
+	default:
+		return 3
+	}
+}
+
+func primaryOf(ips []string) string {
+	if len(ips) == 0 {
+		return "127.0.0.1"
+	}
+	return ips[0]
+}
+
+func viewLAN() (running, starting bool, ips []string) {
+	app.mu.Lock()
+	defer app.mu.Unlock()
+	running = app.ServerRunning
+	starting = app.ServerCmd != nil && !app.ServerRunning
+	ips = append([]string(nil), app.LanIPs...)
+	return
+}
+
+func serverBusy() bool {
+	app.mu.Lock()
+	defer app.mu.Unlock()
+	return app.ServerCmd != nil
+}
+
+func portOpen(port int) bool {
+	conn, err := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", port), 200*time.Millisecond)
+	if err != nil {
+		return false
+	}
+	_ = conn.Close()
+	return true
 }
 
 func loadConfigPort() {
@@ -259,8 +327,25 @@ func appendServerLog(line string) {
 	}
 }
 
+func markListening(port int) {
+	ips := detectLANIPs()
+	app.mu.Lock()
+	if app.ServerCmd == nil || app.ServerRunning {
+		app.mu.Unlock()
+		return
+	}
+	app.LanIPs = ips
+	app.ServerRunning = true
+	app.mu.Unlock()
+	appendServerLog(fmt.Sprintf("Server läuft auf Port %d.", port))
+	for _, ip := range ips {
+		appendServerLog(fmt.Sprintf("http://%s:%d/", ip, port))
+	}
+}
+
+// startServer reports "Server läuft" only after the port accepts connections.
 func startServer() {
-	if app.ServerRunning {
+	if serverBusy() {
 		return
 	}
 	serverPy := filepath.Join(app.AppDir, "server.py")
@@ -282,7 +367,7 @@ func startServer() {
 
 	cmd := exec.Command(pyExe, args...)
 	cmd.Dir = app.AppDir
-	cmd.Env = append(os.Environ(), "SC_COCKPIT_HOME="+app.UserDir, "PYTHONIOENCODING=utf-8")
+	cmd.Env = append(os.Environ(), "SC_COCKPIT_HOME="+app.UserDir, "PYTHONIOENCODING=utf-8", "PYTHONUNBUFFERED=1")
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 
 	stdout, err := cmd.StdoutPipe()
@@ -292,35 +377,71 @@ func startServer() {
 	}
 	cmd.Stderr = cmd.Stdout
 
+	busyBefore := portOpen(app.Port)
 	if err := cmd.Start(); err != nil {
 		appendServerLog("Python-Server konnte nicht gestartet werden: " + err.Error())
 		return
 	}
 
+	app.mu.Lock()
 	app.ServerCmd = cmd.Process
-	app.ServerRunning = true
-	app.LanIP = detectPrimaryLANIP()
-	appendServerLog(fmt.Sprintf("Server gestartet auf http://%s:%d/", app.LanIP, app.Port))
+	app.ServerRunning = false
+	app.LanIPs = detectLANIPs()
+	port := app.Port
+	app.mu.Unlock()
 
-	go func(r io.Reader, c *exec.Cmd) {
-		scanner := bufio.NewScanner(r)
-		for scanner.Scan() {
-			text := scanner.Text()
-			// Filter noisy console startup banner lines
-			if strings.HasPrefix(text, "Dieses Fenster") || strings.HasPrefix(text, "Strg+C") || strings.HasPrefix(text, "Gerät:") {
+	go func(r io.Reader, c *exec.Cmd, port int) {
+		sc := bufio.NewScanner(r)
+		for sc.Scan() {
+			text := strings.TrimSpace(sc.Text())
+			if strings.Contains(text, "Server lauscht auf ") {
+				markListening(port)
+				continue
+			}
+			if text == "" || strings.HasPrefix(text, "Dieses Fenster") || strings.HasPrefix(text, "Strg+C") || strings.HasPrefix(text, "Gerät:") {
 				continue
 			}
 			appendServerLog(text)
 		}
 		_ = c.Wait()
 		app.mu.Lock()
-		if app.ServerCmd != nil && c.Process != nil && app.ServerCmd.Pid == c.Process.Pid {
+		same := app.ServerCmd != nil && c.Process != nil && app.ServerCmd.Pid == c.Process.Pid
+		wasUp := app.ServerRunning
+		if same {
 			app.ServerRunning = false
 			app.ServerCmd = nil
 		}
 		app.mu.Unlock()
-		appendServerLog("Server gestoppt.")
-	}(stdout, cmd)
+		if !same {
+			return
+		}
+		if wasUp {
+			appendServerLog("Server gestoppt.")
+		} else {
+			appendServerLog("Server lauscht nicht.")
+		}
+	}(stdout, cmd, port)
+
+	if busyBefore {
+		return
+	}
+	go func(c *exec.Cmd, port int) {
+		deadline := time.Now().Add(8 * time.Second)
+		for time.Now().Before(deadline) {
+			app.mu.Lock()
+			up := app.ServerRunning
+			ours := app.ServerCmd != nil && c.Process != nil && app.ServerCmd.Pid == c.Process.Pid
+			app.mu.Unlock()
+			if up || !ours {
+				return
+			}
+			if portOpen(port) {
+				markListening(port)
+				return
+			}
+			time.Sleep(200 * time.Millisecond)
+		}
+	}(cmd, port)
 }
 
 func stopServer() {
@@ -332,6 +453,7 @@ func stopServer() {
 
 	if proc != nil {
 		_ = proc.Kill()
+		appendServerLog("Server gestoppt.")
 	}
 }
 
@@ -591,11 +713,27 @@ func triggerInAppButton(btn DashButton) {
 	app.LastActionTxt = fmt.Sprintf("%s (%s)", btn.Label, combo)
 	app.ToastMsg = fmt.Sprintf("SHARD AUSGELÖST:  %s  ►  [%s]", strings.ToUpper(btn.Label), combo)
 
-	if !app.ServerRunning {
+	if !serverBusy() {
 		startServer()
 	}
 
 	go func(b DashButton) {
+		deadline := time.Now().Add(4 * time.Second)
+		for time.Now().Before(deadline) {
+			app.mu.Lock()
+			up := app.ServerRunning
+			app.mu.Unlock()
+			if up {
+				break
+			}
+			time.Sleep(100 * time.Millisecond)
+		}
+		app.mu.Lock()
+		up := app.ServerRunning
+		app.mu.Unlock()
+		if !up {
+			return
+		}
 		pFindWindowW := user32.NewProc("FindWindowW")
 		pSetForegroundWindow := user32.NewProc("SetForegroundWindow")
 		for _, title := range []string{"Star Citizen", "StarCitizen"} {
@@ -960,7 +1098,7 @@ func runGitHubLivePull(userInitiated bool) {
 
 	reloadDashboards()
 	if updatedCount > 0 {
-		if app.ServerRunning {
+		if serverBusy() {
 			stopServer()
 			startServer()
 		}

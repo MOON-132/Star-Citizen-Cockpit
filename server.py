@@ -1389,7 +1389,12 @@ def serve(host: str = "0.0.0.0") -> None:
     for item in items:
         for err in validate_layout(item["data"]):
             log(f"{item['id']}: {err}")
-    server = ThreadingHTTPServer((host, CONFIG["port"]), Handler)
+    try:
+        server = ThreadingHTTPServer((host, CONFIG["port"]), Handler)
+    except OSError as exc:
+        log(f"Port {CONFIG['port']} ist belegt oder gesperrt ({exc}).")
+        raise SystemExit(1) from exc
+    log(f"Server lauscht auf {host}:{CONFIG['port']}")
     ips = lan_ips()
     log("")
     log(f"SC Cockpit {VERSION}")

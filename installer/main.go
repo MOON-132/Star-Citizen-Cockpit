@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"sccockpit-installer/qrcode"
 	"strings"
 	"sync"
 	"syscall"
@@ -56,23 +57,23 @@ const (
 	WS_CLIPCHILDREN = 0x02000000
 	WS_EX_APPWINDOW = 0x00040000
 
-	WM_DESTROY       = 0x0002
-	WM_SIZE          = 0x0005
-	WM_PAINT         = 0x000F
-	WM_CLOSE         = 0x0010
-	WM_ERASEBKGND    = 0x0014
-	WM_SETCURSOR     = 0x0020
-	WM_NCHITTEST     = 0x0084
+	WM_DESTROY         = 0x0002
+	WM_SIZE            = 0x0005
+	WM_PAINT           = 0x000F
+	WM_CLOSE           = 0x0010
+	WM_ERASEBKGND      = 0x0014
+	WM_SETCURSOR       = 0x0020
+	WM_NCHITTEST       = 0x0084
 	WM_NCLBUTTONDBLCLK = 0x00A3
-	WM_KEYDOWN       = 0x0100
-	WM_CHAR          = 0x0102
-	WM_MOUSEMOVE     = 0x0200
-	WM_LBUTTONDOWN   = 0x0201
-	WM_LBUTTONUP     = 0x0202
-	WM_LBUTTONDBLCLK = 0x0203
-	WM_MOUSEWHEEL    = 0x020A
-	WM_APP_REFRESH   = 0x8001
-	WM_APP_DONE      = 0x8002
+	WM_KEYDOWN         = 0x0100
+	WM_CHAR            = 0x0102
+	WM_MOUSEMOVE       = 0x0200
+	WM_LBUTTONDOWN     = 0x0201
+	WM_LBUTTONUP       = 0x0202
+	WM_LBUTTONDBLCLK   = 0x0203
+	WM_MOUSEWHEEL      = 0x020A
+	WM_APP_REFRESH     = 0x8001
+	WM_APP_DONE        = 0x8002
 
 	HTCLIENT      = 1
 	HTCAPTION     = 2
@@ -396,7 +397,7 @@ type AppState struct {
 	ServerRunning bool
 	ServerCmd     *os.Process
 	Port          int
-	LanIP         string
+	LanIPs        []string
 	ServerLogs    []string
 	ToastMsg      string
 
@@ -444,7 +445,6 @@ var app = &AppState{
 	OptDesktop:   true,
 	OptStartMenu: true,
 	Port:         8765,
-	LanIP:        "127.0.0.1",
 	LiveToggled:  make(map[string]bool),
 	HangarFilter: "hangar",
 }
@@ -546,6 +546,41 @@ func drawText(hdc uintptr, text string, r RECT, font uintptr, col uint32, flags 
 }
 
 // GameGlass Holographic Button
+func drawQR(hdc uintptr, r RECT, text string) {
+	mod := qrcode.Modules(text)
+	fillRect(hdc, r, rgb(0xff, 0xff, 0xff))
+	if mod == nil {
+		return
+	}
+	n := len(mod)
+	quiet := 4
+	span := n + quiet*2
+	side := int(r.Right - r.Left)
+	if h := int(r.Bottom - r.Top); h < side {
+		side = h
+	}
+	px := side / span
+	if px < 1 {
+		px = 1
+	}
+	ox := int(r.Left) + (int(r.Right-r.Left)-px*span)/2
+	oy := int(r.Top) + (int(r.Bottom-r.Top)-px*span)/2
+	black := rgb(0, 0, 0)
+	for y := 0; y < n; y++ {
+		for x := 0; x < n; x++ {
+			if !mod[y][x] {
+				continue
+			}
+			fillRect(hdc, RECT{
+				Left:   int32(ox + (x+quiet)*px),
+				Top:    int32(oy + (y+quiet)*px),
+				Right:  int32(ox + (x+quiet+1)*px),
+				Bottom: int32(oy + (y+quiet+1)*px),
+			}, black)
+		}
+	}
+}
+
 func drawButton(hdc uintptr, id int, r RECT, label string, style string) {
 	app.Regions = append(app.Regions, HotRegion{ID: id, Rect: r})
 	hov := app.HoverID == id
@@ -1025,16 +1060,20 @@ func paintLauncherMode(hdc uintptr, w, h int32) {
 	}
 
 	// Bottom Sidebar Status Pod
+	running, starting, lanIPs := viewLAN()
 	statusCard := RECT{sc(12), h - sc(108), sideW - sc(12), h - sc(14)}
-	if app.ServerRunning {
+	if running {
 		drawShardBox(hdc, statusCard, 8, colGreenBg, colGreen)
 		fillRect(hdc, RECT{statusCard.Left, statusCard.Top + sc(6), statusCard.Left + sc(3), statusCard.Bottom - sc(8)}, colGreen)
-		drawText(hdc, "●  HOST LINK ONLINE", RECT{statusCard.Left + sc(12), statusCard.Top + sc(8), statusCard.Right - sc(8), statusCard.Top + sc(26)}, app.FontBold, colGreen, DT_LEFT|DT_SINGLELINE)
+		drawText(hdc, "●  SERVER LÄUFT", RECT{statusCard.Left + sc(12), statusCard.Top + sc(8), statusCard.Right - sc(8), statusCard.Top + sc(26)}, app.FontBold, colGreen, DT_LEFT|DT_SINGLELINE)
+	} else if starting {
+		drawShardBox(hdc, statusCard, 8, colAmberBg, colAmber)
+		drawText(hdc, "○  SERVER STARTET", RECT{statusCard.Left + sc(12), statusCard.Top + sc(8), statusCard.Right - sc(8), statusCard.Top + sc(26)}, app.FontBold, colAmber, DT_LEFT|DT_SINGLELINE)
 	} else {
 		drawShardBox(hdc, statusCard, 8, colPanel, colLine)
 		drawText(hdc, "○  WLAN SERVER AUS", RECT{statusCard.Left + sc(12), statusCard.Top + sc(8), statusCard.Right - sc(8), statusCard.Top + sc(26)}, app.FontBold, colMuted, DT_LEFT|DT_SINGLELINE)
 	}
-	drawText(hdc, fmt.Sprintf("http://%s:%d/", app.LanIP, app.Port), RECT{statusCard.Left + sc(12), statusCard.Top + sc(28), statusCard.Right - sc(8), statusCard.Top + sc(46)}, app.FontMono, colCyan, DT_LEFT|DT_SINGLELINE)
+	drawText(hdc, fmt.Sprintf("http://%s:%d/", primaryOf(lanIPs), app.Port), RECT{statusCard.Left + sc(12), statusCard.Top + sc(28), statusCard.Right - sc(8), statusCard.Top + sc(46)}, app.FontMono, colCyan, DT_LEFT|DT_SINGLELINE)
 	lastAct := app.LastActionTxt
 	if lastAct == "" {
 		lastAct = "Bereit für Eingaben"
@@ -1654,37 +1693,66 @@ func paintTabHostLink(hdc uintptr, cx, cw, h int32) {
 	drawText(hdc, "Verbinde dein Tablet, Smartphone oder einen Zweitbildschirm im WLAN mit deinem Star Citizen PC.",
 		RECT{cx, sc(52), cx + cw, sc(74)}, app.FontBody, colMuted, DT_LEFT|DT_SINGLELINE)
 
-	heroCard := RECT{cx, sc(88), cx + cw, sc(226)}
+	running, starting, lanIPs := viewLAN()
+	url := fmt.Sprintf("http://%s:%d/", primaryOf(lanIPs), app.Port)
+
+	heroCard := RECT{cx, sc(88), cx + cw, sc(292)}
 	drawShardBox(hdc, heroCard, 12, colPanel, colLineHi)
 	fillRect(hdc, RECT{heroCard.Left, heroCard.Top, heroCard.Left + sc(90), heroCard.Top + sc(2)}, colCyan)
 
-	url := fmt.Sprintf("http://%s:%d/", app.LanIP, app.Port)
+	qrBox := RECT{heroCard.Right - sc(184), heroCard.Top + sc(16), heroCard.Right - sc(16), heroCard.Top + sc(184)}
+	drawQR(hdc, qrBox, url)
 
-	if app.ServerRunning {
-		drawText(hdc, "●  GAMEGLASS HOST SERVER IST ONLINE", RECT{heroCard.Left + sc(22), heroCard.Top + sc(16), heroCard.Right - sc(220), heroCard.Top + sc(36)}, app.FontBold, colGreen, DT_LEFT|DT_SINGLELINE)
-	} else {
-		drawText(hdc, "○  HOST SERVER IST GESTOPPT", RECT{heroCard.Left + sc(22), heroCard.Top + sc(16), heroCard.Right - sc(220), heroCard.Top + sc(36)}, app.FontBold, colAmber, DT_LEFT|DT_SINGLELINE)
+	status := "○  HOST SERVER IST GESTOPPT"
+	statusCol := colAmber
+	if running {
+		status = "●  SERVER LÄUFT"
+		statusCol = colGreen
+	} else if starting {
+		status = "○  SERVER STARTET"
+		statusCol = colAmber
+	}
+	textRight := qrBox.Left - sc(12)
+	drawText(hdc, status, RECT{heroCard.Left + sc(22), heroCard.Top + sc(14), textRight, heroCard.Top + sc(34)}, app.FontBold, statusCol, DT_LEFT|DT_SINGLELINE)
+	drawText(hdc, "ADRESSE IM WLAN:", RECT{heroCard.Left + sc(22), heroCard.Top + sc(38), textRight, heroCard.Top + sc(56)}, app.FontSmall, colMuted, DT_LEFT|DT_SINGLELINE)
+
+	ipY := heroCard.Top + sc(58)
+	shown := lanIPs
+	if len(shown) > 4 {
+		shown = shown[:4]
+	}
+	if len(shown) == 0 {
+		shown = []string{primaryOf(nil)}
+	}
+	urlFont := app.FontHero
+	rowH := sc(34)
+	if len(shown) > 1 {
+		urlFont = app.FontBold
+		rowH = sc(22)
+	}
+	for _, ip := range shown {
+		drawText(hdc, fmt.Sprintf("http://%s:%d/", ip, app.Port), RECT{heroCard.Left + sc(22), ipY, textRight, ipY + rowH}, urlFont, colCyan, DT_LEFT|DT_VCENTER|DT_SINGLELINE)
+		ipY += rowH
 	}
 
-	drawText(hdc, "SHARD-ADRESSE FÜR TABLET / SMARTPHONE IM WLAN:", RECT{heroCard.Left + sc(22), heroCard.Top + sc(42), heroCard.Right - sc(220), heroCard.Top + sc(60)}, app.FontSmall, colMuted, DT_LEFT|DT_SINGLELINE)
-	drawText(hdc, url, RECT{heroCard.Left + sc(22), heroCard.Top + sc(60), heroCard.Right - sc(220), heroCard.Top + sc(92)}, app.FontHero, colCyan, DT_LEFT|DT_SINGLELINE)
-
-	btnCopy := RECT{heroCard.Left + sc(22), heroCard.Bottom - sc(46), heroCard.Left + sc(172), heroCard.Bottom - sc(12)}
-	btnOpen := RECT{btnCopy.Right + sc(10), heroCard.Bottom - sc(46), btnCopy.Right + sc(185), heroCard.Bottom - sc(12)}
-	btnEdit := RECT{btnOpen.Right + sc(10), heroCard.Bottom - sc(46), btnOpen.Right + sc(185), heroCard.Bottom - sc(12)}
+	btnCopy := RECT{heroCard.Left + sc(22), heroCard.Bottom - sc(46), heroCard.Left + sc(156), heroCard.Bottom - sc(12)}
+	btnOpen := RECT{btnCopy.Right + sc(8), heroCard.Bottom - sc(46), btnCopy.Right + sc(168), heroCard.Bottom - sc(12)}
+	btnEdit := RECT{btnOpen.Right + sc(8), heroCard.Bottom - sc(46), btnOpen.Right + sc(158), heroCard.Bottom - sc(12)}
+	powerBtn := RECT{btnEdit.Right + sc(8), heroCard.Bottom - sc(46), btnEdit.Right + sc(168), heroCard.Bottom - sc(12)}
+	if powerBtn.Right > textRight {
+		powerBtn.Right = textRight
+	}
 
 	drawButton(hdc, CtrlBtnCopyURL, btnCopy, "URL KOPIEREN", "secondary")
-	drawButton(hdc, CtrlBtnOpenBrowser, btnOpen, "WEB-SHARD ÖFFNEN", "cyan")
-	drawButton(hdc, CtrlBtnOpenEditor, btnEdit, "BAUKASTEN ÖFFNEN", "secondary")
-
-	powerBtn := RECT{heroCard.Right - sc(195), heroCard.Top + sc(20), heroCard.Right - sc(22), heroCard.Bottom - sc(56)}
-	if app.ServerRunning {
-		drawButton(hdc, CtrlBtnToggleServer, powerBtn, "SERVER STOPPEN", "danger")
+	drawButton(hdc, CtrlBtnOpenBrowser, btnOpen, "WEB-SHARD", "cyan")
+	drawButton(hdc, CtrlBtnOpenEditor, btnEdit, "BAUKASTEN", "secondary")
+	if running || starting {
+		drawButton(hdc, CtrlBtnToggleServer, powerBtn, "STOPPEN", "danger")
 	} else {
-		drawButton(hdc, CtrlBtnToggleServer, powerBtn, "SERVER STARTEN", "amber")
+		drawButton(hdc, CtrlBtnToggleServer, powerBtn, "STARTEN", "amber")
 	}
 
-	adminCard := RECT{cx, sc(240), cx + cw, sc(304)}
+	adminCard := RECT{cx, sc(304), cx + cw, sc(368)}
 	drawShardBox(hdc, adminCard, 8, colPanel, colLine)
 	if app.IsAdmin {
 		drawText(hdc, "●  ADMINISTRATOR-BERECHTIGUNG AKTIV (Sendet Tasten auch an Star Citizen im Admin-Modus)",
@@ -1696,7 +1764,7 @@ func paintTabHostLink(hdc uintptr, cx, cw, h int32) {
 		drawButton(hdc, CtrlBtnRestartAdmin, adminBtn, "ALS ADMIN STARTEN", "secondary")
 	}
 
-	logCard := RECT{cx, sc(318), cx + cw, h - sc(50)}
+	logCard := RECT{cx, sc(380), cx + cw, h - sc(50)}
 	drawShardBox(hdc, logCard, 10, rgb(0x04, 0x06, 0x0a), colLine)
 	drawText(hdc, "LIVE TELEMETRIE- & TASTEN-PROTOKOLL", RECT{logCard.Left + sc(18), logCard.Top + sc(10), logCard.Right - sc(18), logCard.Top + sc(28)}, app.FontSmall, colDim, DT_LEFT|DT_SINGLELINE)
 
@@ -1854,7 +1922,7 @@ func handleControlClick(id int) {
 		idx := id - CtrlDashEditBase
 		if idx < len(app.Dashboards) {
 			setActiveDashboard(app.Dashboards[idx].ID)
-			if !app.ServerRunning {
+			if !serverBusy() {
 				startServer()
 			}
 			url := fmt.Sprintf("http://127.0.0.1:%d/", app.Port)
@@ -1917,6 +1985,9 @@ func handleControlClick(id int) {
 	case CtrlNavHostLink:
 		app.Tab = TabHostLink
 		app.ConfirmUninst = false
+		app.mu.Lock()
+		app.LanIPs = detectLANIPs()
+		app.mu.Unlock()
 	case CtrlNavSettings:
 		app.Tab = TabSettings
 		app.ConfirmUninst = false
@@ -1977,7 +2048,7 @@ func handleControlClick(id int) {
 		app.ToastMsg = "Lade neueste Version direkt von GitHub (Auto-Pull)..."
 		go runGitHubLivePull(true)
 	case CtrlLiveOpenEditor:
-		if !app.ServerRunning {
+		if !serverBusy() {
 			startServer()
 		}
 		url := fmt.Sprintf("http://127.0.0.1:%d/", app.Port)
@@ -1997,17 +2068,18 @@ func handleControlClick(id int) {
 
 	// Server Controls
 	case CtrlBtnToggleServer:
-		if app.ServerRunning {
+		if serverBusy() {
 			stopServer()
 		} else {
 			startServer()
 		}
 	case CtrlBtnCopyURL:
-		url := fmt.Sprintf("http://%s:%d/", app.LanIP, app.Port)
+		_, _, ips := viewLAN()
+		url := fmt.Sprintf("http://%s:%d/", primaryOf(ips), app.Port)
 		copyToClipboard(url)
-		app.ToastMsg = "Shard-URL kopiert: " + url
+		app.ToastMsg = "Adresse kopiert: " + url
 	case CtrlBtnOpenBrowser, CtrlBtnOpenEditor:
-		if !app.ServerRunning {
+		if !serverBusy() {
 			startServer()
 		}
 		url := fmt.Sprintf("http://127.0.0.1:%d/", app.Port)
@@ -2040,7 +2112,7 @@ func handleControlClick(id int) {
 		if app.Port > 1024 {
 			app.Port--
 			saveConfigPort(app.Port)
-			if app.ServerRunning {
+			if serverBusy() {
 				stopServer()
 				startServer()
 			}
@@ -2049,7 +2121,7 @@ func handleControlClick(id int) {
 		if app.Port < 65530 {
 			app.Port++
 			saveConfigPort(app.Port)
-			if app.ServerRunning {
+			if serverBusy() {
 				stopServer()
 				startServer()
 			}
