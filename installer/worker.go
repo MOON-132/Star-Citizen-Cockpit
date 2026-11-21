@@ -988,10 +988,10 @@ func addSubsystemToActiveShip(subKind string) {
 					"buttons": []map[string]interface{}{
 						{"id": "slv-mode", "sc": "v_toggle_salvage_mode", "label": "Salvage-Modus", "hint": "M", "keys": []string{"m"}, "mode": "toggle", "color": "amber", "wide": true},
 						{"id": "slv-beam", "label": "Scraper-Strahl", "hint": "Maus Links halten", "keys": []string{"mouse1"}, "mode": "hold", "color": "red", "danger": true, "wide": true},
-						{"id": "slv-all", "sc": "v_salvage_focus_all_heads", "label": "Beide Köpfe", "hint": "R-Alt + S", "keys": []string{"ralt", "s"}, "mode": "tap", "color": "amber"},
+						{"id": "slv-all", "sc": "v_salvage_focus_all_heads", "label": "Fokus alle Köpfe", "hint": "L-Alt + S", "keys": []string{"lalt", "s"}, "mode": "tap", "color": "amber"},
 						{"id": "slv-gimb", "sc": "v_salvage_toggle_gimbal_mode", "label": "Salvage Gimbal", "hint": "G", "keys": []string{"g"}, "mode": "toggle", "color": "cyan"},
 						{"id": "slv-frac", "sc": "v_salvage_toggle_fire_fracture", "label": "Fraktur-Feld", "hint": "R-Alt + W", "keys": []string{"ralt", "w"}, "mode": "tap", "color": "red", "wide": true},
-						{"id": "slv-cm", "sc": "v_salvage_toggle_fire_disintegrate", "label": "Desintegration (CM)", "hint": "R-Alt + X", "keys": []string{"ralt", "x"}, "mode": "tap", "color": "amber", "wide": true},
+						{"id": "slv-cm", "sc": "v_salvage_toggle_fire_disintegrate", "label": "Desintegration (CM)", "hint": "R-Alt + S", "keys": []string{"ralt", "s"}, "mode": "tap", "color": "amber", "wide": true},
 					},
 				},
 			},
@@ -1004,7 +1004,7 @@ func addSubsystemToActiveShip(subKind string) {
 				{
 					"title": "Gefechtssysteme & Gegenmaßnahmen",
 					"buttons": []map[string]interface{}{
-						{"id": "kmp-tgt", "sc": "v_target_nearest_hostile", "label": "Nächster Feind", "hint": "T", "keys": []string{"t"}, "mode": "tap", "color": "red"},
+						{"id": "kmp-tgt", "sc": "v_target_cycle_in_view_fwd", "label": "Ziel wechseln", "hint": "T", "keys": []string{"t"}, "mode": "tap", "color": "red"},
 						{"id": "kmp-gmb", "sc": "v_weapon_gimbals_state_toggle", "label": "Gimbal Modus", "hint": "G", "keys": []string{"g"}, "mode": "tap", "color": "blue"},
 						{"id": "kmp-flr", "sc": "v_weapon_countermeasure_decoy_launch", "label": "Flare / Köder", "hint": "H", "keys": []string{"h"}, "mode": "tap", "color": "amber"},
 						{"id": "kmp-nse", "sc": "v_weapon_countermeasure_noise_launch", "label": "Noise / Störfeld", "hint": "J", "keys": []string{"j"}, "mode": "tap", "color": "cyan"},
@@ -1020,10 +1020,9 @@ func addSubsystemToActiveShip(subKind string) {
 				{
 					"title": "Hangar, Rampen & Frachtgitter",
 					"buttons": []map[string]interface{}{
-						{"id": "crg-drs", "sc": "v_toggle_all_doors", "label": "Alle Rampen / Türen", "hint": "R-Alt + K", "keys": []string{"ralt", "k"}, "mode": "toggle", "color": "amber", "wide": true},
-						{"id": "crg-lck", "sc": "v_lock_all_doors", "label": "Verriegeln", "hint": "R-Alt + L", "keys": []string{"ralt", "l"}, "mode": "toggle", "color": "cyan"},
+						{"id": "crg-drs", "sc": "v_toggle_all_portlocks", "label": "Port Lock", "hint": "R-Alt + K", "keys": []string{"ralt", "k"}, "mode": "toggle", "color": "amber", "wide": true},
 						{"id": "crg-prt", "sc": "v_toggle_all_portlocks", "label": "Frachtgitter / Portlocks", "hint": "R-Alt + P", "keys": []string{"ralt", "p"}, "mode": "toggle", "color": "amber"},
-						{"id": "crg-atc", "sc": "v_atc_loading_area_request", "label": "Ladebereich anfragen", "hint": "L-Alt + K", "keys": []string{"lalt", "k"}, "mode": "tap", "color": "green", "wide": true},
+						{"id": "crg-atc", "sc": "v_atc_loading_area_request", "label": "Ladebereich anfragen", "hint": "R-Alt + N", "keys": []string{"ralt", "n"}, "mode": "tap", "color": "green", "wide": true},
 					},
 				},
 			},

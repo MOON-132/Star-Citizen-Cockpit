@@ -292,11 +292,11 @@ def _build_page_for_tag(tag: str, ship_name: str, mfg: str) -> dict:
                         {"id": "salvage-mode", "sc": "v_toggle_salvage_mode", "label": "Salvage-Modus", "hint": "M", "keys": ["m"], "mode": "toggle", "color": "amber", "wide": True},
                         {"id": "salvage-beam", "label": "Scraper / Strahl", "hint": "Maus Links halten", "keys": ["mouse1"], "mode": "hold", "color": "red", "danger": True, "wide": True},
                         {"id": "salvage-gimbal", "sc": "v_salvage_toggle_gimbal_mode", "label": "Salvage Gimbal", "hint": "G", "keys": ["g"], "mode": "toggle", "color": "cyan"},
-                        {"id": "salvage-all", "sc": "v_salvage_focus_all_heads", "label": "Beide Köpfe (Abrade)", "hint": "R-Alt + S", "keys": ["ralt", "s"], "mode": "tap", "color": "amber"},
-                        {"id": "salvage-left", "sc": "v_salvage_focus_left", "label": "Kopf Links (Cinch)", "hint": "R-Alt + A", "keys": ["ralt", "a"], "mode": "tap", "color": "cyan"},
-                        {"id": "salvage-right", "sc": "v_salvage_focus_right", "label": "Kopf Rechts", "hint": "R-Alt + D", "keys": ["ralt", "d"], "mode": "tap", "color": "cyan"},
+                        {"id": "salvage-all", "sc": "v_salvage_focus_all_heads", "label": "Fokus alle Köpfe", "hint": "L-Alt + S", "keys": ["lalt", "s"], "mode": "tap", "color": "amber"},
+                        {"id": "salvage-left", "sc": "v_salvage_focus_left", "label": "Fokus Kopf links", "hint": "L-Alt + A", "keys": ["lalt", "a"], "mode": "tap", "color": "cyan"},
+                        {"id": "salvage-right", "sc": "v_salvage_focus_right", "label": "Fokus Kopf rechts", "hint": "L-Alt + D", "keys": ["lalt", "d"], "mode": "tap", "color": "cyan"},
                         {"id": "salvage-fracture", "sc": "v_salvage_toggle_fire_fracture", "label": "Fraktur-Feld (Brechen)", "hint": "R-Alt + W", "keys": ["ralt", "w"], "mode": "tap", "color": "red", "wide": True},
-                        {"id": "salvage-cm", "sc": "v_salvage_toggle_fire_disintegrate", "label": "Desintegration (CM)", "hint": "R-Alt + X", "keys": ["ralt", "x"], "mode": "tap", "color": "amber", "wide": True},
+                        {"id": "salvage-cm", "sc": "v_salvage_toggle_fire_disintegrate", "label": "Desintegration (CM)", "hint": "R-Alt + S", "keys": ["ralt", "s"], "mode": "tap", "color": "amber", "wide": True},
                     ],
                 }
             ],
@@ -309,10 +309,9 @@ def _build_page_for_tag(tag: str, ship_name: str, mfg: str) -> dict:
                 {
                     "title": f"{ship_name} // Rampen, Frachtgitter & ATC",
                     "buttons": [
-                        {"id": "doors-all", "sc": "v_toggle_all_doors", "label": "Alle Rampen / Luken", "hint": "R-Alt + K", "keys": ["ralt", "k"], "mode": "toggle", "color": "amber", "wide": True},
-                        {"id": "doors-lock", "sc": "v_lock_all_doors", "label": "Schiff Verriegeln", "hint": "R-Alt + L", "keys": ["ralt", "l"], "mode": "toggle", "color": "cyan", "wide": True},
+                        {"id": "doors-all", "sc": "v_toggle_all_portlocks", "label": "Port Lock", "hint": "R-Alt + K", "keys": ["ralt", "k"], "mode": "toggle", "color": "amber", "wide": True},
                         {"id": "atc-req", "sc": "v_atc_request", "label": "Landeerlaubnis (ATC)", "hint": "L-Alt + N", "keys": ["lalt", "n"], "mode": "tap", "color": "green", "wide": True},
-                        {"id": "cargo-atc", "sc": "v_atc_loading_area_request", "label": "Ladebereich anfragen", "hint": "L-Alt + K", "keys": ["lalt", "k"], "mode": "tap", "color": "cyan", "wide": True},
+                        {"id": "cargo-atc", "sc": "v_atc_loading_area_request", "label": "Ladebereich anfragen", "hint": "R-Alt + N", "keys": ["ralt", "n"], "mode": "tap", "color": "cyan", "wide": True},
                         {"id": "portlocks", "sc": "v_toggle_all_portlocks", "label": "Frachtgitter / Portlocks", "hint": "R-Alt + P", "keys": ["ralt", "p"], "mode": "toggle", "color": "amber"},
                         {"id": "tractor-mode", "label": "Traktorstrahl-Modus", "hint": "B / M", "keys": ["m"], "mode": "toggle", "color": "cyan"},
                     ],
@@ -327,7 +326,7 @@ def _build_page_for_tag(tag: str, ship_name: str, mfg: str) -> dict:
                 {
                     "title": f"{ship_name} // Search & Rescue (MedBay)",
                     "buttons": [
-                        {"id": "med-doors", "sc": "v_toggle_all_doors", "label": "Notfall-Heckrampe", "hint": "R-Alt + K", "keys": ["ralt", "k"], "mode": "toggle", "color": "red", "wide": True},
+                        {"id": "med-doors", "sc": "v_toggle_all_portlocks", "label": "Port Lock", "hint": "R-Alt + K", "keys": ["ralt", "k"], "mode": "toggle", "color": "red", "wide": True},
                         {"id": "med-lights", "sc": "v_lights", "label": "Einsatz-Suchscheinwerfer", "hint": "L", "keys": ["l"], "mode": "toggle", "color": "amber", "wide": True},
                         {"id": "med-ping", "sc": "v_invoke_ping", "label": "Biometrie / Radar Ping", "hint": "Tab halten", "keys": ["tab"], "mode": "hold", "color": "cyan"},
                         {"id": "med-atc", "sc": "v_atc_request", "label": "Klinik-Landeerlaubnis", "hint": "L-Alt + N", "keys": ["lalt", "n"], "mode": "tap", "color": "green"},
@@ -375,7 +374,7 @@ def _build_page_for_tag(tag: str, ship_name: str, mfg: str) -> dict:
                 {
                     "title": f"{ship_name} // Truppenabwurf & Gefechtszone",
                     "buttons": [
-                        {"id": "drop-ramps", "sc": "v_toggle_all_doors", "label": "Abwurframpen Öffnen", "hint": "R-Alt + K", "keys": ["ralt", "k"], "mode": "toggle", "color": "amber", "wide": True},
+                        {"id": "drop-ramps", "sc": "v_toggle_all_portlocks", "label": "Port Lock", "hint": "R-Alt + K", "keys": ["ralt", "k"], "mode": "toggle", "color": "amber", "wide": True},
                         {"id": "drop-vtol", "sc": "v_vtol_toggle", "label": "VTOL Landeschub", "hint": "K", "keys": ["k"], "mode": "toggle", "color": "cyan", "wide": True},
                         {"id": "drop-flare", "sc": "v_weapon_countermeasure_decoy_launch", "label": "Abwurf-Flares", "hint": "H", "keys": ["h"], "mode": "tap", "color": "red"},
                         {"id": "drop-noise", "sc": "v_weapon_countermeasure_noise_launch", "label": "Rauch / Noise-Schirm", "hint": "J", "keys": ["j"], "mode": "tap", "color": "cyan"},
@@ -391,9 +390,9 @@ def _build_page_for_tag(tag: str, ship_name: str, mfg: str) -> dict:
                 {
                     "title": f"{ship_name} // Gefechtskontrolle",
                     "buttons": [
-                        {"id": "target-hostile", "sc": "v_target_nearest_hostile", "label": "Nächster Feind", "hint": "T", "keys": ["t"], "mode": "tap", "color": "red"},
+                        {"id": "target-hostile", "sc": "v_target_cycle_in_view_fwd", "label": "Ziel wechseln", "hint": "T", "keys": ["t"], "mode": "tap", "color": "red"},
                         {"id": "gimbal", "sc": "v_weapon_gimbals_state_toggle", "label": "Gimbal Modus", "hint": "G", "keys": ["g"], "mode": "tap", "color": "blue"},
-                        {"id": "missiles", "label": "Raketen-Operator", "hint": "Mittelklick", "keys": ["mouse3"], "mode": "tap", "color": "amber"},
+                        {"id": "missiles", "sc": "v_operator_mode_cycle_forward", "label": "Nächster Operator-Modus", "hint": "Mittelklick", "keys": ["mouse3"], "mode": "tap", "color": "amber"},
                         {"id": "flares", "sc": "v_weapon_countermeasure_decoy_launch", "label": "Täuschkörper (Flare)", "hint": "H", "keys": ["h"], "mode": "tap", "color": "amber"},
                         {"id": "noise", "sc": "v_weapon_countermeasure_noise_launch", "label": "Störfeld (Noise)", "hint": "J", "keys": ["j"], "mode": "tap", "color": "cyan"},
                     ],
@@ -448,7 +447,7 @@ def _build_page_for_tag(tag: str, ship_name: str, mfg: str) -> dict:
                     {"id": "decoupled", "sc": "v_ifcs_vector_decoupling_toggle", "label": "Decoupled", "hint": "C", "keys": ["c"], "mode": "toggle", "color": "blue"},
                     {"id": "cruise", "sc": "v_ifcs_toggle_cruise_control", "label": "Tempomat (Cruise)", "hint": "L-Alt + C", "keys": ["lalt", "c"], "mode": "toggle", "color": "blue"},
                     {"id": "lights", "sc": "v_lights", "label": "Scheinwerfer", "hint": "L", "keys": ["l"], "mode": "toggle", "color": "amber"},
-                    {"id": "doors", "sc": "v_toggle_all_doors", "label": "Türen / Luken", "hint": "R-Alt + K", "keys": ["ralt", "k"], "mode": "toggle", "color": "slate"},
+                    {"id": "doors", "sc": "v_toggle_all_portlocks", "label": "Port Lock", "hint": "R-Alt + K", "keys": ["ralt", "k"], "mode": "toggle", "color": "slate"},
                     {"id": "atc", "sc": "v_atc_request", "label": "Landeerlaubnis (ATC)", "hint": "L-Alt + N", "keys": ["lalt", "n"], "mode": "tap", "color": "amber", "wide": True},
                 ],
             }

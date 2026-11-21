@@ -47,27 +47,27 @@
             {
               "id": "salvage-focus-all",
               "sc": "v_salvage_focus_all_heads",
-              "label": "Beide Köpfe (Abrade)",
-              "hint": "R-Alt + S",
-              "keys": ["ralt", "s"],
+              "label": "Fokus alle Köpfe",
+              "hint": "L-Alt + S",
+              "keys": ["lalt", "s"],
               "mode": "tap",
               "color": "amber"
             },
             {
               "id": "salvage-focus-left",
               "sc": "v_salvage_focus_left",
-              "label": "Kopf Links (Cinch)",
-              "hint": "R-Alt + A",
-              "keys": ["ralt", "a"],
+              "label": "Fokus Kopf links",
+              "hint": "L-Alt + A",
+              "keys": ["lalt", "a"],
               "mode": "tap",
               "color": "cyan"
             },
             {
               "id": "salvage-focus-right",
               "sc": "v_salvage_focus_right",
-              "label": "Kopf Rechts",
-              "hint": "R-Alt + D",
-              "keys": ["ralt", "d"],
+              "label": "Fokus Kopf rechts",
+              "hint": "L-Alt + D",
+              "keys": ["lalt", "d"],
               "mode": "tap",
               "color": "cyan"
             }
@@ -90,8 +90,8 @@
               "id": "salvage-disintegrate",
               "sc": "v_salvage_toggle_fire_disintegrate",
               "label": "Desintegration (CM einziehen)",
-              "hint": "R-Alt + X",
-              "keys": ["ralt", "x"],
+              "hint": "R-Alt + S",
+              "keys": ["ralt", "s"],
               "mode": "tap",
               "color": "amber",
               "wide": true
@@ -146,8 +146,8 @@
             },
             {
               "id": "doors",
-              "sc": "v_toggle_all_doors",
-              "label": "Heckrampe / Türen",
+              "sc": "v_toggle_all_portlocks",
+              "label": "Port Lock",
               "hint": "R-Alt + K",
               "keys": ["ralt", "k"],
               "mode": "toggle",

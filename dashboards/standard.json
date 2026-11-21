@@ -107,7 +107,8 @@
             },
             {
               "id": "doors",
-              "label": "Türen",
+              "sc": "v_toggle_all_portlocks",
+              "label": "Port Lock",
               "hint": "R-Alt + K",
               "keys": [
                 "ralt",
@@ -300,6 +301,7 @@
           "buttons": [
             {
               "id": "target",
+              "sc": "v_target_cycle_in_view_fwd",
               "label": "Ziel wechseln",
               "hint": "T",
               "keys": [
@@ -340,7 +342,8 @@
             },
             {
               "id": "missiles",
-              "label": "Raketenmodus",
+              "sc": "v_operator_mode_cycle_forward",
+              "label": "Nächster Operator-Modus",
               "hint": "Mittelklick",
               "keys": [
                 "mouse3"
