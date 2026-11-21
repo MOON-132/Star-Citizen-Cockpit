@@ -169,30 +169,130 @@
     },
     {
       "id": "energie",
-      "label": "Energie & Schilde",
+      "label": "Power Management",
       "groups": [
         {
-          "title": "Live Schiffs-Verteiler",
+          "title": "Waffen",
           "buttons": [
             {
-              "id": "vulture-pwr",
-              "kind": "power",
-              "label": "Energie-Kondensator",
-              "hint": "F5 / F6 / F7 / F8",
-              "keys": ["f8"],
+              "id": "pip-waffen-minus",
+              "sc": "v_engineering_assignment_weapons_decrease",
+              "label": "−",
+              "hint": "L-Alt + F5",
+              "keys": ["lalt", "f5"],
               "mode": "tap",
-              "color": "amber",
-              "wide": true
+              "color": "red"
             },
             {
-              "id": "vulture-shd",
-              "kind": "shield",
-              "label": "Schild-Matrix",
-              "hint": "Sektoren",
-              "keys": ["num5"],
+              "id": "pip-waffen-plus",
+              "sc": "v_engineering_assignment_weapons_increase",
+              "label": "+",
+              "hint": "F5",
+              "keys": ["f5"],
               "mode": "tap",
-              "color": "cyan",
+              "color": "red"
+            }
+          ]
+        },
+        {
+          "title": "Antrieb",
+          "buttons": [
+            {
+              "id": "pip-antrieb-minus",
+              "sc": "v_engineering_assignment_engine_decrease",
+              "label": "−",
+              "hint": "L-Alt + F6",
+              "keys": ["lalt", "f6"],
+              "mode": "tap",
+              "color": "amber"
+            },
+            {
+              "id": "pip-antrieb-plus",
+              "sc": "v_engineering_assignment_engine_increase",
+              "label": "+",
+              "hint": "F6",
+              "keys": ["f6"],
+              "mode": "tap",
+              "color": "amber"
+            }
+          ]
+        },
+        {
+          "title": "Schilde",
+          "buttons": [
+            {
+              "id": "pip-schild-minus",
+              "sc": "v_engineering_assignment_shields_decrease",
+              "label": "−",
+              "hint": "L-Alt + F7",
+              "keys": ["lalt", "f7"],
+              "mode": "tap",
+              "color": "cyan"
+            },
+            {
+              "id": "pip-schild-plus",
+              "sc": "v_engineering_assignment_shields_increase",
+              "label": "+",
+              "hint": "F7",
+              "keys": ["f7"],
+              "mode": "tap",
+              "color": "cyan"
+            }
+          ]
+        },
+        {
+          "title": "Reset",
+          "buttons": [
+            {
+              "id": "pip-reset",
+              "sc": "v_engineering_assignment_reset",
+              "label": "Reset (F8)",
+              "hint": "F8",
+              "keys": ["f8"],
+              "mode": "tap",
+              "color": "slate",
               "wide": true
+            }
+          ]
+        },
+        {
+          "title": "Strom",
+          "buttons": [
+            {
+              "id": "power-all",
+              "sc": "v_power_toggle",
+              "label": "Hauptstrom",
+              "hint": "U",
+              "keys": ["u"],
+              "mode": "toggle",
+              "color": "green"
+            },
+            {
+              "id": "power-thrusters",
+              "sc": "v_power_toggle_thrusters",
+              "label": "Triebwerke",
+              "hint": "I",
+              "keys": ["i"],
+              "mode": "toggle",
+              "color": "amber"
+            },
+            {
+              "id": "power-shd",
+              "sc": "v_power_toggle_shields",
+              "label": "Schilde",
+              "hint": "O",
+              "keys": ["o"],
+              "mode": "toggle",
+              "color": "cyan"
+            },
+            {
+              "id": "power-wep",
+              "sc": "v_power_toggle_weapons",
+              "label": "Waffen",
+              "hint": "P",
+              "keys": ["p"],
+              "mode": "toggle",
+              "color": "red"
             }
           ]
         }

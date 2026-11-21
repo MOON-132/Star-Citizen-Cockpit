@@ -926,19 +926,21 @@ def iter_buttons(layout: dict):
                 yield page, group, button
 
 
-WIDGET_KINDS = {"button", "shield", "power", "telemetry", "pair", "guard"}
+WIDGET_KINDS = {"button", "telemetry", "pair", "guard"}
 
 
 def validate_layout(layout: dict) -> list[str]:
     errors = []
     count = 0
+    skipped = 0
     for page, _group, button in iter_buttons(layout):
-        count += 1
         kind = str(button.get("kind") or "button")
         if kind not in WIDGET_KINDS:
-            errors.append(f"{page.get('id')}: unbekannter Baustein {kind!r}")
+            # Retired live widgets (power/shield) and unknown kinds are ignored.
+            skipped += 1
             continue
-        if kind in {"shield", "power", "telemetry"}:
+        count += 1
+        if kind == "telemetry":
             continue
         label = button.get("label", button.get("id", "?"))
         keys = button.get("keys")
@@ -951,7 +953,7 @@ def validate_layout(layout: dict) -> list[str]:
         mode = button.get("mode", "tap")
         if mode not in {"tap", "toggle", "hold"}:
             errors.append(f"{page.get('id')}/{label}: mode {mode!r} ungültig")
-    if count == 0:
+    if count == 0 and skipped == 0:
         errors.append("Layout enthält keine Buttons")
     return errors
 
@@ -1185,9 +1187,9 @@ def clean_dashboard(data: dict, dash_id: str) -> dict:
                     continue
                 kind = str(button.get("kind") or "button")
                 if kind not in WIDGET_KINDS:
-                    kind = "button"
+                    continue
                 keys_raw = button.get("keys")
-                if kind in {"shield", "power", "telemetry"} and not keys_raw:
+                if kind == "telemetry" and not keys_raw:
                     norm = ["f8"]
                 else:
                     if not isinstance(keys_raw, list) or not 1 <= len(keys_raw) <= 4:
@@ -1319,12 +1321,10 @@ def is_admin() -> bool | None:
 
 
 class TelemetryState:
-    """Tracks live ship state (power triangle, shield sectors, systems) & Star Citizen Game.log / process status."""
+    """Tracks key-echoed ship toggles and Star Citizen Game.log / process status. No power percentages."""
 
     def __init__(self) -> None:
         self.lock = threading.Lock()
-        self.power = {"weapons": 33, "engines": 34, "shields": 33}
-        self.shields = {"front": 25, "back": 25, "left": 25, "right": 25}
         self.systems = {
             "flight_ready": False,
             "gear": True,
@@ -1333,10 +1333,6 @@ class TelemetryState:
             "decoupled": False,
             "cruise": False,
             "master_mode": "SCM",
-            "power_all": True,
-            "power_thrusters": True,
-            "power_weapons": True,
-            "power_shields": True,
         }
         self.sc_running = False
         self.sc_ship = "AEGIS / UEE COCKPIT"
@@ -1348,41 +1344,8 @@ class TelemetryState:
         combo = "+".join(keys)
         with self.lock:
             self.last_action = f"{label} ({combo})" if label else combo
-            # Power triangle distribution
-            if combo == "f5":
-                self._shift_power("weapons", 12)
-            elif combo == "f6":
-                self._shift_power("engines", 12)
-            elif combo == "f7":
-                self._shift_power("shields", 12)
-            elif combo == "f8":
-                self.power = {"weapons": 33, "engines": 34, "shields": 33}
-            # Shield sector distribution (numpad or RCTRL+numpad)
-            elif combo in {"num8", "rctrl+num8"}:
-                self._shift_shield("front", 15)
-            elif combo in {"num2", "rctrl+num2"}:
-                self._shift_shield("back", 15)
-            elif combo in {"num4", "rctrl+num4"}:
-                self._shift_shield("left", 15)
-            elif combo in {"num6", "rctrl+num6"}:
-                self._shift_shield("right", 15)
-            elif combo in {"num5", "rctrl+num5"}:
-                self.shields = {"front": 25, "back": 25, "left": 25, "right": 25}
-            # Ship systems toggles
-            elif combo == "ralt+r":
+            if combo == "ralt+r":
                 self.systems["flight_ready"] = True
-                self.systems["power_all"] = True
-                self.systems["power_thrusters"] = True
-                self.systems["power_weapons"] = True
-                self.systems["power_shields"] = True
-            elif combo == "u":
-                self.systems["power_all"] = not self.systems["power_all"]
-            elif combo == "i":
-                self.systems["power_thrusters"] = not self.systems["power_thrusters"]
-            elif combo == "p":
-                self.systems["power_weapons"] = not self.systems["power_weapons"]
-            elif combo == "o":
-                self.systems["power_shields"] = not self.systems["power_shields"]
             elif combo == "n":
                 self.systems["gear"] = not self.systems["gear"]
             elif combo == "k":
@@ -1396,45 +1359,8 @@ class TelemetryState:
             elif combo == "b":
                 self.systems["master_mode"] = "NAV / QUANTUM" if self.systems["master_mode"] == "SCM" else "SCM"
 
-    def _shift_power(self, target: str, delta: int) -> None:
-        others = [k for k in self.power if k != target]
-        gain = min(delta, 100 - self.power[target])
-        if gain <= 0:
-            return
-        self.power[target] += gain
-        half1 = gain // 2
-        half2 = gain - half1
-        self.power[others[0]] = max(0, self.power[others[0]] - half1)
-        self.power[others[1]] = max(0, self.power[others[1]] - half2)
-        total = sum(self.power.values())
-        if total != 100:
-            self.power[target] += 100 - total
-
-    def _shift_shield(self, target: str, delta: int) -> None:
-        others = [k for k in self.shields if k != target]
-        gain = min(delta, 100 - self.shields[target])
-        if gain <= 0:
-            return
-        self.shields[target] += gain
-        per = gain // 3
-        rem = gain - per * 3
-        for idx, k in enumerate(others):
-            sub = per + (1 if idx < rem else 0)
-            self.shields[k] = max(0, self.shields[k] - sub)
-        total = sum(self.shields.values())
-        if total != 100:
-            self.shields[target] += 100 - total
-
     def update(self, payload: dict) -> dict:
         with self.lock:
-            if isinstance(payload.get("power"), dict):
-                for k in ("weapons", "engines", "shields"):
-                    if k in payload["power"]:
-                        self.power[k] = max(0, min(100, int(payload["power"][k])))
-            if isinstance(payload.get("shields"), dict):
-                for k in ("front", "back", "left", "right"):
-                    if k in payload["shields"]:
-                        self.shields[k] = max(0, min(100, int(payload["shields"][k])))
             if isinstance(payload.get("systems"), dict):
                 for k, v in payload["systems"].items():
                     if k in self.systems:
@@ -1492,8 +1418,6 @@ class TelemetryState:
         self._poll_sc_environment()
         with self.lock:
             return {
-                "power": dict(self.power),
-                "shields": dict(self.shields),
                 "systems": dict(self.systems),
                 "sc_running": self.sc_running,
                 "sc_ship": self.sc_ship,
@@ -1905,6 +1829,26 @@ def self_test() -> int:
 
     tmp = Path(tempfile.mkdtemp(prefix="sc-cockpit-"))
     os.environ["SC_COCKPIT_HOME"] = str(tmp)
+    sample_dir = tmp / "dashboards"
+    sample_dir.mkdir(parents=True, exist_ok=True)
+    retired_power = "power"
+    retired_shield = "shield"
+    (sample_dir / "old-power-widget.json").write_text(json.dumps({
+        "id": "old-power-widget",
+        "title": "Altes Power-Widget",
+        "pages": [{
+            "id": "energie",
+            "label": "Alt",
+            "groups": [{
+                "title": "Alt",
+                "buttons": [
+                    {"id": "gear", "label": "Fahrwerk", "keys": ["n"], "mode": "toggle", "color": "cyan"},
+                    {"id": "live-pwr", "kind": retired_power, "label": "Energie-Kondensator", "hint": "F5 / F6 / F7 / F8", "keys": ["f8"], "mode": "tap", "color": "amber", "wide": True},
+                    {"id": "live-shd", "kind": retired_shield, "label": "Schild-Matrix", "hint": "Sektoren", "keys": ["f8"], "mode": "tap", "color": "cyan", "wide": True},
+                ],
+            }],
+        }],
+    }, ensure_ascii=False), encoding="utf-8")
     items = catalog()
     if not any(item["id"] == "aegis-gladius" for item in items):
         log("aegis-gladius Dashboard fehlt")
@@ -1975,8 +1919,21 @@ def self_test() -> int:
             raise SystemExit("Dashboard nicht gelöscht")
         call("POST", "/api/press", {"keys": ["n"], "mode": "tap", "id": "test"})
         tele = call("GET", "/api/telemetry")
-        if "power" not in tele or "shields" not in tele:
+        if "power" in tele or "shields" in tele:
+            raise SystemExit("Power-Dreieck-Telemetrie noch vorhanden")
+        if "systems" not in tele or "sc_running" not in tele or "sc_ship" not in tele:
             raise SystemExit("telemetry unvollständig")
+        old = call("GET", "/api/dashboard/old-power-widget")
+        if old.get("id") != "old-power-widget":
+            raise SystemExit("altes Power-Widget-Dashboard nicht ladbar")
+        glad = find_dashboard("aegis-gladius")
+        energie = next(p for p in glad["data"]["pages"] if p["id"] == "energie")
+        if energie.get("label") != "Power Management":
+            raise SystemExit(f"energie-Seite heißt {energie.get('label')!r}")
+        for group in energie["groups"]:
+            for button in group["buttons"]:
+                if button.get("kind") in {"power", "shield"}:
+                    raise SystemExit("energie-Seite hat noch ein Live-Widget")
         with urllib.request.urlopen(base + "/") as res:
             html = res.read().decode()
         if "Baukasten" not in html:
