@@ -783,6 +783,74 @@ func addSubsystemToActiveShip(subKind string) {
 	app.ToastMsg = fmt.Sprintf("Unterpunkt '%s' wurde zum Schiff '%s' hinzugefügt!", newPage["label"], cur.Ship)
 }
 
+func runGitHubLivePull(userInitiated bool) {
+	updatedCount := 0
+
+	// 1. If we are inside a Git repository, execute `git pull --ff-only` automatically!
+	gitDir := filepath.Join(app.AppDir, ".git")
+	if _, err := os.Stat(gitDir); err == nil {
+		if gitExe, err2 := exec.LookPath("git"); err2 == nil && gitExe != "" {
+			cmd := exec.Command(gitExe, "pull", "--ff-only")
+			cmd.Dir = app.AppDir
+			cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+			if out, err3 := cmd.CombinedOutput(); err3 == nil {
+				outStr := strings.TrimSpace(string(out))
+				if !strings.Contains(outStr, "Already up to date") && !strings.Contains(outStr, "Bereits aktuell") {
+					updatedCount++
+				}
+			}
+		}
+	}
+
+	// 2. Also fetch latest core files directly from GitHub raw main branch (works even without Git installed or in %LOCALAPPDATA%!)
+	rawBase := "https://raw.githubusercontent.com/MOON-132/Star-Citizen-Cockpit/main/"
+	filesToSync := []string{
+		"server.py",
+		"index.html",
+		"dashboards/standard.json",
+		"dashboards/mining.json",
+		"dashboards/salvage.json",
+		"dashboards/hauler.json",
+	}
+	client := &http.Client{Timeout: 5 * time.Second}
+	for _, rel := range filesToSync {
+		resp, err := client.Get(rawBase + rel)
+		if err != nil || resp == nil {
+			continue
+		}
+		if resp.StatusCode == 200 {
+			body, err := io.ReadAll(resp.Body)
+			resp.Body.Close()
+			if err == nil && len(body) > 32 {
+				targetPath := filepath.Join(app.AppDir, filepath.FromSlash(rel))
+				_ = os.MkdirAll(filepath.Dir(targetPath), 0755)
+				existing, _ := os.ReadFile(targetPath)
+				if !bytes.Equal(existing, body) {
+					if os.WriteFile(targetPath, body, 0644) == nil {
+						updatedCount++
+					}
+				}
+			}
+		} else {
+			resp.Body.Close()
+		}
+	}
+
+	reloadDashboards()
+	if updatedCount > 0 {
+		if app.ServerRunning {
+			stopServer()
+			startServer()
+		}
+		app.ToastMsg = "AUTO-UPDATE ERFOLGREICH: Neueste Version & Schiffe wurden von GitHub geladen!"
+	} else if userInitiated {
+		app.ToastMsg = "SC Cockpit ist bereits auf dem allerneuesten GitHub-Stand."
+	}
+	if app.Hwnd != 0 {
+		pPostMessageW.Call(app.Hwnd, WM_APP_REFRESH, 0, 0)
+	}
+}
+
 func syncStarCitizenActionmaps() string {
 	candidates := []string{
 		`C:\Program Files\Roberts Space Industries\StarCitizen\LIVE\user\client\0\Profiles\default\actionmaps.xml`,

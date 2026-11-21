@@ -3,6 +3,13 @@ chcp 65001 >nul
 cd /d "%~dp0"
 title SC Cockpit
 
+if exist "%~dp0.git" (
+  where git >nul 2>&1 && (
+    echo [SC Cockpit] Lade neueste Version von GitHub (git pull)...
+    git pull --ff-only >nul 2>&1
+  )
+)
+
 if /i not "%~1"=="--console" (
   if exist "%~dp0SC-Cockpit-Setup.exe" (
     powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "Unblock-File -LiteralPath '%~dp0SC-Cockpit-Setup.exe' -ErrorAction SilentlyContinue" >nul 2>&1
@@ -26,4 +33,5 @@ where py >nul 2>&1 && (
 echo.
 echo Server beendet.
 pause
+
 

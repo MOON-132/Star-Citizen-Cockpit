@@ -1153,6 +1153,31 @@ class Handler(BaseHTTPRequestHandler):
         if self._dash_id(path):
             self._save_dashboard()
             return
+        if path == "/api/git-pull":
+            updated = []
+            try:
+                import subprocess
+                import urllib.request
+                if (APP_ROOT / ".git").is_dir():
+                    subprocess.run(["git", "pull", "--ff-only"], cwd=str(APP_ROOT), timeout=8, check=False)
+                raw_base = "https://raw.githubusercontent.com/MOON-132/Star-Citizen-Cockpit/main/"
+                for rel in ("index.html", "dashboards/standard.json", "dashboards/mining.json", "dashboards/salvage.json", "dashboards/hauler.json"):
+                    try:
+                        with urllib.request.urlopen(raw_base + rel, timeout=5) as res:
+                            if res.status == 200:
+                                data_bytes = res.read()
+                                target = APP_ROOT / rel
+                                target.parent.mkdir(parents=True, exist_ok=True)
+                                if not target.is_file() or target.read_bytes() != data_bytes:
+                                    target.write_bytes(data_bytes)
+                                    updated.append(rel)
+                    except Exception:
+                        pass
+            except Exception as exc:
+                self._json(500, {"error": str(exc)})
+                return
+            self._json(200, {"ok": True, "updated": updated})
+            return
         if path == "/api/telemetry":
             try:
                 data = self._read_json(32768)

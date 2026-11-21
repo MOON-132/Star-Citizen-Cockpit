@@ -2271,6 +2271,23 @@ document.getElementById("full").addEventListener("click", () => {
   else document.exitFullscreen?.();
 });
 
+document.getElementById("git-pull-btn").addEventListener("click", async () => {
+  toast("Ziehe neueste Version von GitHub (Auto-Pull)...");
+  try {
+    const res = await api("/api/git-pull", { method: "POST", headers: headers(), body: "{}" });
+    const id = await refreshList();
+    await openBoard(id);
+    if (res.updated && res.updated.length) {
+      toast("GitHub-Update geladen! Seite wird aktualisiert...");
+      setTimeout(() => location.reload(), 600);
+    } else {
+      toast("Bereits auf dem neuesten GitHub-Stand!");
+    }
+  } catch (err) {
+    toast("Update-Fehler: " + err.message);
+  }
+});
+
 setInterval(() => {
   if (editing) return;
   held.forEach((id) => {

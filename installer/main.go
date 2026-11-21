@@ -236,6 +236,7 @@ const (
 	CtrlLiveNextBoard
 	CtrlLiveArmToggle
 	CtrlLiveAlwaysOnTop
+	CtrlLiveGitPull
 	CtrlLiveOpenEditor
 
 	// Shards Manager Controls
@@ -935,17 +936,20 @@ func paintTabLiveCockpit(hdc uintptr, cx, cw, h int32) {
 	btnNext := RECT{btnPrev.Right + sc(220), topBar.Top + sc(6), btnPrev.Right + sc(248), topBar.Bottom - sc(6)}
 	drawButton(hdc, CtrlLiveNextBoard, btnNext, "►", "secondary")
 
-	btnEdit := RECT{topBar.Right - sc(115), topBar.Top + sc(6), topBar.Right - sc(8), topBar.Bottom - sc(6)}
+	btnEdit := RECT{topBar.Right - sc(108), topBar.Top + sc(6), topBar.Right - sc(8), topBar.Bottom - sc(6)}
 	drawButton(hdc, CtrlLiveOpenEditor, btnEdit, "BAUKASTEN", "cyan")
 
-	btnPin := RECT{btnEdit.Left - sc(122), topBar.Top + sc(6), btnEdit.Left - sc(6), topBar.Bottom - sc(6)}
+	btnPull := RECT{btnEdit.Left - sc(102), topBar.Top + sc(6), btnEdit.Left - sc(6), topBar.Bottom - sc(6)}
+	drawButton(hdc, CtrlLiveGitPull, btnPull, "⟳ UPDATE", "secondary")
+
+	btnPin := RECT{btnPull.Left - sc(114), topBar.Top + sc(6), btnPull.Left - sc(6), topBar.Bottom - sc(6)}
 	if app.AlwaysOnTop {
 		drawButton(hdc, CtrlLiveAlwaysOnTop, btnPin, "📌 OVERLAY AN", "amber")
 	} else {
 		drawButton(hdc, CtrlLiveAlwaysOnTop, btnPin, "📌 OVERLAY", "secondary")
 	}
 
-	btnArm := RECT{btnPin.Left - sc(132), topBar.Top + sc(6), btnPin.Left - sc(6), topBar.Bottom - sc(6)}
+	btnArm := RECT{btnPin.Left - sc(126), topBar.Top + sc(6), btnPin.Left - sc(6), topBar.Bottom - sc(6)}
 	if app.LiveArmed {
 		drawButton(hdc, CtrlLiveArmToggle, btnArm, "WAFFEN ARMED", "danger")
 	} else {
@@ -1604,6 +1608,9 @@ func handleControlClick(id int) {
 		}
 	case CtrlLiveAlwaysOnTop:
 		toggleAlwaysOnTop()
+	case CtrlLiveGitPull:
+		app.ToastMsg = "Lade neueste Version direkt von GitHub (Auto-Pull)..."
+		go runGitHubLivePull(true)
 	case CtrlLiveOpenEditor:
 		if !app.ServerRunning {
 			startServer()
@@ -1660,8 +1667,8 @@ func handleControlClick(id int) {
 		_ = os.MkdirAll(app.UserDashDir, 0755)
 		pShellExecuteW.Call(0, u16ptr("open"), u16ptr(app.UserDashDir), 0, 0, SW_SHOWNORMAL)
 	case CtrlBtnReloadDash:
-		reloadDashboards()
-		app.ToastMsg = "Flotte & Shards neu geladen."
+		app.ToastMsg = "Lade neueste Version & Schiffe von GitHub..."
+		go runGitHubLivePull(true)
 
 	// Settings Controls
 	case CtrlBtnPortMinus:
@@ -1941,6 +1948,7 @@ func main() {
 	if app.Mode == ModeLauncher {
 		reloadDashboards()
 		startServer()
+		go runGitHubLivePull(false)
 	}
 
 	pShowWindow.Call(hwnd, SW_SHOWNORMAL)
