@@ -1424,7 +1424,7 @@
           <input type="checkbox" value="kampf">
           <div>
             <b style="color:var(--red);font-size:13px">Kampf & Abwehr</b>
-            <div style="color:var(--muted);font-size:11px">Feindaufschaltung, Gimbal, Flares, Noise, Waffengruppen</div>
+            <div style="color:var(--muted);font-size:11px">Feindaufschaltung, Gimbal, Flares, Noise</div>
           </div>
         </label>
         <label class="subsys-card">
@@ -1627,7 +1627,7 @@ function getIconSVG(id, label) {
   if (s.includes("door") || s.includes("tür") || s.includes("rampe") || s.includes("lock") || s.includes("fracht")) {
     return `<svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/></svg>`;
   }
-  if (s.includes("boost") || s.includes("vtol") || s.includes("antrieb") || s.includes("cruise") || s.includes("decouple")) {
+  if (s.includes("vtol") || s.includes("antrieb") || s.includes("cruise") || s.includes("decouple")) {
     return `<svg viewBox="0 0 24 24"><path d="m13 17 5-5-5-5M6 17l5-5-5-5"/></svg>`;
   }
   return `<svg viewBox="0 0 24 24"><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/></svg>`;
@@ -1697,9 +1697,7 @@ const SUBSYSTEM_TEMPLATES = {
         { id: "target-hostile", sc: "v_target_nearest_hostile", label: "Nächster Feind", hint: "T", keys: ["t"], mode: "tap", color: "red" },
         { id: "gimbal", sc: "v_weapon_gimbals_state_toggle", label: "Gimbal Modus", hint: "G", keys: ["g"], mode: "tap", color: "blue" },
         { id: "flares", sc: "v_weapon_countermeasure_decoy_launch", label: "Flare / Köder", hint: "H", keys: ["h"], mode: "tap", color: "amber" },
-        { id: "noise", sc: "v_weapon_countermeasure_noise_launch", label: "Noise / Störfeld", hint: "J", keys: ["j"], mode: "tap", color: "cyan" },
-        { id: "fire-1", sc: "v_attack1", label: "Waffengruppe 1", hint: "Maus Links", keys: ["mouse1"], mode: "hold", color: "red", danger: true, wide: true },
-        { id: "fire-2", sc: "v_attack2", label: "Waffengruppe 2", hint: "Maus Rechts", keys: ["mouse2"], mode: "hold", color: "red", danger: true, wide: true }
+        { id: "noise", sc: "v_weapon_countermeasure_noise_launch", label: "Noise / Störfeld", hint: "J", keys: ["j"], mode: "tap", color: "cyan" }
       ]
     }]
   }),
@@ -1765,7 +1763,6 @@ const SC_PRESETS = [
   { cat: "start", sc: "v_lights", label: "Scheinwerfer", hint: "L", keys: ["l"], mode: "toggle", color: "amber" },
   { cat: "start", sc: "v_toggle_all_doors", label: "Alle Türen", hint: "R-Alt + K", keys: ["ralt", "k"], mode: "toggle", color: "slate" },
   { cat: "flug", sc: "v_toggle_quantum_mode", label: "Master Mode (SCM/NAV)", hint: "B halten", keys: ["b"], mode: "hold", color: "amber", wide: true },
-  { cat: "flug", sc: "v_afterburner", label: "Boost / Nachbrenner", hint: "L-Shift halten", keys: ["lshift"], mode: "hold", color: "red", wide: true },
   { cat: "flug", sc: "v_ifcs_vector_decoupling_toggle", label: "Decoupled", hint: "C", keys: ["c"], mode: "toggle", color: "blue" },
   { cat: "flug", sc: "v_ifcs_toggle_cruise_control", label: "Cruise Control", hint: "L-Alt + C", keys: ["lalt", "c"], mode: "toggle", color: "blue" },
   { cat: "flug", sc: "v_invoke_ping", label: "Radar Ping", hint: "Tab halten", keys: ["tab"], mode: "hold", color: "cyan" },
@@ -1776,9 +1773,6 @@ const SC_PRESETS = [
   { cat: "kampf", sc: "v_weapon_gimbals_state_toggle", label: "Gimbal Modus", hint: "G", keys: ["g"], mode: "tap", color: "blue" },
   { cat: "kampf", sc: "v_weapon_countermeasure_decoy_launch", label: "Flare / Täuschkörper", hint: "H", keys: ["h"], mode: "tap", color: "amber" },
   { cat: "kampf", sc: "v_weapon_countermeasure_noise_launch", label: "Noise / Störfeld", hint: "J", keys: ["j"], mode: "tap", color: "cyan" },
-  { cat: "kampf", sc: "v_attack1", label: "Waffengruppe 1", hint: "Maus Links", keys: ["mouse1"], mode: "hold", color: "red", danger: true, wide: true },
-  { cat: "kampf", sc: "v_attack2", label: "Waffengruppe 2", hint: "Maus Rechts", keys: ["mouse2"], mode: "hold", color: "red", danger: true, wide: true },
-  { cat: "kampf", sc: "v_eject", label: "Schleudersitz", hint: "R-Alt + Y", keys: ["ralt", "y"], mode: "hold", color: "red", danger: true },
   { cat: "industrie", sc: "v_toggle_mining_mode", label: "Mining-Modus", hint: "M", keys: ["m"], mode: "toggle", color: "amber", wide: true },
   { cat: "industrie", sc: "v_mining_laser", label: "Mining-Laser", hint: "Maus Links", keys: ["mouse1"], mode: "hold", color: "red", danger: true, wide: true },
   { cat: "industrie", sc: "v_mining_use_consumable1", label: "Mining Modul 1", hint: "L-Alt + 1", keys: ["lalt", "1"], mode: "tap", color: "cyan" },
