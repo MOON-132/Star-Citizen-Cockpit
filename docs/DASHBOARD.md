@@ -100,7 +100,7 @@ Eine Seite ohne Button wird beim Speichern abgelehnt.
 | --- | --- |
 | `tap` | Kurzer Druck. Für Schalter, die das Spiel selbst umlegt: Fahrwerk, Lichter, Power-Stufe. |
 | `toggle` | Wie `tap`, plus eine Markierung nur auf dem Gerät. Das Spiel wird nicht ausgelesen. Nach einem Neuladen ist die Markierung weg, auch wenn das Schiff noch im anderen Zustand ist. |
-| `hold` | Taste bleibt unten, solange der Finger darauf liegt. Für Boost, Master Mode, Radar-Ping, Waffen, Laser. Lässt das Gerät los oder schläft es ein, lässt der Server nach `hold_timeout_s` los (Standard 4 Sekunden). |
+| `hold` | Taste bleibt unten, solange der Finger darauf liegt. Für Master Mode, Radar-Ping und Laser. Lässt das Gerät los oder schläft es ein, lässt der Server nach `hold_timeout_s` los (Standard 4 Sekunden). |
 
 Es gibt keinen Modus für Makros, Wartezeiten oder „erst B, dann Maus“. Master Mode ist `hold` auf `b`. Der Sprung selbst bleibt am Spieler.
 
@@ -112,7 +112,7 @@ Nur diese Werte, sonst wird beim Speichern `slate` daraus:
 | --- | --- |
 | `amber` | Hauptaktion, Antrieb, Quantum |
 | `cyan` | Schilde, Fahrwerk, Abwehr |
-| `red` | Feuer, Boost, Gefahr |
+| `red` | Feuer, Gefahr |
 | `blue` | Flugmodus, Ziele |
 | `green` | Systeme einschalten |
 | `slate` | Selten, ohne Dringlichkeit |
@@ -152,7 +152,6 @@ Das sind die häufig genannten Tastatur-Defaults um Alpha 4.10, nicht das Profil
 | VTOL | `k` | toggle | nein |
 | Schiffslichter | `l` | toggle | nein |
 | Nachtsicht | `ralt`, `l` | toggle | nein |
-| Boost | `lshift` | hold | nein |
 | Decoupled | `c` | toggle | nein |
 | Cruise | `lalt`, `c` | toggle | nein |
 | Landeanfrage | `lalt`, `n` | tap | nein |
@@ -173,9 +172,6 @@ Das sind die häufig genannten Tastatur-Defaults um Alpha 4.10, nicht das Profil
 | Flares | `h` | tap | nein |
 | Noise | `j` | tap | nein |
 | Raketenmodus | `mouse3` | tap | nein |
-| Munition nachladen | `lalt`, `1` | tap | nein |
-| Waffengruppe 1 | `mouse1` | hold | ja |
-| Waffengruppe 2 | `mouse2` | hold | ja |
 | Mining-Modus | `m` | toggle | nein |
 | Mining-Laser | `mouse1` | hold | ja |
 | Mining-Modul 1 bis 3 | `lalt` plus `1`, `2` oder `3` | tap | nein |
@@ -236,7 +232,7 @@ Lies diese Datei, bevor du ein Dashboard erzeugst. Halte dich daran, auch wenn d
 3. Keine Felder außerhalb des Schemas. Keine Kommentare, kein Markdown um das JSON, wenn der Nutzer die Datei direkt speichern will.
 4. Ids auf Englisch und als Slug (`mining-laser`). Beschriftungen in der Sprache des Nutzers. `hint` zeigt die Taste so, wie ein Mensch sie liest (`L-Alt + 1`), `keys` die Maschinennamen (`["lalt", "1"]`).
 5. Hat der Nutzer keine eigenen Keybinds genannt, nur die Tabelle oben verwenden und im `hint` und kurz im Begleittext sagen, dass es Defaults um Alpha 4.10 sind und er sie prüfen muss. Fehlende Binds nicht raten. Schildseiten weglassen, bis der Nutzer die Tasten nennt.
-6. Waffenfeuer, Mining-Laser und Abwerfen: `mode` `hold` oder `tap` wie in der Tabelle, `danger` `true`, `color` `red`. Flight Ready, Power und Fahrwerk nicht als Gefahr markieren.
+6. Mining-Laser und Abwerfen: `mode` `hold` oder `tap` wie in der Tabelle, `danger` `true`, `color` `red`. Flight Ready, Power und Fahrwerk nicht als Gefahr markieren.
 7. Keine Selbstzerstörung, kein Schleudersitz, kein Makro, keine Mausbewegung, keine Folge aus mehreren Schritten auf einem Button.
 8. Lieber wenige große Buttons als jede Taste des Spiels. Eine Seite pro Aufgabe: Flug, Energie, Quantum, Kampf, Mining. Gruppen bündeln, was gleichzeitig gebraucht wird.
 9. `wide: true` für die eine Hauptaktion der Seite. Maximal 12 Seiten.

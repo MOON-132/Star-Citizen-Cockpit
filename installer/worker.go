@@ -1008,8 +1008,6 @@ func addSubsystemToActiveShip(subKind string) {
 						{"id": "kmp-gmb", "sc": "v_weapon_gimbals_state_toggle", "label": "Gimbal Modus", "hint": "G", "keys": []string{"g"}, "mode": "tap", "color": "blue"},
 						{"id": "kmp-flr", "sc": "v_weapon_countermeasure_decoy_launch", "label": "Flare / Köder", "hint": "H", "keys": []string{"h"}, "mode": "tap", "color": "amber"},
 						{"id": "kmp-nse", "sc": "v_weapon_countermeasure_noise_launch", "label": "Noise / Störfeld", "hint": "J", "keys": []string{"j"}, "mode": "tap", "color": "cyan"},
-						{"id": "kmp-f1", "sc": "v_attack1", "label": "Waffengruppe 1", "hint": "Maus Links", "keys": []string{"mouse1"}, "mode": "hold", "color": "red", "danger": true, "wide": true},
-						{"id": "kmp-f2", "sc": "v_attack2", "label": "Waffengruppe 2", "hint": "Maus Rechts", "keys": []string{"mouse2"}, "mode": "hold", "color": "red", "danger": true, "wide": true},
 					},
 				},
 			},

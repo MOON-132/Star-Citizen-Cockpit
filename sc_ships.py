@@ -396,9 +396,6 @@ def _build_page_for_tag(tag: str, ship_name: str, mfg: str) -> dict:
                         {"id": "missiles", "label": "Raketen-Operator", "hint": "Mittelklick", "keys": ["mouse3"], "mode": "tap", "color": "amber"},
                         {"id": "flares", "sc": "v_weapon_countermeasure_decoy_launch", "label": "Täuschkörper (Flare)", "hint": "H", "keys": ["h"], "mode": "tap", "color": "amber"},
                         {"id": "noise", "sc": "v_weapon_countermeasure_noise_launch", "label": "Störfeld (Noise)", "hint": "J", "keys": ["j"], "mode": "tap", "color": "cyan"},
-                        {"id": "repool", "label": "Waffen Repool", "hint": "L-Alt + 1", "keys": ["lalt", "1"], "mode": "tap", "color": "slate"},
-                        {"id": "fire1", "sc": "v_attack1", "label": "Waffengruppe 1", "hint": "Linksklick halten", "keys": ["mouse1"], "mode": "hold", "color": "red", "danger": True, "wide": True},
-                        {"id": "fire2", "sc": "v_attack2", "label": "Waffengruppe 2", "hint": "Rechtsklick halten", "keys": ["mouse2"], "mode": "hold", "color": "red", "danger": True, "wide": True},
                     ],
                 }
             ],
@@ -446,7 +443,6 @@ def _build_page_for_tag(tag: str, ship_name: str, mfg: str) -> dict:
                 "title": f"{mfg} // Flugsteuerung & Landung",
                 "buttons": [
                     {"id": "flight-ready", "sc": "v_flightready", "label": "Flight Ready", "hint": "R-Alt + R", "keys": ["ralt", "r"], "mode": "tap", "color": "green", "wide": True},
-                    {"id": "boost", "sc": "v_afterburner", "label": "Boost / Nachbrenner", "hint": "L-Shift halten", "keys": ["lshift"], "mode": "hold", "color": "red", "wide": True},
                     {"id": "gear", "sc": "v_toggle_landing_system", "label": "Fahrwerk", "hint": "N", "keys": ["n"], "mode": "toggle", "color": "cyan"},
                     {"id": "vtol", "sc": "v_vtol_toggle", "label": "VTOL Düsen", "hint": "K", "keys": ["k"], "mode": "toggle", "color": "cyan"},
                     {"id": "decoupled", "sc": "v_ifcs_vector_decoupling_toggle", "label": "Decoupled", "hint": "C", "keys": ["c"], "mode": "toggle", "color": "blue"},

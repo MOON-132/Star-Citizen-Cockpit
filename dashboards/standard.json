@@ -74,17 +74,6 @@
           "title": "Fluglage",
           "buttons": [
             {
-              "id": "boost",
-              "label": "Boost",
-              "hint": "L-Shift halten",
-              "keys": [
-                "lshift"
-              ],
-              "mode": "hold",
-              "color": "red",
-              "wide": true
-            },
-            {
               "id": "decoupled",
               "label": "Decoupled",
               "hint": "C",
@@ -358,46 +347,6 @@
               ],
               "mode": "tap",
               "color": "amber"
-            },
-            {
-              "id": "repool",
-              "label": "Repool",
-              "hint": "L-Alt + 1",
-              "keys": [
-                "lalt",
-                "1"
-              ],
-              "mode": "tap",
-              "color": "slate"
-            }
-          ]
-        },
-        {
-          "title": "Feuer",
-          "buttons": [
-            {
-              "id": "fire1",
-              "label": "Waffengruppe 1",
-              "hint": "Linksklick halten",
-              "keys": [
-                "mouse1"
-              ],
-              "mode": "hold",
-              "color": "red",
-              "danger": true,
-              "wide": true
-            },
-            {
-              "id": "fire2",
-              "label": "Waffengruppe 2",
-              "hint": "Rechtsklick halten",
-              "keys": [
-                "mouse2"
-              ],
-              "mode": "hold",
-              "color": "red",
-              "danger": true,
-              "wide": true
             }
           ]
         }
