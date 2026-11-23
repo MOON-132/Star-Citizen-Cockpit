@@ -1468,6 +1468,112 @@ BOARD = Board(CONFIG["hold_timeout_s"])
 TELEMETRY = TelemetryState()
 
 
+_MAP_KINDS = {"terminal", "lift", "med", "hazard"}
+
+
+def map_static_file(url_path: str) -> Path | None:
+    """Datei unter maps/ oder None. Kein Verzeichnis, kein Pfad nach oben."""
+    prefix = "/maps/"
+    if not url_path.startswith(prefix):
+        return None
+    rel = unquote(url_path[len(prefix):])
+    if not rel or rel.startswith("/") or "\\" in rel:
+        return None
+    parts = rel.split("/")
+    if any(part in {"", ".", ".."} for part in parts):
+        return None
+    root = (APP_ROOT / "maps").resolve()
+    file = root.joinpath(*parts).resolve()
+    if file != root and root not in file.parents:
+        return None
+    if file.suffix.lower() not in {".json", ".js"} or not file.is_file():
+        return None
+    return file
+
+
+def validate_maps() -> list[str]:
+    errors: list[str] = []
+    root = APP_ROOT / "maps"
+    loc = root / "location.js"
+    try:
+        script = loc.read_text(encoding="utf-8")
+    except OSError:
+        script = ""
+    if "SCCockpitLocation" not in script or "return null" not in script:
+        errors.append("maps/location.js ohne Positions-Stub")
+    station_path = root / "qv-breaker" / "station.json"
+    try:
+        station = json.loads(station_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return errors + [f"station.json: {exc}"]
+    ids = [item.get("id") for item in station.get("stations") or [] if isinstance(item, dict)]
+    for need in ("brk-127", "brk-204", "brk-320", "brk-425", "brk-546"):
+        if need not in ids:
+            errors.append(f"Station {need} fehlt")
+    levels = station.get("levels") or []
+    if not isinstance(levels, list) or len(levels) < 4:
+        errors.append("zu wenige Kartenebenen")
+        return errors
+    seen: set[str] = set()
+    for level in levels:
+        if not isinstance(level, dict):
+            errors.append("Ebene ist kein Objekt")
+            continue
+        lid = str(level.get("id") or "")
+        fname = str(level.get("file") or "")
+        if lid in seen:
+            errors.append(f"Ebene doppelt {lid}")
+        seen.add(lid)
+        if not re.fullmatch(r"[a-z0-9-]+\.json", fname):
+            errors.append(f"{lid}: Dateiname")
+            continue
+        path = root / "qv-breaker" / fname
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            errors.append(f"{fname}: {exc}")
+            continue
+        if data.get("id") != lid:
+            errors.append(f"{fname}: id stimmt nicht")
+        w, h = data.get("w"), data.get("h")
+        if not isinstance(w, int) or not isinstance(h, int) or w < 400 or h < 400:
+            errors.append(f"{lid}: Maße")
+        rooms = data.get("rooms") or []
+        if not isinstance(rooms, list) or len(rooms) < 2:
+            errors.append(f"{lid}: Räume")
+        for room in rooms if isinstance(rooms, list) else []:
+            if not isinstance(room, dict):
+                errors.append(f"{lid}: Raum")
+                continue
+            for key in ("id", "label", "x", "y", "w", "h"):
+                if key not in room:
+                    errors.append(f"{lid}/{room.get('id')}: {key}")
+                    break
+        known = {str(item.get("id") or "") for item in levels if isinstance(item, dict)}
+        for marker in data.get("markers") or []:
+            if not isinstance(marker, dict) or marker.get("kind") not in _MAP_KINDS:
+                errors.append(f"{lid}: Markerart {marker.get('kind') if isinstance(marker, dict) else marker}")
+                continue
+            for key in ("id", "label", "x", "y"):
+                if key not in marker:
+                    errors.append(f"{lid}/{marker.get('id')}: {key}")
+                    break
+            go = marker.get("go")
+            if go and go not in known:
+                errors.append(f"{lid}: Markerziel {go}")
+        for room in rooms if isinstance(rooms, list) else []:
+            if isinstance(room, dict) and room.get("go") and room.get("go") not in known:
+                errors.append(f"{lid}: Raumziel {room.get('go')}")
+    needed = {"service", "central-core", "sector-1a", "sector-1b", "sector-2", "laser", "operations", "warehouse", "ring"}
+    if not needed <= seen:
+        errors.append("Kartenebenen unvollständig")
+    sources = station.get("sources") or []
+    blob = json.dumps(sources)
+    if "ko-fi.com/realmrkraken" not in blob or "discord.gg/mrkraken" not in blob:
+        errors.append("MrKraken-Credit fehlt")
+    return errors
+
+
 class Handler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
 
@@ -1541,6 +1647,11 @@ class Handler(BaseHTTPRequestHandler):
                 return
             html_bytes = file.read_bytes().replace(b"\r\n", b"\n")
             self._bytes(200, html_bytes, "text/html; charset=utf-8")
+            return
+        map_file = map_static_file(path)
+        if map_file is not None:
+            kind = "application/json" if map_file.suffix.lower() == ".json" else "text/javascript"
+            self._bytes(200, map_file.read_bytes(), f"{kind}; charset=utf-8")
             return
         if path == "/favicon.ico":
             ico = APP_ROOT / "sc-cockpit.ico"
@@ -1817,6 +1928,17 @@ def self_test() -> int:
     import urllib.error
     import urllib.request
 
+    map_errors = validate_maps()
+    if map_errors:
+        for err in map_errors:
+            log(f"karte: {err}")
+        return 1
+    if map_static_file("/maps/../server.py") is not None or map_static_file("/maps/qv-breaker/../../server.py") is not None:
+        log("Kartendatei lässt Pfad nach oben zu")
+        return 1
+    if map_static_file("/maps/qv-breaker/station.json") is None:
+        log("station.json nicht auffindbar")
+        return 1
     example = json.loads((APP_ROOT / "docs" / "beispiel.json").read_text(encoding="utf-8"))
     cleaned = clean_dashboard(example, example["id"])
     if cleaned["id"] != "beispiel" or not cleaned["pages"]:
@@ -1938,6 +2060,32 @@ def self_test() -> int:
             html = res.read().decode()
         if "Baukasten" not in html:
             raise SystemExit("index.html ohne Baukasten-Editor")
+        if 'id="nav-map"' not in html or "Schematisch" not in html:
+            raise SystemExit("index.html ohne Karte")
+        if "ko-fi.com/realmrkraken" not in html or "discord.gg/mrkraken" not in html:
+            raise SystemExit("index.html ohne Karten-Credit")
+
+        def raw_get(url_path: str) -> tuple[int, bytes]:
+            req = urllib.request.Request(base + url_path, method="GET")
+            try:
+                with urllib.request.urlopen(req) as res:
+                    return res.status, res.read()
+            except urllib.error.HTTPError as exc:
+                return exc.code, exc.read()
+
+        code, body = raw_get("/maps/qv-breaker/station.json")
+        if code != 200 or b"brk-546" not in body:
+            raise SystemExit(f"Kartendaten nicht abrufbar ({code})")
+        code, body = raw_get("/maps/location.js")
+        if code != 200 or b"SCCockpitLocation" not in body:
+            raise SystemExit("Positions-Stub nicht abrufbar")
+        code, _body = raw_get("/maps/../server.py")
+        if code != 404:
+            raise SystemExit("Kartendatei lässt Pfad nach oben zu")
+        legacy = json.loads((APP_ROOT / "dashboards" / "standard.json").read_text(encoding="utf-8"))
+        legacy_errors = validate_layout(legacy)
+        if legacy_errors:
+            raise SystemExit("altes Dashboard standard.json: " + "; ".join(legacy_errors))
     finally:
         server.shutdown()
         server.server_close()

@@ -1,0 +1,32 @@
+{
+  "id": "laser",
+  "label": "Laser",
+  "schematic": true,
+  "w": 1200,
+  "h": 640,
+  "rooms": [
+    {"id": "fab", "label": "Linsenbau", "x": 200, "y": 24, "w": 700, "h": 140},
+    {"id": "control", "label": "Kontrollraum", "x": 24, "y": 200, "w": 210, "h": 180},
+    {"id": "banks", "label": "Katalysatoren", "x": 280, "y": 200, "w": 420, "h": 200},
+    {"id": "align", "label": "Ausrichtung", "x": 740, "y": 200, "w": 240, "h": 190},
+    {"id": "bahn", "label": "Bahn", "x": 280, "y": 450, "w": 420, "h": 130, "go": "warehouse"},
+    {"id": "ring", "label": "zum Ring", "x": 1020, "y": 220, "w": 150, "h": 140, "go": "ring"}
+  ],
+  "corridors": [
+    {"x": 420, "y": 164, "w": 80, "h": 36},
+    {"x": 234, "y": 260, "w": 46, "h": 50},
+    {"x": 700, "y": 260, "w": 40, "h": 50},
+    {"x": 430, "y": 400, "w": 70, "h": 50},
+    {"x": 980, "y": 260, "w": 40, "h": 50}
+  ],
+  "markers": [
+    {"id": "fab", "label": "Fertigung", "kind": "terminal", "x": 480, "y": 90},
+    {"id": "fire", "label": "Abfeuern", "kind": "terminal", "x": 100, "y": 300},
+    {"id": "cat", "label": "Katalysator", "kind": "terminal", "x": 460, "y": 300},
+    {"id": "lens", "label": "Linsen", "kind": "terminal", "x": 860, "y": 290},
+    {"id": "elite-1", "label": "Elite", "kind": "hazard", "x": 360, "y": 330},
+    {"id": "elite-2", "label": "Elite", "kind": "hazard", "x": 600, "y": 280},
+    {"id": "bahn", "label": "Lager", "kind": "lift", "x": 460, "y": 520, "go": "warehouse"},
+    {"id": "ring", "label": "Ring", "kind": "lift", "x": 1080, "y": 290, "go": "ring"}
+  ]
+}

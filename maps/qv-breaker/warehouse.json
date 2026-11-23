@@ -1,0 +1,28 @@
+{
+  "id": "warehouse",
+  "label": "Lager",
+  "schematic": true,
+  "w": 920,
+  "h": 660,
+  "rooms": [
+    {"id": "logi", "label": "Logistik", "x": 24, "y": 24, "w": 210, "h": 130},
+    {"id": "pack", "label": "Rucksack", "x": 24, "y": 190, "w": 150, "h": 100},
+    {"id": "legs", "label": "Beine", "x": 24, "y": 320, "w": 150, "h": 100},
+    {"id": "helm", "label": "Helm", "x": 24, "y": 400, "w": 150, "h": 110},
+    {"id": "kern", "label": "Kern", "x": 250, "y": 170, "w": 300, "h": 260},
+    {"id": "bahn", "label": "Bahn", "x": 640, "y": 70, "w": 170, "h": 440, "go": "laser"}
+  ],
+  "corridors": [
+    {"x": 180, "y": 130, "w": 90, "h": 50},
+    {"x": 174, "y": 220, "w": 76, "h": 40},
+    {"x": 174, "y": 350, "w": 76, "h": 40},
+    {"x": 174, "y": 410, "w": 76, "h": 40},
+    {"x": 550, "y": 270, "w": 90, "h": 50}
+  ],
+  "markers": [
+    {"id": "code-a", "label": "Code A", "kind": "terminal", "x": 100, "y": 90},
+    {"id": "cat", "label": "Katalysator", "kind": "terminal", "x": 360, "y": 280},
+    {"id": "elite", "label": "Elite", "kind": "hazard", "x": 460, "y": 340},
+    {"id": "bahn", "label": "Laser", "kind": "lift", "x": 720, "y": 280, "go": "laser"}
+  ]
+}

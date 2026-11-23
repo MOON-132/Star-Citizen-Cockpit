@@ -1,0 +1,35 @@
+{
+  "id": "sector-2",
+  "label": "Sektor 2",
+  "schematic": true,
+  "w": 1180,
+  "h": 840,
+  "rooms": [
+    {"id": "bridge", "label": "Brücke", "x": 30, "y": 24, "w": 210, "h": 90, "go": "central-core"},
+    {"id": "upper", "label": "Kern", "x": 900, "y": 24, "w": 210, "h": 90, "go": "central-core"},
+    {"id": "ms02", "label": "MS-S2-02", "x": 24, "y": 250, "w": 170, "h": 150},
+    {"id": "abbau", "label": "Abbau", "x": 220, "y": 180, "w": 480, "h": 360},
+    {"id": "stollen", "label": "Stollen", "x": 780, "y": 220, "w": 180, "h": 150},
+    {"id": "ms03", "label": "MS-S2-03", "x": 820, "y": 480, "w": 270, "h": 180},
+    {"id": "air", "label": "Luftschleuse", "x": 900, "y": 710, "w": 190, "h": 96}
+  ],
+  "corridors": [
+    {"x": 240, "y": 48, "w": 660, "h": 40},
+    {"x": 80, "y": 114, "w": 44, "h": 136},
+    {"x": 194, "y": 300, "w": 26, "h": 50},
+    {"x": 700, "y": 270, "w": 80, "h": 44},
+    {"x": 900, "y": 114, "w": 44, "h": 106},
+    {"x": 860, "y": 370, "w": 44, "h": 110},
+    {"x": 960, "y": 660, "w": 44, "h": 50}
+  ],
+  "markers": [
+    {"id": "cap-1", "label": "Kondensator", "kind": "terminal", "x": 340, "y": 280},
+    {"id": "cap-2", "label": "Kondensator", "kind": "terminal", "x": 520, "y": 400},
+    {"id": "cap-3", "label": "Kondensator", "kind": "terminal", "x": 920, "y": 560},
+    {"id": "elite-1", "label": "Elite", "kind": "hazard", "x": 400, "y": 420},
+    {"id": "elite-2", "label": "Elite", "kind": "hazard", "x": 860, "y": 290},
+    {"id": "bridge", "label": "Brücke", "kind": "lift", "x": 110, "y": 70, "go": "central-core"},
+    {"id": "upper", "label": "Kern", "kind": "lift", "x": 990, "y": 70, "go": "central-core"},
+    {"id": "air", "label": "Schleuse", "kind": "lift", "x": 980, "y": 760}
+  ]
+}

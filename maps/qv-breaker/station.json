@@ -1,0 +1,50 @@
+{
+  "id": "qv-breaker",
+  "label": "QV Breaker",
+  "system": "Nyx",
+  "region": "Keeger Belt",
+  "schematic": true,
+  "sharedLayout": true,
+  "stations": [
+    {"id": "brk-127", "label": "BRK-127"},
+    {"id": "brk-204", "label": "BRK-204"},
+    {"id": "brk-320", "label": "BRK-320"},
+    {"id": "brk-425", "label": "BRK-425"},
+    {"id": "brk-546", "label": "BRK-546"}
+  ],
+  "levels": [
+    {"id": "service", "file": "service.json", "label": "Service-Eingang"},
+    {"id": "central-core", "file": "central-core.json", "label": "Kern & Power"},
+    {"id": "sector-1a", "file": "sector-1a.json", "label": "Sektor 1-A"},
+    {"id": "sector-1b", "file": "sector-1b.json", "label": "Sektor 1-B"},
+    {"id": "sector-2", "file": "sector-2.json", "label": "Sektor 2"},
+    {"id": "laser", "file": "laser.json", "label": "Laser"},
+    {"id": "operations", "file": "operations.json", "label": "Operations"},
+    {"id": "warehouse", "file": "warehouse.json", "label": "Lager"},
+    {"id": "ring", "file": "ring.json", "label": "Ring"}
+  ],
+  "confidence": {
+    "service": "high",
+    "central-core": "high",
+    "sector-1a": "high",
+    "sector-1b": "high",
+    "sector-2": "medium",
+    "laser": "high",
+    "operations": "high",
+    "warehouse": "high",
+    "ring": "high"
+  },
+  "sources": [
+    {
+      "title": "MrKraken: Breaker Stations Companion Guide",
+      "url": "https://ko-fi.com/realmrkraken",
+      "discord": "https://discord.gg/mrkraken",
+      "used": "Room positions, connections, relative scale and ring order. Redrawn as our own schematic. The guide images and icons are not included."
+    },
+    {
+      "title": "Star Citizen Wiki: QV Breaker stations",
+      "url": "https://starcitizen.tools/QV_Breaker_stations",
+      "used": "Beacon stations BRK-127/204/320/425/546"
+    }
+  ]
+}

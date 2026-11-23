@@ -1,0 +1,26 @@
+{
+  "id": "operations",
+  "label": "Operations",
+  "schematic": true,
+  "w": 820,
+  "h": 460,
+  "rooms": [
+    {"id": "station", "label": "Station", "x": 280, "y": 20, "w": 210, "h": 84, "go": "service"},
+    {"id": "code", "label": "Code C", "x": 24, "y": 130, "w": 180, "h": 120},
+    {"id": "hall", "label": "Korridor", "x": 230, "y": 130, "w": 360, "h": 140},
+    {"id": "side", "label": "Nebenraum", "x": 620, "y": 140, "w": 170, "h": 120},
+    {"id": "refs", "label": "Refraktoren", "x": 300, "y": 320, "w": 220, "h": 100, "go": "ring"}
+  ],
+  "corridors": [
+    {"x": 360, "y": 104, "w": 50, "h": 26},
+    {"x": 204, "y": 170, "w": 26, "h": 50},
+    {"x": 590, "y": 175, "w": 30, "h": 44},
+    {"x": 380, "y": 270, "w": 50, "h": 50}
+  ],
+  "markers": [
+    {"id": "code-c", "label": "Code C", "kind": "terminal", "x": 90, "y": 200},
+    {"id": "ring", "label": "Ring", "kind": "lift", "x": 400, "y": 200, "go": "ring"},
+    {"id": "station", "label": "Station", "kind": "lift", "x": 370, "y": 60, "go": "service"},
+    {"id": "refs", "label": "Ring", "kind": "lift", "x": 390, "y": 370, "go": "ring"}
+  ]
+}

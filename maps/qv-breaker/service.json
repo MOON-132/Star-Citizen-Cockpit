@@ -1,0 +1,24 @@
+{
+  "id": "service",
+  "label": "Service-Eingang",
+  "schematic": true,
+  "w": 760,
+  "h": 520,
+  "rooms": [
+    {"id": "neben", "label": "Nebenraum", "x": 36, "y": 150, "w": 120, "h": 140},
+    {"id": "flur", "label": "Flur", "x": 180, "y": 36, "w": 280, "h": 84},
+    {"id": "aufzug", "label": "Aufzug", "x": 500, "y": 28, "w": 210, "h": 120, "go": "central-core"},
+    {"id": "halle", "label": "Halle", "x": 180, "y": 156, "w": 300, "h": 170},
+    {"id": "unten", "label": "Unterhalle", "x": 80, "y": 370, "w": 500, "h": 120}
+  ],
+  "corridors": [
+    {"x": 280, "y": 120, "w": 70, "h": 36},
+    {"x": 156, "y": 190, "w": 24, "h": 60},
+    {"x": 460, "y": 56, "w": 40, "h": 40},
+    {"x": 270, "y": 326, "w": 90, "h": 44}
+  ],
+  "markers": [
+    {"id": "ring", "label": "Ring", "kind": "lift", "x": 400, "y": 250, "go": "ring"},
+    {"id": "aufzug", "label": "Kern", "kind": "lift", "x": 590, "y": 90, "go": "central-core"}
+  ]
+}

@@ -143,7 +143,7 @@ def build_payload_zip(ico_path: Path, zip_path: Path) -> None:
         # Include custom SC icon so desktop/start menu shortcuts get the SC icon
         zf.write(ico_path, arcname="sc-cockpit.ico")
 
-        for folder_name in ("dashboards", "docs"):
+        for folder_name in ("dashboards", "docs", "maps"):
             folder = ROOT / folder_name
             for p in sorted(folder.rglob("*")):
                 if p.is_dir():

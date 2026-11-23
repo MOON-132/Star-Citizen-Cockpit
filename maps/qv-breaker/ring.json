@@ -1,0 +1,35 @@
+{
+  "id": "ring",
+  "label": "Ring",
+  "schematic": true,
+  "w": 1040,
+  "h": 760,
+  "rooms": [
+    {"id": "ops", "label": "Operations", "x": 390, "y": 20, "w": 230, "h": 100, "go": "operations"},
+    {"id": "refa", "label": "Refraktor A", "x": 780, "y": 110, "w": 210, "h": 110},
+    {"id": "refb", "label": "Refraktor B", "x": 850, "y": 310, "w": 160, "h": 140},
+    {"id": "refc", "label": "Refraktor C", "x": 700, "y": 560, "w": 220, "h": 110},
+    {"id": "laser", "label": "Laser", "x": 70, "y": 540, "w": 230, "h": 120, "go": "laser"},
+    {"id": "service", "label": "Service", "x": 24, "y": 230, "w": 200, "h": 120, "go": "service"}
+  ],
+  "corridors": [
+    {"x": 610, "y": 50, "w": 200, "h": 40},
+    {"x": 790, "y": 70, "w": 44, "h": 50},
+    {"x": 880, "y": 220, "w": 40, "h": 90},
+    {"x": 860, "y": 450, "w": 40, "h": 50},
+    {"x": 760, "y": 490, "w": 140, "h": 40},
+    {"x": 780, "y": 530, "w": 40, "h": 30},
+    {"x": 300, "y": 590, "w": 400, "h": 40},
+    {"x": 130, "y": 350, "w": 44, "h": 190},
+    {"x": 110, "y": 50, "w": 40, "h": 180},
+    {"x": 150, "y": 50, "w": 240, "h": 40}
+  ],
+  "markers": [
+    {"id": "ops", "label": "Halt", "kind": "lift", "x": 480, "y": 70, "go": "operations"},
+    {"id": "a", "label": "Refraktor A", "kind": "terminal", "x": 860, "y": 165},
+    {"id": "b", "label": "Refraktor B", "kind": "terminal", "x": 910, "y": 380},
+    {"id": "c", "label": "Refraktor C", "kind": "terminal", "x": 790, "y": 620},
+    {"id": "laser", "label": "Halt", "kind": "lift", "x": 160, "y": 600, "go": "laser"},
+    {"id": "service", "label": "Halt", "kind": "lift", "x": 100, "y": 290, "go": "service"}
+  ]
+}
