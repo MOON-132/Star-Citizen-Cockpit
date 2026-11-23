@@ -1,0 +1,53 @@
+{
+  "id": "qv-breaker",
+  "label": "QV Breaker",
+  "system": "Nyx",
+  "region": "Keeger Belt",
+  "schematic": true,
+  "sharedLayout": true,
+  "stations": [
+    {"id": "brk-127", "label": "BRK-127"},
+    {"id": "brk-204", "label": "BRK-204"},
+    {"id": "brk-320", "label": "BRK-320"},
+    {"id": "brk-425", "label": "BRK-425"},
+    {"id": "brk-546", "label": "BRK-546"}
+  ],
+  "levels": [
+    {"id": "zugang", "file": "zugang.json", "label": "Zugang"},
+    {"id": "power-core", "file": "power-core.json", "label": "Power Core"},
+    {"id": "operations", "file": "operations.json", "label": "Operations"},
+    {"id": "laser", "file": "laser.json", "label": "Laser-Bereich"},
+    {"id": "lager", "file": "lager.json", "label": "Lager (Bahn)"},
+    {"id": "gondel", "file": "gondel.json", "label": "Gondel"}
+  ],
+  "confidence": {
+    "zugang": "medium",
+    "power-core": "medium",
+    "operations": "medium",
+    "laser": "medium",
+    "lager": "medium",
+    "gondel": "low"
+  },
+  "sources": [
+    {
+      "title": "Star Citizen Wiki: QV Breaker stations",
+      "url": "https://starcitizen.tools/QV_Breaker_stations",
+      "used": "Beacon stations BRK-127/204/320/425/546 and the restore sequence"
+    },
+    {
+      "title": "Citizen Starter Guide, Rock Breaker, patch 4.10 text",
+      "url": "https://citizen-starter-guide.com/rock-breaker-interactive-guide/",
+      "used": "Side entrances, sector doors, capacitor robots, code areas, lens bay, storage control room. Images were not copied."
+    },
+    {
+      "title": "SCANZ Rock Breaker guide",
+      "url": "https://scanz.space/news/guides/complete-guide-to-rock-breaker-cracker",
+      "used": "Lobby medbay, gondola by the pads, operations console, laser left/right split, storage stairs"
+    },
+    {
+      "title": "The Impound QV Breaker Station guide",
+      "url": "https://theimpound.com/blogs/guides/star-citizen-qv-breaker-station-guide",
+      "used": "Rocky core, outer gondola, airlock entry, storage catalysts"
+    }
+  ]
+}

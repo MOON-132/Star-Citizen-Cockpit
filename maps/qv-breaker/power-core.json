@@ -1,0 +1,45 @@
+{
+  "id": "power-core",
+  "label": "Power Core",
+  "schematic": true,
+  "w": 1200,
+  "h": 700,
+  "rooms": [
+    {"id": "aussen2", "label": "Außentür Sektor 2", "x": 16, "y": 20, "w": 210, "h": 100, "go": "zugang"},
+    {"id": "aufzug", "label": "Aufzug", "x": 360, "y": 20, "w": 230, "h": 110, "go": "zugang"},
+    {"id": "sicherung", "label": "Sicherungstür", "x": 940, "y": 20, "w": 230, "h": 100},
+    {"id": "sektor2", "label": "Sektor 2", "x": 16, "y": 190, "w": 270, "h": 240},
+    {"id": "kern", "label": "Power Core", "x": 350, "y": 180, "w": 310, "h": 260},
+    {"id": "sektor1", "label": "Sektor 1", "x": 720, "y": 190, "w": 200, "h": 240},
+    {"id": "steg", "label": "Steg", "x": 390, "y": 510, "w": 230, "h": 150},
+    {"id": "aussen1", "label": "Außentür Sektor 1", "x": 720, "y": 510, "w": 200, "h": 120, "go": "zugang"},
+    {"id": "schacht", "label": "Stillgelegter Aufzug", "x": 940, "y": 180, "w": 230, "h": 120},
+    {"id": "kisten", "label": "Kistenraum", "x": 940, "y": 380, "w": 230, "h": 150}
+  ],
+  "corridors": [
+    {"x": 80, "y": 120, "w": 60, "h": 70},
+    {"x": 440, "y": 130, "w": 60, "h": 50},
+    {"x": 286, "y": 270, "w": 64, "h": 56},
+    {"x": 660, "y": 270, "w": 60, "h": 56},
+    {"x": 590, "y": 48, "w": 350, "h": 44},
+    {"x": 1030, "y": 120, "w": 50, "h": 60},
+    {"x": 1030, "y": 300, "w": 50, "h": 80},
+    {"x": 470, "y": 440, "w": 56, "h": 70},
+    {"x": 790, "y": 430, "w": 50, "h": 80}
+  ],
+  "markers": [
+    {"id": "aufzug", "label": "Aufzug", "kind": "lift", "x": 430, "y": 80, "go": "zugang"},
+    {"id": "aussen2", "label": "Zugang", "kind": "lift", "x": 80, "y": 70, "go": "zugang"},
+    {"id": "aussen1", "label": "Zugang", "kind": "lift", "x": 790, "y": 570, "go": "zugang"},
+    {"id": "sicherung", "label": "Sicherung", "kind": "terminal", "x": 1020, "y": 70},
+    {"id": "slots", "label": "Kondensatoren", "kind": "terminal", "x": 430, "y": 280},
+    {"id": "hebel", "label": "Power-Hebel", "kind": "terminal", "x": 560, "y": 360},
+    {"id": "unten", "label": "Kondensator", "kind": "terminal", "x": 500, "y": 400},
+    {"id": "code", "label": "Refraktor-Code", "kind": "terminal", "x": 470, "y": 590},
+    {"id": "s2-cap", "label": "Kondensator", "kind": "terminal", "x": 80, "y": 280},
+    {"id": "s2", "label": "Gegner", "kind": "hazard", "x": 180, "y": 360},
+    {"id": "s1-cap", "label": "Kondensator", "kind": "terminal", "x": 780, "y": 280},
+    {"id": "s1", "label": "Gegner", "kind": "hazard", "x": 860, "y": 360},
+    {"id": "schacht", "label": "Aufzug", "kind": "lift", "x": 1020, "y": 240}
+  ]
+}

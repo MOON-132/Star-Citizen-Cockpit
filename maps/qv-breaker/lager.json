@@ -1,0 +1,23 @@
+{
+  "id": "lager",
+  "label": "Lager (Bahn)",
+  "schematic": true,
+  "w": 1080,
+  "h": 660,
+  "rooms": [
+    {"id": "bahn", "label": "Bahn-Station", "x": 30, "y": 220, "w": 240, "h": 210, "go": "laser"},
+    {"id": "halle", "label": "Lagerhalle", "x": 340, "y": 70, "w": 430, "h": 500},
+    {"id": "leitstand", "label": "Leitstand", "x": 840, "y": 150, "w": 210, "h": 300}
+  ],
+  "corridors": [
+    {"x": 270, "y": 290, "w": 70, "h": 70},
+    {"x": 770, "y": 250, "w": 70, "h": 70}
+  ],
+  "markers": [
+    {"id": "bahn", "label": "Bahn", "kind": "lift", "x": 120, "y": 320, "go": "laser"},
+    {"id": "kats", "label": "Katalysatoren", "kind": "terminal", "x": 520, "y": 320},
+    {"id": "gegner", "label": "Gegner", "kind": "hazard", "x": 460, "y": 180},
+    {"id": "frei", "label": "Freigabe", "kind": "terminal", "x": 910, "y": 240},
+    {"id": "code", "label": "Refraktor-Code", "kind": "terminal", "x": 910, "y": 340}
+  ]
+}

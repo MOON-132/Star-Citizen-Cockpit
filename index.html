@@ -167,6 +167,7 @@
     display: inline-flex;
     align-items: center;
     gap: 7px;
+    white-space: nowrap;
     clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
     transition: all 0.15s ease;
   }
@@ -279,6 +280,7 @@
   /* =========================================================================
      QUICK HANGAR SWITCHER BAR (SHOWS ONLY USER'S FAVORITED HANGAR SHIPS ★)
      ========================================================================= */
+  .gg-fleet-bar[hidden] { display: none; }
   .gg-fleet-bar {
     position: relative;
     z-index: 12;
@@ -1124,6 +1126,9 @@
     box-shadow: 0 0 24px var(--cyan-glow);
   }
 
+  @media (max-width: 1180px) {
+    .gg-topbar { flex-wrap: wrap; }
+  }
   @media (max-width: 900px) {
     .gg-topbar { flex-wrap: wrap; }
     .gg-tele-strip { display: none; }
@@ -1151,6 +1156,135 @@
     .page-power .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .page-power .key.wide, .page-power .key.span-2, .page-power .key.span-3 { grid-column: 1 / -1; }
   }
+
+  #map-view {
+    position: relative;
+    z-index: 10;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    overflow: hidden;
+    background: rgba(6, 10, 16, 0.96);
+  }
+  #map-view[hidden] { display: none; }
+  .map-side {
+    width: 212px;
+    flex: 0 0 212px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+    border-right: 1px solid var(--line);
+    background: rgba(8, 13, 22, 0.96);
+    overflow: auto;
+  }
+  .map-kicker {
+    margin: 6px 0 0;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .map-side select { width: 100%; text-transform: none; letter-spacing: 0.04em; }
+  .map-floors { display: flex; flex-direction: column; gap: 6px; }
+  .map-floor {
+    height: 40px;
+    padding: 0 12px;
+    text-align: left;
+    text-transform: none;
+    letter-spacing: 0.04em;
+  }
+  .map-floor[aria-pressed="true"] {
+    background: var(--amber);
+    border-color: var(--amber);
+    color: #1a1204;
+    box-shadow: 0 0 14px var(--amber-glow);
+  }
+  .map-legend {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .map-legend li { display: flex; align-items: center; gap: 8px; }
+  .map-legend i {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: block;
+    flex: 0 0 auto;
+  }
+  .map-legend .terminal { background: var(--amber); }
+  .map-legend .lift { background: var(--blue); }
+  .map-legend .med { background: var(--green); }
+  .map-legend .hazard { background: var(--red); }
+  .map-vp {
+    flex: 1;
+    min-width: 0;
+    position: relative;
+    overflow: hidden;
+    touch-action: none;
+    cursor: grab;
+    background-color: #070d16;
+    background-image: radial-gradient(rgba(120, 156, 190, 0.28) 1px, transparent 1px);
+    background-size: 22px 22px;
+  }
+  .map-vp.dragging { cursor: grabbing; }
+  .map-stage { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+  .map-badge {
+    position: absolute;
+    left: 12px;
+    top: 12px;
+    z-index: 2;
+    pointer-events: none;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border: 1px solid var(--line);
+    background: rgba(7, 12, 20, 0.82);
+    padding: 4px 8px;
+  }
+  .map-zoom {
+    position: absolute;
+    right: 12px;
+    top: 12px;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .map-zoom button {
+    width: 42px;
+    height: 42px;
+    padding: 0;
+    font-size: 18px;
+    letter-spacing: 0;
+  }
+  #map-zfit { font-size: 11px; letter-spacing: 0.06em; }
+  @media (max-width: 720px) {
+    .gg-mode-nav { max-width: 100%; flex-wrap: wrap; }
+    .mode-tab { flex: 0 0 auto; padding: 0 10px; }
+    #map-view { flex-direction: column; }
+    .map-side {
+      width: 100%;
+      flex: 0 0 auto;
+      max-height: 42%;
+      border-right: none;
+      border-bottom: 1px solid var(--line);
+      padding: 8px 10px;
+    }
+    .map-side { max-width: 100%; min-width: 0; }
+    .map-floors { flex-direction: row; overflow-x: auto; max-width: 100%; }
+    .map-floor { width: auto; flex: 0 0 auto; white-space: nowrap; }
+    .map-legend { flex-direction: row; flex-wrap: wrap; gap: 10px 14px; }
+  }
 </style>
 </head>
 <body>
@@ -1173,6 +1307,9 @@
   <nav class="gg-mode-nav" aria-label="Hauptnavigation">
     <button id="nav-cockpit" class="mode-tab active" type="button">
       <span>► LIVE COCKPIT</span>
+    </button>
+    <button id="nav-map" class="mode-tab" type="button">
+      <span>Karte</span>
     </button>
     <button id="nav-hangar" class="mode-tab hangar-tab" type="button">
       <span>★ HANGAR & SCHIFFE</span>
@@ -1207,7 +1344,7 @@
 </header>
 
 <!-- 1-Tap Hangar Quick Switcher Bar (Shows user's favorited Hangar ships ★) -->
-<div class="gg-fleet-bar">
+<div id="fleet-bar" class="gg-fleet-bar">
   <div class="hangar-bar-label">
     <span>★ MEIN HANGAR:</span>
   </div>
@@ -1478,6 +1615,31 @@
   </div>
 </section>
 
+<section id="map-view" hidden>
+  <aside class="map-side">
+    <div class="map-kicker">Ort</div>
+    <select id="map-station" aria-label="Station"></select>
+    <div class="map-kicker">Ebene</div>
+    <div id="map-floors" class="map-floors"></div>
+    <div class="map-kicker">Legende</div>
+    <ul class="map-legend">
+      <li><i class="terminal"></i>Ziel / Terminal</li>
+      <li><i class="lift"></i>Aufzug / Gondel</li>
+      <li><i class="med"></i>Medbay</li>
+      <li><i class="hazard"></i>Gefahr</li>
+    </ul>
+  </aside>
+  <div id="map-vp" class="map-vp">
+    <div id="map-stage" class="map-stage"></div>
+    <div class="map-badge">Schematisch</div>
+    <div class="map-zoom">
+      <button id="map-zin" class="gg-btn" type="button" aria-label="Vergrößern">+</button>
+      <button id="map-zout" class="gg-btn" type="button" aria-label="Verkleinern">−</button>
+      <button id="map-zfit" class="gg-btn" type="button" aria-label="Einpassen">Fit</button>
+    </div>
+  </div>
+</section>
+
 <!-- Main GameGlass Shard Workspace -->
 <div id="cockpit-workspace" class="gg-workspace">
   <aside class="gg-rail">
@@ -1505,6 +1667,7 @@
 
 <div id="toast" hidden></div>
 
+<script src="/maps/location.js"></script>
 <script>
 function getIconSVG(id, label) {
   const s = ((id || "") + " " + (label || "")).toLowerCase();
@@ -1733,7 +1896,10 @@ const toastEl = document.getElementById("toast");
 const armEl = document.getElementById("arm");
 const editEl = document.getElementById("edit");
 const navCockpitEl = document.getElementById("nav-cockpit");
+const navMapEl = document.getElementById("nav-map");
 const navHangarEl = document.getElementById("nav-hangar");
+const mapViewEl = document.getElementById("map-view");
+const fleetBarEl = document.getElementById("fleet-bar");
 const hangarViewEl = document.getElementById("hangar-view");
 const cockpitWorkspaceEl = document.getElementById("cockpit-workspace");
 const boardEl = document.getElementById("board");
@@ -1793,51 +1959,34 @@ function parseKeys(text) {
   return text.split(/[+,]/).map((part) => part.trim().toLowerCase()).filter(Boolean);
 }
 
-// Switch between LIVE COCKPIT, HANGAR & SCHIFFE, and BAUKASTEN
+// Switch between LIVE COCKPIT, KARTE, HANGAR & SCHIFFE, and BAUKASTEN
 function setViewMode(mode) {
-  if (mode === "hangar") {
-    hangarOpen = true;
-    editing = false;
-    hangarViewEl.hidden = false;
-    cockpitWorkspaceEl.hidden = true;
-    editorEl.hidden = true;
-    document.body.classList.remove("editing");
-    navHangarEl.classList.add("active");
-    navCockpitEl.classList.remove("active");
-    editEl.classList.remove("active");
-    editEl.setAttribute("aria-pressed", "false");
-    renderHangarGrid();
-  } else if (mode === "edit") {
-    hangarOpen = false;
-    editing = true;
-    hangarViewEl.hidden = true;
-    cockpitWorkspaceEl.hidden = false;
-    editorEl.hidden = false;
-    document.body.classList.add("editing");
-    navHangarEl.classList.remove("active");
-    navCockpitEl.classList.remove("active");
-    editEl.classList.add("active");
-    editEl.setAttribute("aria-pressed", "true");
+  hangarOpen = mode === "hangar";
+  editing = mode === "edit";
+  const mapOn = mode === "map";
+  hangarViewEl.hidden = !hangarOpen;
+  mapViewEl.hidden = !mapOn;
+  fleetBarEl.hidden = mapOn;
+  cockpitWorkspaceEl.hidden = hangarOpen || mapOn;
+  editorEl.hidden = !editing;
+  document.body.classList.toggle("editing", editing);
+  navHangarEl.classList.toggle("active", hangarOpen);
+  navMapEl.classList.toggle("active", mapOn);
+  navCockpitEl.classList.toggle("active", mode === "cockpit");
+  editEl.classList.toggle("active", editing);
+  editEl.setAttribute("aria-pressed", editing ? "true" : "false");
+  if (hangarOpen) renderHangarGrid();
+  if (editing) {
     renderPresets();
     held.clear();
     api("/api/release", { method: "POST", headers: headers(), body: "{}" }).catch(() => {});
-    if (current) render(current, activePageIndex());
-  } else {
-    hangarOpen = false;
-    editing = false;
-    hangarViewEl.hidden = true;
-    cockpitWorkspaceEl.hidden = false;
-    editorEl.hidden = true;
-    document.body.classList.remove("editing");
-    navHangarEl.classList.remove("active");
-    navCockpitEl.classList.add("active");
-    editEl.classList.remove("active");
-    editEl.setAttribute("aria-pressed", "false");
-    if (current) render(current, activePageIndex());
   }
+  if (!hangarOpen && !mapOn && current) render(current, activePageIndex());
+  if (mapOn) ensureMap();
 }
 
 navCockpitEl.addEventListener("click", () => setViewMode("cockpit"));
+navMapEl.addEventListener("click", () => setViewMode("map"));
 navHangarEl.addEventListener("click", () => setViewMode("hangar"));
 document.getElementById("btn-manage-hangar").addEventListener("click", () => setViewMode("hangar"));
 document.getElementById("close-hangar-btn").addEventListener("click", () => setViewMode("cockpit"));
@@ -2798,6 +2947,260 @@ document.addEventListener("visibilitychange", () => {
     fetch("/api/release", { method: "POST", headers: headers(), body: "{}", keepalive: true }).catch(() => {});
   }
 });
+
+const MAP_COLORS = {
+  terminal: "#ffab00",
+  lift: "#3d8bff",
+  med: "#00e676",
+  hazard: "#ff3d57"
+};
+const mapStationEl = document.getElementById("map-station");
+const mapFloorsEl = document.getElementById("map-floors");
+const mapVpEl = document.getElementById("map-vp");
+const mapStageEl = document.getElementById("map-stage");
+let mapCatalog = null;
+let mapLevelId = "operations";
+let mapWorld = { w: 1000, h: 640 };
+let mapScale = 1;
+let mapTx = 0;
+let mapTy = 0;
+let mapPointers = new Map();
+let mapPinch = null;
+let mapMoved = 0;
+
+function applyMapTransform() {
+  mapStageEl.style.transform = `translate(${mapTx}px, ${mapTy}px) scale(${mapScale})`;
+}
+
+function fitMap() {
+  const vw = mapVpEl.clientWidth;
+  const vh = mapVpEl.clientHeight;
+  if (!vw || !vh) return;
+  const pad = 28;
+  const reserveR = 58;
+  mapScale = Math.min((vw - pad - reserveR) / mapWorld.w, (vh - pad) / mapWorld.h);
+  mapScale = Math.max(0.2, mapScale);
+  mapTx = (vw - reserveR - mapWorld.w * mapScale) / 2;
+  mapTy = (vh - mapWorld.h * mapScale) / 2;
+  applyMapTransform();
+}
+
+function zoomMapAt(clientX, clientY, nextScale) {
+  const rect = mapVpEl.getBoundingClientRect();
+  const px = clientX - rect.left;
+  const py = clientY - rect.top;
+  const next = Math.min(5, Math.max(0.3, nextScale));
+  const k = next / mapScale;
+  mapTx = px - (px - mapTx) * k;
+  mapTy = py - (py - mapTy) * k;
+  mapScale = next;
+  applyMapTransform();
+}
+
+function svgEl(name, attrs) {
+  const node = document.createElementNS("http://www.w3.org/2000/svg", name);
+  Object.entries(attrs).forEach(([key, value]) => node.setAttribute(key, String(value)));
+  return node;
+}
+
+function mapLocation() {
+  try {
+    const src = window.SCCockpitLocation;
+    return src && typeof src.where === "function" ? src.where() : null;
+  } catch (_err) {
+    return null;
+  }
+}
+
+function paintYou() {
+  const prev = mapStageEl.querySelector("#map-you");
+  if (prev) prev.remove();
+  const svg = mapStageEl.querySelector("svg");
+  if (!svg) return;
+  const loc = mapLocation();
+  const station = mapStationEl.value;
+  if (!loc || loc.levelId !== mapLevelId) return;
+  if (loc.stationId && loc.stationId !== station) return;
+  if (typeof loc.x !== "number" || typeof loc.y !== "number") return;
+  const group = svgEl("g", { id: "map-you" });
+  group.appendChild(svgEl("circle", {
+    cx: loc.x, cy: loc.y, r: 12, fill: "none", stroke: "#00e676",
+    "stroke-width": 2, "stroke-dasharray": "3 2"
+  }));
+  if (loc.label) {
+    const text = svgEl("text", {
+      x: loc.x + 16, y: loc.y + 4, fill: "#00e676", "font-size": 13,
+      "font-family": "Segoe UI, sans-serif"
+    });
+    text.textContent = String(loc.label);
+    group.appendChild(text);
+  }
+  svg.appendChild(group);
+}
+
+function drawLevel(level) {
+  mapWorld = { w: level.w || 1000, h: level.h || 640 };
+  const svg = svgEl("svg", {
+    width: mapWorld.w,
+    height: mapWorld.h,
+    viewBox: `0 0 ${mapWorld.w} ${mapWorld.h}`
+  });
+  (level.corridors || []).forEach((part) => {
+    svg.appendChild(svgEl("rect", {
+      x: part.x, y: part.y, width: part.w, height: part.h, rx: 8,
+      fill: "#101a28", stroke: "#2c4d6e", "stroke-width": 2
+    }));
+  });
+  (level.rooms || []).forEach((room) => {
+    const group = svgEl("g", {});
+    if (room.go) group.setAttribute("data-go", room.go);
+    group.appendChild(svgEl("rect", {
+      x: room.x, y: room.y, width: room.w, height: room.h, rx: 14,
+      fill: "#132033", stroke: "#3e6a92", "stroke-width": 2
+    }));
+    const text = svgEl("text", {
+      x: room.x + 14, y: room.y + 24, fill: "#c5d5e4", "font-size": 14,
+      "font-family": "Segoe UI, sans-serif"
+    });
+    text.textContent = room.label || "";
+    group.appendChild(text);
+    svg.appendChild(group);
+  });
+  (level.markers || []).forEach((marker) => {
+    const color = MAP_COLORS[marker.kind] || "#c5d5e4";
+    const group = svgEl("g", {});
+    if (marker.go) group.setAttribute("data-go", marker.go);
+    group.appendChild(svgEl("circle", {
+      cx: marker.x, cy: marker.y, r: 7, fill: color
+    }));
+    const text = svgEl("text", {
+      x: marker.x + 12, y: marker.y + 4, fill: color, "font-size": 13,
+      "font-family": "Segoe UI, sans-serif"
+    });
+    text.textContent = marker.label || "";
+    group.appendChild(text);
+    svg.appendChild(group);
+  });
+  mapStageEl.replaceChildren(svg);
+  paintYou();
+  requestAnimationFrame(fitMap);
+}
+
+async function showMapLevel(levelId) {
+  if (!mapCatalog) return;
+  const level = (mapCatalog.levels || []).find((item) => item.id === levelId) || mapCatalog.levels[0];
+  if (!level || !/^[a-z0-9-]+\.json$/.test(level.file || "")) return;
+  mapLevelId = level.id;
+  mapFloorsEl.querySelectorAll(".map-floor").forEach((btn) => {
+    btn.setAttribute("aria-pressed", btn.dataset.level === mapLevelId ? "true" : "false");
+  });
+  const data = await api("/maps/qv-breaker/" + level.file);
+  drawLevel(data);
+}
+
+async function ensureMap() {
+  try {
+    if (!mapCatalog) {
+      mapCatalog = await api("/maps/qv-breaker/station.json");
+      mapStationEl.replaceChildren();
+      (mapCatalog.stations || []).forEach((station) => {
+        const option = document.createElement("option");
+        option.value = station.id;
+        option.textContent = station.label || station.id;
+        mapStationEl.appendChild(option);
+      });
+      mapFloorsEl.replaceChildren();
+      (mapCatalog.levels || []).forEach((level) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "gg-btn map-floor";
+        btn.dataset.level = level.id;
+        btn.textContent = level.label || level.id;
+        btn.addEventListener("click", () => {
+          showMapLevel(level.id).catch((err) => toast(err.message));
+        });
+        mapFloorsEl.appendChild(btn);
+      });
+    }
+    await showMapLevel(mapLevelId);
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+mapStationEl.addEventListener("change", () => paintYou());
+document.getElementById("map-zin").addEventListener("click", () => {
+  const rect = mapVpEl.getBoundingClientRect();
+  zoomMapAt(rect.left + rect.width / 2, rect.top + rect.height / 2, mapScale * 1.25);
+});
+document.getElementById("map-zout").addEventListener("click", () => {
+  const rect = mapVpEl.getBoundingClientRect();
+  zoomMapAt(rect.left + rect.width / 2, rect.top + rect.height / 2, mapScale / 1.25);
+});
+document.getElementById("map-zfit").addEventListener("click", () => fitMap());
+
+mapVpEl.addEventListener("wheel", (event) => {
+  event.preventDefault();
+  const factor = event.deltaY < 0 ? 1.12 : 1 / 1.12;
+  zoomMapAt(event.clientX, event.clientY, mapScale * factor);
+}, { passive: false });
+
+mapVpEl.addEventListener("pointerdown", (event) => {
+  if (event.target.closest(".map-zoom")) return;
+  try { mapVpEl.setPointerCapture(event.pointerId); } catch (_err) {}
+  if (mapPointers.size === 0) mapMoved = 0;
+  mapPointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+  if (mapPointers.size === 2) {
+    const pts = [...mapPointers.values()];
+    mapPinch = {
+      dist: Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) || 1,
+      scale: mapScale
+    };
+  }
+  mapVpEl.classList.add("dragging");
+});
+
+mapVpEl.addEventListener("pointermove", (event) => {
+  const prev = mapPointers.get(event.pointerId);
+  if (!prev) return;
+  const dx = event.clientX - prev.x;
+  const dy = event.clientY - prev.y;
+  prev.x = event.clientX;
+  prev.y = event.clientY;
+  mapMoved += Math.abs(dx) + Math.abs(dy);
+  if (mapPointers.size >= 2 && mapPinch) {
+    const pts = [...mapPointers.values()];
+    const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) || 1;
+    const midX = (pts[0].x + pts[1].x) / 2;
+    const midY = (pts[0].y + pts[1].y) / 2;
+    zoomMapAt(midX, midY, mapPinch.scale * (dist / mapPinch.dist));
+    return;
+  }
+  mapTx += dx;
+  mapTy += dy;
+  applyMapTransform();
+});
+
+function endMapPointer(event) {
+  if (!mapPointers.has(event.pointerId)) return;
+  mapPointers.delete(event.pointerId);
+  if (mapPointers.size < 2) mapPinch = null;
+  if (mapPointers.size === 0) mapVpEl.classList.remove("dragging");
+  if (mapPointers.size === 0 && mapMoved < 8) {
+    const hit = event.target.closest ? event.target.closest("[data-go]") : null;
+    if (hit && hit.getAttribute("data-go")) {
+      showMapLevel(hit.getAttribute("data-go")).catch((err) => toast(err.message));
+    }
+  }
+}
+mapVpEl.addEventListener("pointerup", endMapPointer);
+mapVpEl.addEventListener("pointercancel", endMapPointer);
+window.addEventListener("resize", () => {
+  if (!mapViewEl.hidden) fitMap();
+});
+setInterval(() => {
+  if (!mapViewEl.hidden) paintYou();
+}, 1000);
 
 async function initCockpit() {
   try {

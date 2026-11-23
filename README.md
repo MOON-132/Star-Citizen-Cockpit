@@ -104,6 +104,7 @@ uninstall.bat             Startet den Deinstaller (Fallback auf uninstall.ps1)
 dashboards/*.json         mitgelieferte Basis-Dashboards
 dashboards/local/*.json   eigene/angepasste Schiffs-Dashboards & state.json (Favoriten)
 docs/DASHBOARD.md         Format, Tasten, API, Regeln für eine KI
+maps/                     Schematische QV-Breaker-Karten, eine JSON-Datei pro Ebene
 docs/dashboard.schema.json
 docs/beispiel.json
 config.local.json         optional, Port, Token, Halte-Timeout
@@ -150,7 +151,7 @@ Der Test prüft die mitgelieferten Dashboards, das Beispiel in `docs/beispiel.js
 
 `main` ist die Fassung für den Spiel-PC. Layout-Experimente auf einen eigenen Branch. Ein `git pull` auf dem Spiel-PC und ein Neuladen der Seite übernehmen neue mitgelieferte Dashboards. Die installierte Kopie aktualisiert sich nicht von selbst: nach einem Pull dort erneut `SC-Cockpit-Setup.exe` (oder `install.bat`) ausführen. Der Ordner `user` bleibt dabei.
 
-Wenn Änderungen an `server.py`, `index.html`, den mitgelieferten Dashboards oder dem Installer-Code unter `installer/` vorgenommen wurden, wird die `SC-Cockpit-Setup.exe` (benötigt Python 3 und Go) neu gebaut mit:
+Wenn Änderungen an `server.py`, `index.html`, `maps/`, den mitgelieferten Dashboards oder dem Installer-Code unter `installer/` vorgenommen wurden, wird die `SC-Cockpit-Setup.exe` (benötigt Python 3 und Go) neu gebaut mit:
 
 ```bat
 python installer/build_installer.py
