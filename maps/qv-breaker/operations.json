@@ -2,23 +2,25 @@
   "id": "operations",
   "label": "Operations",
   "schematic": true,
-  "w": 1080,
-  "h": 660,
+  "w": 820,
+  "h": 460,
   "rooms": [
-    {"id": "gondel", "label": "Gondel-Station", "x": 40, "y": 400, "w": 270, "h": 190, "go": "gondel"},
-    {"id": "plattform", "label": "Plattform", "x": 40, "y": 70, "w": 270, "h": 250},
-    {"id": "schleuse", "label": "Luftschleuse", "x": 380, "y": 180, "w": 160, "h": 160},
-    {"id": "ops", "label": "Operationsraum", "x": 600, "y": 80, "w": 430, "h": 460}
+    {"id": "station", "label": "Station", "x": 280, "y": 20, "w": 210, "h": 84, "go": "service"},
+    {"id": "code", "label": "Code C", "x": 24, "y": 130, "w": 180, "h": 120},
+    {"id": "hall", "label": "Korridor", "x": 230, "y": 130, "w": 360, "h": 140},
+    {"id": "side", "label": "Nebenraum", "x": 620, "y": 140, "w": 170, "h": 120},
+    {"id": "refs", "label": "Refraktoren", "x": 300, "y": 320, "w": 220, "h": 100, "go": "ring"}
   ],
   "corridors": [
-    {"x": 130, "y": 320, "w": 80, "h": 80},
-    {"x": 310, "y": 230, "w": 70, "h": 60},
-    {"x": 540, "y": 230, "w": 60, "h": 60}
+    {"x": 360, "y": 104, "w": 50, "h": 26},
+    {"x": 204, "y": 170, "w": 26, "h": 50},
+    {"x": 590, "y": 175, "w": 30, "h": 44},
+    {"x": 380, "y": 270, "w": 50, "h": 50}
   ],
   "markers": [
-    {"id": "gondel", "label": "Gondel", "kind": "lift", "x": 160, "y": 500, "go": "gondel"},
-    {"id": "gefahr", "label": "Gegner", "kind": "hazard", "x": 150, "y": 180},
-    {"id": "restart", "label": "Restart", "kind": "terminal", "x": 720, "y": 280},
-    {"id": "code", "label": "Refraktor-Code", "kind": "terminal", "x": 900, "y": 280}
+    {"id": "code-c", "label": "Code C", "kind": "terminal", "x": 90, "y": 200},
+    {"id": "ring", "label": "Ring", "kind": "lift", "x": 400, "y": 200, "go": "ring"},
+    {"id": "station", "label": "Station", "kind": "lift", "x": 370, "y": 60, "go": "service"},
+    {"id": "refs", "label": "Ring", "kind": "lift", "x": 390, "y": 370, "go": "ring"}
   ]
 }

@@ -1236,16 +1236,34 @@
   }
   .map-vp.dragging { cursor: grabbing; }
   .map-stage { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+  .map-labels {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    overflow: hidden;
+  }
+  .map-float {
+    position: absolute;
+    left: 0;
+    top: 0;
+    white-space: nowrap;
+    font-weight: 700;
+    line-height: 1.15;
+    text-shadow: 0 1px 2px #000;
+  }
+  .map-badge a { pointer-events: auto; color: var(--cyan); text-decoration: none; }
   .map-badge {
     position: absolute;
     left: 12px;
     top: 12px;
     z-index: 2;
+    max-width: calc(100% - 70px);
     pointer-events: none;
-    font-size: 10px;
-    font-weight: 800;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: none;
     color: var(--muted);
     border: 1px solid var(--line);
     background: rgba(7, 12, 20, 0.82);
@@ -1631,7 +1649,8 @@
   </aside>
   <div id="map-vp" class="map-vp">
     <div id="map-stage" class="map-stage"></div>
-    <div class="map-badge">Schematisch</div>
+    <div id="map-labels" class="map-labels"></div>
+    <div class="map-badge">Schematisch · Vorlage <a href="https://ko-fi.com/realmrkraken" target="_blank" rel="noopener">MrKraken</a> · <a href="https://discord.gg/mrkraken" target="_blank" rel="noopener">Discord</a></div>
     <div class="map-zoom">
       <button id="map-zin" class="gg-btn" type="button" aria-label="Vergrößern">+</button>
       <button id="map-zout" class="gg-btn" type="button" aria-label="Verkleinern">−</button>
@@ -2959,7 +2978,7 @@ const mapFloorsEl = document.getElementById("map-floors");
 const mapVpEl = document.getElementById("map-vp");
 const mapStageEl = document.getElementById("map-stage");
 let mapCatalog = null;
-let mapLevelId = "operations";
+let mapLevelId = "service";
 let mapWorld = { w: 1000, h: 640 };
 let mapScale = 1;
 let mapTx = 0;
@@ -2968,8 +2987,30 @@ let mapPointers = new Map();
 let mapPinch = null;
 let mapMoved = 0;
 
+function labelScreenPx(kind) {
+  const grown = 8 + mapScale * 6;
+  const min = kind === "marker" ? 11 : 12;
+  const max = kind === "marker" ? 15 : 16;
+  return Math.min(max, Math.max(min, grown));
+}
+
 function applyMapTransform() {
   mapStageEl.style.transform = `translate(${mapTx}px, ${mapTy}px) scale(${mapScale})`;
+  const stroke = Math.min(2.4, Math.max(1.5, 1.1 + mapScale)) / mapScale;
+  const radius = Math.min(7, Math.max(4.5, 3.2 + mapScale * 2)) / mapScale;
+  mapStageEl.querySelectorAll(".map-line").forEach((node) => {
+    node.setAttribute("stroke-width", stroke.toFixed(2));
+  });
+  mapStageEl.querySelectorAll(".map-dot").forEach((node) => {
+    node.setAttribute("r", radius.toFixed(2));
+  });
+  document.querySelectorAll("#map-labels .map-float").forEach((node) => {
+    const x = Number(node.dataset.x);
+    const y = Number(node.dataset.y);
+    const size = labelScreenPx(node.dataset.kind);
+    node.style.fontSize = size + "px";
+    node.style.transform = `translate(${mapTx + x * mapScale}px, ${mapTy + y * mapScale}px)`;
+  });
 }
 
 function fitMap() {
@@ -3045,41 +3086,49 @@ function drawLevel(level) {
     height: mapWorld.h,
     viewBox: `0 0 ${mapWorld.w} ${mapWorld.h}`
   });
+  const labels = document.getElementById("map-labels");
+  labels.replaceChildren();
+  const addLabel = (x, y, text, color, kind) => {
+    const node = document.createElement("div");
+    node.className = "map-float";
+    node.dataset.x = x;
+    node.dataset.y = y;
+    node.dataset.kind = kind;
+    node.style.color = color;
+    node.textContent = text || "";
+    labels.appendChild(node);
+  };
   (level.corridors || []).forEach((part) => {
-    svg.appendChild(svgEl("rect", {
+    const rect = svgEl("rect", {
       x: part.x, y: part.y, width: part.w, height: part.h, rx: 8,
       fill: "#101a28", stroke: "#2c4d6e", "stroke-width": 2
-    }));
+    });
+    rect.setAttribute("class", "map-line");
+    svg.appendChild(rect);
   });
   (level.rooms || []).forEach((room) => {
     const group = svgEl("g", {});
     if (room.go) group.setAttribute("data-go", room.go);
-    group.appendChild(svgEl("rect", {
+    const rect = svgEl("rect", {
       x: room.x, y: room.y, width: room.w, height: room.h, rx: 14,
       fill: "#132033", stroke: "#3e6a92", "stroke-width": 2
-    }));
-    const text = svgEl("text", {
-      x: room.x + 14, y: room.y + 24, fill: "#c5d5e4", "font-size": 14,
-      "font-family": "Segoe UI, sans-serif"
     });
-    text.textContent = room.label || "";
-    group.appendChild(text);
+    rect.setAttribute("class", "map-line");
+    group.appendChild(rect);
     svg.appendChild(group);
+    addLabel(room.x + 10, room.y + 8, room.label, "#d5e4f2", "room");
   });
   (level.markers || []).forEach((marker) => {
     const color = MAP_COLORS[marker.kind] || "#c5d5e4";
     const group = svgEl("g", {});
     if (marker.go) group.setAttribute("data-go", marker.go);
-    group.appendChild(svgEl("circle", {
+    const dot = svgEl("circle", {
       cx: marker.x, cy: marker.y, r: 7, fill: color
-    }));
-    const text = svgEl("text", {
-      x: marker.x + 12, y: marker.y + 4, fill: color, "font-size": 13,
-      "font-family": "Segoe UI, sans-serif"
     });
-    text.textContent = marker.label || "";
-    group.appendChild(text);
+    dot.setAttribute("class", "map-dot");
+    group.appendChild(dot);
     svg.appendChild(group);
+    addLabel(marker.x + 10, marker.y - 8, marker.label, color, "marker");
   });
   mapStageEl.replaceChildren(svg);
   paintYou();

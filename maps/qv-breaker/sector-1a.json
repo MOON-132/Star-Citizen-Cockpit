@@ -1,0 +1,31 @@
+{
+  "id": "sector-1a",
+  "label": "Sektor 1-A",
+  "schematic": true,
+  "w": 980,
+  "h": 740,
+  "rooms": [
+    {"id": "ms03", "label": "MS-S1-03", "x": 40, "y": 30, "w": 190, "h": 110},
+    {"id": "air", "label": "Luftschleuse", "x": 640, "y": 24, "w": 190, "h": 96},
+    {"id": "ms04", "label": "MS-S1-04", "x": 24, "y": 180, "w": 210, "h": 140},
+    {"id": "eng", "label": "Engineering", "x": 24, "y": 360, "w": 230, "h": 150},
+    {"id": "shaft", "label": "Schacht", "x": 70, "y": 540, "w": 100, "h": 160},
+    {"id": "ms02", "label": "MS-S1-02", "x": 360, "y": 180, "w": 520, "h": 300},
+    {"id": "core", "label": "Oberer Kern", "x": 280, "y": 600, "w": 210, "h": 100, "go": "central-core"}
+  ],
+  "corridors": [
+    {"x": 110, "y": 140, "w": 44, "h": 40},
+    {"x": 100, "y": 320, "w": 44, "h": 40},
+    {"x": 100, "y": 510, "w": 44, "h": 30},
+    {"x": 230, "y": 60, "w": 410, "h": 36},
+    {"x": 700, "y": 120, "w": 40, "h": 60},
+    {"x": 254, "y": 400, "w": 106, "h": 44},
+    {"x": 170, "y": 630, "w": 110, "h": 40}
+  ],
+  "markers": [
+    {"id": "cap", "label": "Kondensator", "kind": "terminal", "x": 120, "y": 450},
+    {"id": "elite", "label": "Elite", "kind": "hazard", "x": 700, "y": 340},
+    {"id": "air", "label": "Schleuse", "kind": "lift", "x": 730, "y": 70},
+    {"id": "core", "label": "Kern", "kind": "lift", "x": 360, "y": 650, "go": "central-core"}
+  ]
+}

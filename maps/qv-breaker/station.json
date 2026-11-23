@@ -13,41 +13,38 @@
     {"id": "brk-546", "label": "BRK-546"}
   ],
   "levels": [
-    {"id": "zugang", "file": "zugang.json", "label": "Zugang"},
-    {"id": "power-core", "file": "power-core.json", "label": "Power Core"},
+    {"id": "service", "file": "service.json", "label": "Service-Eingang"},
+    {"id": "central-core", "file": "central-core.json", "label": "Kern & Power"},
+    {"id": "sector-1a", "file": "sector-1a.json", "label": "Sektor 1-A"},
+    {"id": "sector-1b", "file": "sector-1b.json", "label": "Sektor 1-B"},
+    {"id": "sector-2", "file": "sector-2.json", "label": "Sektor 2"},
+    {"id": "laser", "file": "laser.json", "label": "Laser"},
     {"id": "operations", "file": "operations.json", "label": "Operations"},
-    {"id": "laser", "file": "laser.json", "label": "Laser-Bereich"},
-    {"id": "lager", "file": "lager.json", "label": "Lager (Bahn)"},
-    {"id": "gondel", "file": "gondel.json", "label": "Gondel"}
+    {"id": "warehouse", "file": "warehouse.json", "label": "Lager"},
+    {"id": "ring", "file": "ring.json", "label": "Ring"}
   ],
   "confidence": {
-    "zugang": "medium",
-    "power-core": "medium",
-    "operations": "medium",
-    "laser": "medium",
-    "lager": "medium",
-    "gondel": "low"
+    "service": "high",
+    "central-core": "high",
+    "sector-1a": "high",
+    "sector-1b": "high",
+    "sector-2": "medium",
+    "laser": "high",
+    "operations": "high",
+    "warehouse": "high",
+    "ring": "high"
   },
   "sources": [
     {
+      "title": "MrKraken: Breaker Stations Companion Guide",
+      "url": "https://ko-fi.com/realmrkraken",
+      "discord": "https://discord.gg/mrkraken",
+      "used": "Room positions, connections, relative scale and ring order. Redrawn as our own schematic. The guide images and icons are not included."
+    },
+    {
       "title": "Star Citizen Wiki: QV Breaker stations",
       "url": "https://starcitizen.tools/QV_Breaker_stations",
-      "used": "Beacon stations BRK-127/204/320/425/546 and the restore sequence"
-    },
-    {
-      "title": "Citizen Starter Guide, Rock Breaker, patch 4.10 text",
-      "url": "https://citizen-starter-guide.com/rock-breaker-interactive-guide/",
-      "used": "Side entrances, sector doors, capacitor robots, code areas, lens bay, storage control room. Images were not copied."
-    },
-    {
-      "title": "SCANZ Rock Breaker guide",
-      "url": "https://scanz.space/news/guides/complete-guide-to-rock-breaker-cracker",
-      "used": "Lobby medbay, gondola by the pads, operations console, laser left/right split, storage stairs"
-    },
-    {
-      "title": "The Impound QV Breaker Station guide",
-      "url": "https://theimpound.com/blogs/guides/star-citizen-qv-breaker-station-guide",
-      "used": "Rocky core, outer gondola, airlock entry, storage catalysts"
+      "used": "Beacon stations BRK-127/204/320/425/546"
     }
   ]
 }

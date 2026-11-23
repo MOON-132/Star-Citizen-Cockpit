@@ -1549,6 +1549,7 @@ def validate_maps() -> list[str]:
                 if key not in room:
                     errors.append(f"{lid}/{room.get('id')}: {key}")
                     break
+        known = {str(item.get("id") or "") for item in levels if isinstance(item, dict)}
         for marker in data.get("markers") or []:
             if not isinstance(marker, dict) or marker.get("kind") not in _MAP_KINDS:
                 errors.append(f"{lid}: Markerart {marker.get('kind') if isinstance(marker, dict) else marker}")
@@ -1557,6 +1558,19 @@ def validate_maps() -> list[str]:
                 if key not in marker:
                     errors.append(f"{lid}/{marker.get('id')}: {key}")
                     break
+            go = marker.get("go")
+            if go and go not in known:
+                errors.append(f"{lid}: Markerziel {go}")
+        for room in rooms if isinstance(rooms, list) else []:
+            if isinstance(room, dict) and room.get("go") and room.get("go") not in known:
+                errors.append(f"{lid}: Raumziel {room.get('go')}")
+    needed = {"service", "central-core", "sector-1a", "sector-1b", "sector-2", "laser", "operations", "warehouse", "ring"}
+    if not needed <= seen:
+        errors.append("Kartenebenen unvollständig")
+    sources = station.get("sources") or []
+    blob = json.dumps(sources)
+    if "ko-fi.com/realmrkraken" not in blob or "discord.gg/mrkraken" not in blob:
+        errors.append("MrKraken-Credit fehlt")
     return errors
 
 
@@ -2048,6 +2062,8 @@ def self_test() -> int:
             raise SystemExit("index.html ohne Baukasten-Editor")
         if 'id="nav-map"' not in html or "Schematisch" not in html:
             raise SystemExit("index.html ohne Karte")
+        if "ko-fi.com/realmrkraken" not in html or "discord.gg/mrkraken" not in html:
+            raise SystemExit("index.html ohne Karten-Credit")
 
         def raw_get(url_path: str) -> tuple[int, bytes]:
             req = urllib.request.Request(base + url_path, method="GET")
